@@ -1,103 +1,205 @@
-import Image from "next/image";
+"use client"
+import { useState } from "react"
+import AdvancedQuestionForm, { Inputs } from "@/components/AdvancedQuestionForm"
+import { generateQuestions } from "@/lib/gemini"
+
+interface Question {
+  type: string
+  question: string
+  prompt?: string      // <-- Add this line
+  options?: string[]
+  choices?: string[]   // <-- (optional) if you want to normalize from 'choices'
+  correctAnswer: string
+  answer?: string      // <-- (optional) if you want to normalize from 'answer'
+  explanation?: string
+}
 
 export default function Home() {
-  return (
-    <div className="font-sans grid grid-rows-[20px_1fr_20px] items-center justify-items-center min-h-screen p-8 pb-20 gap-16 sm:p-20">
-      <main className="flex flex-col gap-[32px] row-start-2 items-center sm:items-start">
-        <Image
-          className="dark:invert"
-          src="/next.svg"
-          alt="Next.js logo"
-          width={180}
-          height={38}
-          priority
-        />
-        <ol className="font-mono list-inside list-decimal text-sm/6 text-center sm:text-left">
-          <li className="mb-2 tracking-[-.01em]">
-            Get started by editing{" "}
-            <code className="bg-black/[.05] dark:bg-white/[.06] font-mono font-semibold px-1 py-0.5 rounded">
-              src/app/page.tsx
-            </code>
-            .
-          </li>
-          <li className="tracking-[-.01em]">
-            Save and see your changes instantly.
-          </li>
-        </ol>
+  const [output, setOutput] = useState("")
+  const [questions, setQuestions] = useState<Question[]>([])
+  const [isLoading, setIsLoading] = useState(false)
+  
+  // filepath: c:\Users\Archi\Projects\ai-question-generator\src\app\page.tsx
+const parseQuestions = (text: string): Question[] => {
+  let cleanText = text.trim();
 
-        <div className="flex gap-4 items-center flex-col sm:flex-row">
-          <a
-            className="rounded-full border border-solid border-transparent transition-colors flex items-center justify-center bg-foreground text-background gap-2 hover:bg-[#383838] dark:hover:bg-[#ccc] font-medium text-sm sm:text-base h-10 sm:h-12 px-4 sm:px-5 sm:w-auto"
-            href="https://vercel.com/new?utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-            target="_blank"
-            rel="noopener noreferrer"
-          >
-            <Image
-              className="dark:invert"
-              src="/vercel.svg"
-              alt="Vercel logomark"
-              width={20}
-              height={20}
-            />
-            Deploy now
-          </a>
-          <a
-            className="rounded-full border border-solid border-black/[.08] dark:border-white/[.145] transition-colors flex items-center justify-center hover:bg-[#f2f2f2] dark:hover:bg-[#1a1a1a] hover:border-transparent font-medium text-sm sm:text-base h-10 sm:h-12 px-4 sm:px-5 w-full sm:w-auto md:w-[158px]"
-            href="https://nextjs.org/docs?utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-            target="_blank"
-            rel="noopener noreferrer"
-          >
-            Read our docs
-          </a>
+  // Remove markdown code block wrappers (``` or ```json)
+  cleanText = cleanText.replace(/^```(?:json)?/im, '').replace(/```$/m, '');
+
+  // Remove leading/trailing quotes/backticks
+  cleanText = cleanText.replace(/^["'`]+|["'`]+$/g, '');
+
+  // Try to find the first JSON array or object in the text
+  const arrayMatch = cleanText.match(/\[[\s\S]*\]/);
+  const objectMatch = cleanText.match(/\{[\s\S]*?\}/);
+
+  let jsonString = arrayMatch ? arrayMatch[0] : objectMatch ? objectMatch[0] : cleanText;
+
+  try {
+    const parsed = JSON.parse(jsonString);
+
+    // If the parsed result is an object with a 'questions' array, return that array
+    if (!Array.isArray(parsed) && parsed.questions && Array.isArray(parsed.questions)) {
+      return parsed.questions;
+    }
+    return Array.isArray(parsed) ? parsed : [parsed];
+  } catch (error) {
+    console.error("Failed to parse questions:", error);
+    console.error("Raw text was:", text);
+    console.error("Cleaned text was:", jsonString);
+    return tryAlternativeParsing(text);
+  }
+}
+
+// Fallback parsing method
+const tryAlternativeParsing = (text: string): Question[] => {
+  try {
+    // Look for JSON-like structure and extract it
+    const lines = text.split('\n')
+    let jsonStart = -1
+    let jsonEnd = -1
+    
+    for (let i = 0; i < lines.length; i++) {
+      if (lines[i].includes('{') && jsonStart === -1) {
+        jsonStart = i
+      }
+      if (lines[i].includes('}') && jsonStart !== -1) {
+        jsonEnd = i
+      }
+    }
+    
+    if (jsonStart !== -1 && jsonEnd !== -1) {
+      const jsonText = lines.slice(jsonStart, jsonEnd + 1).join('\n')
+      const parsed = JSON.parse(jsonText)
+      return Array.isArray(parsed) ? parsed : [parsed]
+    }
+    
+    return []
+  } catch (error) {
+    console.error("Alternative parsing also failed:", error)
+    return []
+  }
+}
+
+  const getQuestionTypeDisplay = (type: string) => {
+  const typeMap: Record<string, string> = {
+    'multiple-choice': 'Multiple Choice',
+    'fill-in-the-blank': 'Fill in the Blank', 
+    'short-answer': 'Short Answer',
+    'long-answer': 'Long Answer'
+  }
+  return typeMap[type] || type
+}
+
+  const handleGenerate = async (prompt: string, inputs: Inputs) => {
+  setIsLoading(true)
+  setOutput("Generating questions...")
+  setQuestions([])
+
+  try {
+    const text = await generateQuestions(inputs)
+    setOutput(text)
+
+    let parsedQuestions = parseQuestions(text)
+
+    // Normalize fields for all question types
+    parsedQuestions = parsedQuestions.map(q => ({
+      type: q.type,
+      question: q.question || q.prompt || "",
+      options: q.options || q.choices || [],
+      correctAnswer: q.correctAnswer || q.answer || "",
+      explanation: q.explanation || ""
+    }))
+
+    setQuestions(parsedQuestions)
+  } catch (err) {
+    setOutput("Error generating questions. Check console.")
+    console.error(err)
+  } finally {
+    setIsLoading(false)
+  }
+}
+  const formatQuestion = (q: Question, index: number) => {
+  const isMultipleChoice = q.type === 'multiple-choice'
+  
+  return (
+    <div key={index} className="bg-white p-6 rounded-lg shadow-md border">
+      <div className="flex justify-between items-start mb-3">
+        <h3 className="text-lg font-semibold text-gray-800">Question {index + 1}</h3>
+        <span className="bg-blue-100 text-blue-800 px-2 py-1 rounded text-sm font-medium">
+          {getQuestionTypeDisplay(q.type)}
+        </span>
+      </div>
+      
+      <p className="text-gray-700 mb-4 leading-relaxed">{q.question}</p>
+      
+      {/* Only show options for multiple choice questions */}
+      {isMultipleChoice && q.options && (
+        <div className="mb-4">
+          <ul className="space-y-2">
+            {q.options.map((option, i) => (
+              <li key={i} className="text-gray-600 pl-2">
+                {option} {/* Options already have A), B), C), D) prefixes */}
+              </li>
+            ))}
+          </ul>
         </div>
-      </main>
-      <footer className="row-start-3 flex gap-[24px] flex-wrap items-center justify-center">
-        <a
-          className="flex items-center gap-2 hover:underline hover:underline-offset-4"
-          href="https://nextjs.org/learn?utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-          target="_blank"
-          rel="noopener noreferrer"
-        >
-          <Image
-            aria-hidden
-            src="/file.svg"
-            alt="File icon"
-            width={16}
-            height={16}
-          />
-          Learn
-        </a>
-        <a
-          className="flex items-center gap-2 hover:underline hover:underline-offset-4"
-          href="https://vercel.com/templates?framework=next.js&utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-          target="_blank"
-          rel="noopener noreferrer"
-        >
-          <Image
-            aria-hidden
-            src="/window.svg"
-            alt="Window icon"
-            width={16}
-            height={16}
-          />
-          Examples
-        </a>
-        <a
-          className="flex items-center gap-2 hover:underline hover:underline-offset-4"
-          href="https://nextjs.org?utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-          target="_blank"
-          rel="noopener noreferrer"
-        >
-          <Image
-            aria-hidden
-            src="/globe.svg"
-            alt="Globe icon"
-            width={16}
-            height={16}
-          />
-          Go to nextjs.org →
-        </a>
-      </footer>
+      )}
+      
+      <div className="border-t pt-3 mt-4 space-y-2">
+        <p className="font-medium text-green-700">
+          <strong>Answer:</strong> {q.correctAnswer}
+        </p>
+        {q.explanation && (
+          <p className="text-gray-600 text-sm">
+            <strong>Explanation:</strong> {q.explanation}
+          </p>
+        )}
+      </div>
     </div>
-  );
+  )
+}
+
+  return (
+    <main className="min-h-screen bg-gray-50 py-8">
+      <div className="max-w-4xl mx-auto px-4 space-y-8">
+        <AdvancedQuestionForm onGenerate={handleGenerate} />
+
+        {/* Results Section */}
+        {(questions.length > 0 || output) && (
+          <div className="space-y-6">
+            <h2 className="text-2xl font-bold text-gray-800">Generated Questions</h2>
+            
+            {/* Formatted Questions */}
+            {questions.length > 0 && (
+              <div className="space-y-4">
+                <div className="bg-green-50 border border-green-200 text-green-800 px-4 py-3 rounded-md">
+                  ✅ Successfully generated {questions.length} questions
+                </div>
+                {questions.map((q, i) => formatQuestion(q, i))}
+              </div>
+            )}
+            
+            {/* Loading Spinner */}
+            {isLoading && (
+              <div className="text-center py-8">
+                <div className="inline-block animate-spin rounded-full h-8 w-8 border-b-2 border-blue-600"></div>
+                <p className="mt-2 text-gray-600">Generating questions...</p>
+              </div>
+            )}
+            
+            {/* Show raw output only if parsing failed */}
+            {output && questions.length === 0 && !isLoading && (
+              <div>
+                <h3 className="text-lg font-medium text-gray-700 mb-3">Raw AI Response:</h3>
+                <pre className="whitespace-pre-wrap bg-gray-100 p-4 rounded-lg text-sm text-gray-800 border">
+                  {output}
+                </pre>
+              </div>
+            )}
+          </div>
+        )}
+      </div>
+    </main>
+  )
 }
