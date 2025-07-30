@@ -70,7 +70,8 @@ Total questions must equal ${totalQuestions}.`
     pdfContext,
     distributionInfo,
     "Provide each question followed immediately by its correct answer and a brief explanation, separated clearly.",
-    "Return the result as structured JSON with keys: type, question, options (if MCQ), correctAnswer, explanation."
+    "Return the result as structured JSON with keys: type, question, options (if MCQ), correctAnswer, explanation.",
+    "Return the result as a JSON array of question objects, even if there is only one MCQ Question"
   ].filter(Boolean).join("\n\n")
 }
 
