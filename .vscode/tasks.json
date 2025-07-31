@@ -1,0 +1,13 @@
+{
+	"version": "2.0.0",
+	"tasks": [
+		{
+			"type": "shell",
+			"label": "Install jsPDF and html2canvas",
+			"command": "npm install jspdf html2canvas",
+			"group": "build",
+			"problemMatcher": [],
+			"args": []
+		}
+	]
+}

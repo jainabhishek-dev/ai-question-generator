@@ -27,6 +27,15 @@ export default function RootLayout({
     <html lang="en">
       <body className={`${geistSans.variable} ${geistMono.variable} antialiased`}>
         <ClientProviders>
+          {/* Navigation Bar */}
+          <nav className="w-full bg-white border-b shadow-sm mb-8">
+            <div className="max-w-4xl mx-auto px-4 py-3 flex items-center justify-between">
+              <a href="/" className="text-xl font-bold text-gray-900 hover:text-blue-700">AI Question Generator</a>
+              <div className="flex gap-4">
+                <a href="/my-questions" className="text-gray-700 hover:text-blue-600 font-medium">My Questions</a>
+              </div>
+            </div>
+          </nav>
           {children}
         </ClientProviders>
       </body>
