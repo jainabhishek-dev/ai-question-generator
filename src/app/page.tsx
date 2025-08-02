@@ -126,12 +126,24 @@ const handleGenerate = async (prompt: string, inputs: Inputs) => {
     );
 
     parsedQuestions = parsedQuestions.map(q => {
-      // Your existing normalization logic
-      let options = q.options || q.choices || [];
-      if (options && typeof options === "object" && !Array.isArray(options)) {
-        options = Object.keys(options)
-          .sort()
-          .map(key => ((options as unknown) as Record<string, string>)[key]);
+      let options: string[] = [];
+      // Only normalize options for multiple-choice
+      if (q.type === "multiple-choice") {
+        let rawOptions = q.options || q.choices || [];
+        if (rawOptions && typeof rawOptions === "object" && !Array.isArray(rawOptions)) {
+          rawOptions = Object.keys(rawOptions)
+            .sort()
+            .map(key => ((rawOptions as unknown) as Record<string, string>)[key]);
+        }
+        if (Array.isArray(rawOptions)) {
+          options = rawOptions.map(opt => {
+            if (typeof opt === "string" || typeof opt === "number") return String(opt);
+            // If option is an object with a 'text' property, use that
+            if (opt && typeof opt === "object" && Object.prototype.hasOwnProperty.call(opt, "text")) return String((opt as any).text);
+            // Otherwise, try JSON.stringify as last resort
+            return typeof opt !== "undefined" ? JSON.stringify(opt) : "";
+          });
+        }
       }
 
       let correctAnswerLetter = "";
@@ -143,7 +155,7 @@ const handleGenerate = async (prompt: string, inputs: Inputs) => {
       return {
         type: q.type,
         question: q.question || q.prompt || "",
-        options: options as string[],
+        options,
         correctAnswer: q.correctAnswer || q.answer || "",
         correctAnswerLetter,
         explanation: q.explanation || ""
@@ -218,13 +230,20 @@ const handleGenerate = async (prompt: string, inputs: Inputs) => {
   return (
     <li
       key={i}
-      className={`text-gray-600 pl-2 ${isCorrect ? "font-bold text-green-700" : ""}`}
+      className={`text-gray-600 pl-2 flex items-baseline ${isCorrect ? "font-bold text-green-700" : ""}`}
     >
-      <strong>{label})</strong>{" "}
-
-      <ReactMarkdown remarkPlugins={[remarkMath]} rehypePlugins={[rehypeKatex]}>
-        {cleanedOption}
-      </ReactMarkdown>
+      <span className="inline-flex items-baseline">
+        <strong>{label})&nbsp;</strong>
+        <ReactMarkdown
+          remarkPlugins={[remarkMath]}
+          rehypePlugins={[rehypeKatex]}
+          components={{
+            p: ({ children }) => <span>{children}</span>
+          }}
+        >
+          {cleanedOption}
+        </ReactMarkdown>
+      </span>
       {isCorrect && <span className="ml-2 text-green-600 font-semibold">(Correct)</span>}
     </li>
   );
@@ -234,18 +253,22 @@ const handleGenerate = async (prompt: string, inputs: Inputs) => {
       )}
 
       <div className="border-t pt-3 mt-4 space-y-2">
-        <div className="font-medium text-green-700">
-          <strong>Answer:</strong>{" "}
-          <ReactMarkdown remarkPlugins={[remarkMath]} rehypePlugins={[rehypeKatex]}>
-            {q.correctAnswer}
-          </ReactMarkdown>
+        <div className="font-medium text-green-700 mb-4 pb-2 border-b border-green-100">
+          <strong className="block mb-2 text-lg">Answer:</strong>
+          <div className="pl-2 text-base leading-relaxed">
+            <ReactMarkdown remarkPlugins={[remarkMath]} rehypePlugins={[rehypeKatex]}>
+              {q.correctAnswer}
+            </ReactMarkdown>
+          </div>
         </div>
         {q.explanation && (
-          <div className="text-gray-600 text-sm">
-            <strong>Explanation:</strong>
-            <ReactMarkdown remarkPlugins={[remarkMath]} rehypePlugins={[rehypeKatex]}>
-              {q.explanation}
-            </ReactMarkdown>
+          <div className="bg-gray-50 border border-gray-200 rounded-md p-4 text-gray-700 text-base mt-2">
+            <strong className="block mb-2 text-lg">Explanation:</strong>
+            <div className="leading-relaxed">
+              <ReactMarkdown remarkPlugins={[remarkMath]} rehypePlugins={[rehypeKatex]}>
+                {q.explanation}
+              </ReactMarkdown>
+            </div>
           </div>
         )}
       </div>
@@ -257,38 +280,7 @@ const handleGenerate = async (prompt: string, inputs: Inputs) => {
   <main className="min-h-screen bg-gray-50 py-8">
     <div className="max-w-4xl mx-auto px-4 space-y-8">
       
-      {/* NEW: Authentication Header */}
-      <div className="bg-white p-4 rounded-lg shadow-sm border flex justify-between items-center">
-        <div>
-          <h1 className="text-xl font-bold text-gray-800">AI Question Generator</h1>
-          {user && (
-            <p className="text-sm text-gray-600">Welcome, {user.email}</p>
-          )}
-        </div>
-        
-        <div className="flex items-center gap-3">
-          {loading ? (
-            <div className="text-gray-500">Loading...</div>
-          ) : user ? (
-            <div className="flex items-center gap-3">
-              <span className="text-sm text-green-600">✅ Signed In</span>
-              <button
-                onClick={signOut}
-                className="px-4 py-2 text-sm bg-gray-100 text-gray-700 rounded-md hover:bg-gray-200"
-              >
-                Sign Out
-              </button>
-            </div>
-          ) : (
-            <button
-              onClick={() => setShowAuthModal(true)}
-              className="px-4 py-2 bg-blue-600 text-white rounded-md hover:bg-blue-700"
-            >
-              Sign In / Sign Up
-            </button>
-          )}
-        </div>
-      </div>
+      {/* ...removed duplicate header and sign in/sign out button... */}
 
       {/* Your existing AdvancedQuestionForm - NO CHANGES */}
       <AdvancedQuestionForm onGenerate={handleGenerate} />
