@@ -1,0 +1,16 @@
+{
+  "extends": "./tsconfig.json",
+  "compilerOptions": {
+    "outDir": "dist/server",
+    "rootDir": "src",
+    "noEmit": false,
+    "module": "commonjs",
+    "moduleResolution": "node",
+    "target": "ES2020",
+    "jsx": "react",
+    "esModuleInterop": true,
+    "allowSyntheticDefaultImports": true
+  },
+  "include": ["src/server/**/*", "src/types/**/*"],
+  "exclude": ["node_modules", "src/app", "src/lib", "src/contexts"]
+}

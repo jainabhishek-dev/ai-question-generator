@@ -2,7 +2,7 @@ import React from "react";
 import { QuestionRecord } from "../../types/question";
 import ReactMarkdown from "react-markdown";
 import { BlockMath, InlineMath } from "react-katex";
-import "katex/dist/katex.min.css";
+// KaTeX CSS is injected via CDN link in <head> for SSR/PDF rendering
 
 type Props = {
   questions: QuestionRecord[];
@@ -78,7 +78,9 @@ export const ExportPdfDocument: React.FC<Props> = ({
         {preferences?.formatting?.showHeaders && (
           <div className="header">{exportType === "worksheet" ? "Worksheet" : "Answer Key"}</div>
         )}
-        <h1>{exportType === "worksheet" ? "Worksheet" : "Answer Key"}</h1>
+        {!preferences?.formatting?.showHeaders && (
+          <h1>{exportType === "worksheet" ? "Worksheet" : "Answer Key"}</h1>
+        )}
         {questions.map((q, idx) => (
           <div className="question" key={q.id || idx}>
             <div>
@@ -87,12 +89,16 @@ export const ExportPdfDocument: React.FC<Props> = ({
             </div>
             {q.options && q.options.length > 0 && (
               <div className="options">
-                {q.options.map((opt, i) => (
-                  <div key={i}>
-                    <b>{String.fromCharCode(65 + i)})</b>{" "}
-                    <span>{renderMarkdownWithLatex(opt)}</span>
-                  </div>
-                ))}
+                {q.options.map((opt, i) => {
+                  // Remove leading label (e.g., 'A. ', 'B) ', etc.) from option text
+                  const cleanedOpt = opt.replace(/^([A-D][\).]?\s*)/, "");
+                  return (
+                    <div key={i}>
+                      <b>{String.fromCharCode(65 + i)})</b>{" "}
+                      <span>{renderMarkdownWithLatex(cleanedOpt)}</span>
+                    </div>
+                  );
+                })}
               </div>
             )}
             {exportType === "answer-key" && (

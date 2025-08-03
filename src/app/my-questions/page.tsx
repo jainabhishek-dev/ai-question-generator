@@ -7,34 +7,10 @@ import remarkMath from "remark-math";
 import rehypeKatex from "rehype-katex";
 import "katex/dist/katex.min.css";
 import Link from "next/link";
-// Import your types and helpers as needed
 import { QuestionRecord } from "@/types/question";
 import { getUserQuestions, softDeleteUserQuestion } from "@/lib/database";
-  // Delete question handler
-  async function handleDelete(questionId: number) {
-    if (!user || !questionId) return;
-    setDeletingId(questionId);
-    setError(null);
-    try {
-      const res = await softDeleteUserQuestion(questionId, user.id);
-      if (!res.success) {
-        setError(res.error || "Failed to delete question.");
-      } else {
-        // Remove deleted question from state
-        setQuestions(prev => prev.filter(q => q.id !== questionId));
-        setShowDeleteModal(false);
-        setPendingDeleteId(null);
-      }
-    } catch (err: any) {
-      setError("Failed to delete question: " + (err.message || "Unknown error"));
-    } finally {
-      setDeletingId(null);
-    }
-  }
-// import { ALL_TYPE_OPTIONS, ALL_GRADE_OPTIONS, ALL_DIFFICULTY_OPTIONS, ALL_BLOOMS_OPTIONS } from "@/lib/constants";
 
 export default function MyQuestionsPage() {
-  // ...existing code...
   const { user, loading } = useAuth();
   const [questions, setQuestions] = useState<QuestionRecord[]>([]);
   const [isLoading, setIsLoading] = useState(true);
@@ -106,7 +82,6 @@ export default function MyQuestionsPage() {
       .finally(() => setIsLoading(false));
   }, [user]);
 
-  // Use all possible options for dropdowns
   // Example options, replace with your actual options or import from constants
   const typeOptions = ["multiple-choice", "fill-in-the-blank", "short-answer", "long-answer"];
   const gradeOptions = ["1", "2", "3", "4", "5", "6", "7", "8", "9", "10", "11", "12"];
@@ -123,7 +98,6 @@ export default function MyQuestionsPage() {
       if (!res.success) {
         setError(res.error || "Failed to delete question.");
       } else {
-        // Remove deleted question from state
         setQuestions(prev => prev.filter((q: QuestionRecord) => q.id !== questionId));
         setShowDeleteModal(false);
         setPendingDeleteId(null);
@@ -147,7 +121,7 @@ export default function MyQuestionsPage() {
       return;
     }
     try {
-      const res = await fetch("/api/export-pdf", {
+      const res = await fetch("http://localhost:4000/api/export-pdf", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
@@ -189,7 +163,7 @@ export default function MyQuestionsPage() {
       return;
     }
     try {
-      const res = await fetch("/api/export-pdf", {
+      const res = await fetch("http://localhost:4000/api/export-pdf", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
@@ -348,7 +322,7 @@ export default function MyQuestionsPage() {
                       <div className="ml-6 mb-4 text-gray-800">
                         {q.options.map((opt, i) => {
                           // Remove any leading label (e.g., 'A) ', 'B) ', etc.) from option text
-                          const cleanedOpt = typeof opt === 'string' ? opt.replace(/^[A-Z][\\)\\.\\:]\\s*/i, '') : opt;
+                          const cleanedOpt = typeof opt === 'string' ? opt.replace(/^[A-Z][\)\\.\:]\\s*/i, '') : opt;
                           return (
                             <div key={i} className="leading-loose flex items-baseline">
                               <span className="font-bold mr-2">{String.fromCharCode(65 + i)})</span>
