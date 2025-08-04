@@ -10,8 +10,6 @@
     "server": "npm run build:server && node dist/server/server/index.js",
     "build:server": "tsc -p tsconfig.server.json"
   },
-
-
   "dependencies": {
     "@google/generative-ai": "^0.24.1",
     "@radix-ui/react-slot": "^1.2.3",
@@ -21,6 +19,7 @@
     "class-variance-authority": "^0.7.1",
     "clsx": "^2.1.1",
     "cors": "^2.8.5",
+    "dotenv": "^17.2.1",
     "express": "^4.19.2",
     "html2canvas": "^1.4.1",
     "jspdf": "^3.0.1",

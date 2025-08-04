@@ -113,23 +113,29 @@ export default function MyQuestionsPage() {
   async function handleExportWorksheet(event: React.MouseEvent<HTMLButtonElement, MouseEvent>): Promise<void> {
     event.preventDefault();
     setError(null);
-    const exportQuestions = selectedIds.length > 0
-      ? filteredQuestions.filter(q => q.id && selectedIds.includes(q.id))
-      : filteredQuestions;
-    if (exportQuestions.length === 0) {
-      setError("No questions to export.");
+    if (selectedIds.length === 0) {
+      setError("No questions selected to export.");
       return;
     }
     try {
+      // Use access token from AuthContext
+      const accessToken = user?.accessToken;
+      console.log('DEBUG: Export accessToken:', accessToken);
+      if (!accessToken) {
+        setError("Could not get user access token. Please log in again.");
+        return;
+      }
       const res = await fetch("http://localhost:4000/api/export-pdf", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
-          questions: exportQuestions,
+          selectedIds,
+          userId: user?.id,
           exportType: "worksheet",
           preferences: {
             formatting: { fontSize: 14, showHeaders: true, showFooters: true },
           },
+          accessToken,
         }),
       });
       if (!res.ok) {
@@ -155,23 +161,29 @@ export default function MyQuestionsPage() {
   async function handleExportAnswerKey(event: React.MouseEvent<HTMLButtonElement, MouseEvent>): Promise<void> {
     event.preventDefault();
     setError(null);
-    const exportQuestions = selectedIds.length > 0
-      ? filteredQuestions.filter(q => q.id && selectedIds.includes(q.id))
-      : filteredQuestions;
-    if (exportQuestions.length === 0) {
-      setError("No questions to export.");
+    if (selectedIds.length === 0) {
+      setError("No questions selected to export.");
       return;
     }
     try {
+      // Use access token from AuthContext
+      const accessToken = user?.accessToken;
+      console.log('DEBUG: Export accessToken:', accessToken);
+      if (!accessToken) {
+        setError("Could not get user access token. Please log in again.");
+        return;
+      }
       const res = await fetch("http://localhost:4000/api/export-pdf", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
-          questions: exportQuestions,
+          selectedIds,
+          userId: user?.id,
           exportType: "answer-key",
           preferences: {
             formatting: { fontSize: 14, showHeaders: true, showFooters: true },
           },
+          accessToken,
         }),
       });
       if (!res.ok) {

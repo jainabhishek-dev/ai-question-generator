@@ -1,5 +1,5 @@
 import express, { Request, Response } from "express";
-import { ExportPdfRequest } from "../types/question";
+import { supabaseClient } from "../lib/supabaseClient";
 import React from "react";
 import { renderToStaticMarkup } from "react-dom/server";
 import { ExportPdfDocument } from "./components/ExportPdfDocument";
@@ -9,26 +9,52 @@ const router = express.Router();
 
 router.post("/api/export-pdf", async (req: Request, res: Response) => {
   try {
-    const { questions, exportType, preferences }: ExportPdfRequest = req.body;
-
-    if (!questions || !Array.isArray(questions) || !exportType) {
+    const { selectedIds, userId, exportType, preferences, accessToken } = req.body;
+    // Debug log incoming request data
+    console.log('=== EXPORT PDF DEBUG ===');
+    console.log('Selected IDs:', selectedIds);
+    console.log('User ID:', userId);
+    console.log('Access Token:', accessToken?.slice(0, 12) + '...');
+    if (!selectedIds || !Array.isArray(selectedIds) || selectedIds.length === 0 || !exportType || !userId || !accessToken) {
       return res.status(400).json({ error: "Invalid request data" });
     }
 
-    // Filter selected questions if needed
-    let exportQuestions = questions;
-    if (preferences?.selectedIds && preferences.selectedIds.length > 0) {
-      exportQuestions = questions.filter(q => q.id !== undefined && preferences.selectedIds!.includes(q.id));
+    // Recreate Supabase client with user's access token for RLS
+    const { createClient } = require('@supabase/supabase-js');
+    const supabaseUrl = process.env.SUPABASE_URL;
+    // Use anon key for client creation, but pass user's JWT for auth
+    const supabase = createClient(supabaseUrl, process.env.SUPABASE_ANON_KEY, {
+      global: { headers: { Authorization: `Bearer ${accessToken}` } }
+    });
+
+    // Query Supabase for raw questions
+    // Table name: 'questions' (verify this is correct in your Supabase dashboard)
+    const { data, error, status, statusText } = await supabase
+      .from("questions")
+      .select("*")
+      .in("id", selectedIds)
+      .eq("user_id", userId);
+
+    if (error) {
+      console.error('Supabase query error:', error, 'Status:', status, 'StatusText:', statusText);
+      return res.status(403).json({ error: 'Supabase query failed', details: error.message || error, status, statusText });
+    }
+
+    if (!data || data.length === 0) {
+      console.warn('No questions found for the given IDs and user. Data:', data);
+      return res.status(404).json({ error: 'No questions found for the given IDs and user' });
     }
 
     // Render React SSR HTML
     const html = renderToStaticMarkup(
       React.createElement(ExportPdfDocument, {
-        questions: exportQuestions,
+        questions: data,
         exportType,
         preferences,
       })
     );
+
+    // ...existing code...
 
     // Puppeteer PDF generation
     const browser = await puppeteer.launch({
@@ -45,6 +71,8 @@ router.post("/api/export-pdf", async (req: Request, res: Response) => {
       format: "A4",
       margin: { top: "40px", bottom: "40px", left: "40px", right: "40px" },
       printBackground: true,
+      preferCSSPageSize: true, // Respect CSS page rules
+      displayHeaderFooter: false, // Clean output
       timeout: 60000, // 60s timeout
     });
 

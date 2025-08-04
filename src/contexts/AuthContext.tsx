@@ -4,11 +4,15 @@ import { User } from '@supabase/supabase-js'
 import { supabase } from '@/lib/supabase'
 
 interface AuthContextType {
-  user: User | null
-  loading: boolean
-  signIn: (email: string, password: string) => Promise<{ success: boolean; error?: string }>
-  signUp: (email: string, password: string) => Promise<{ success: boolean; error?: string }>
-  signOut: () => Promise<void>
+  user: (User & { accessToken?: string }) | null;
+  session?: {
+    access_token?: string;
+    [key: string]: any;
+  };
+  loading: boolean;
+  signIn: (email: string, password: string) => Promise<{ success: boolean; error?: string }>;
+  signUp: (email: string, password: string) => Promise<{ success: boolean; error?: string }>;
+  signOut: () => Promise<void>;
 }
 
 const AuthContext = createContext<AuthContextType | undefined>(undefined)
@@ -22,29 +26,31 @@ export const useAuth = () => {
 }
 
 export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
-  const [user, setUser] = useState<User | null>(null)
+  const [user, setUser] = useState<(User & { accessToken?: string }) | null>(null)
+  const [session, setSession] = useState<any>(null)
   const [loading, setLoading] = useState(true)
 
   useEffect(() => {
     // Get initial user
-    const getInitialUser = async () => {
-      const { data: { user } } = await supabase.auth.getUser()
-      setUser(user)
-      setLoading(false)
-    }
+    const getInitialSession = async () => {
+      const { data } = await supabase.auth.getSession();
+      setSession(data.session ? { ...data.session, access_token: data.session.access_token } : undefined);
+      setUser(data.session?.user ? { ...data.session.user, accessToken: data.session.access_token } : null);
+      setLoading(false);
+    };
 
-    getInitialUser()
+    getInitialSession();
 
-    // Listen for auth changes with modern approach
     const { data: { subscription } } = supabase.auth.onAuthStateChange(
       async (event, session) => {
-        setUser(session?.user || null)
-        setLoading(false)
+        setSession(session ? { ...session, access_token: session.access_token } : undefined);
+        setUser(session?.user ? { ...session.user, accessToken: session.access_token } : null);
+        setLoading(false);
       }
-    )
+    );
 
-    return () => subscription.unsubscribe()
-  }, [])
+    return () => subscription.unsubscribe();
+  }, []);
 
   const handleSignIn = async (email: string, password: string) => {
     try {
@@ -83,6 +89,7 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
   return (
     <AuthContext.Provider value={{
       user,
+      session,
       loading,
       signIn: handleSignIn,
       signUp: handleSignUp,
