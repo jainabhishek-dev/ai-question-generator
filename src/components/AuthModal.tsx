@@ -34,7 +34,7 @@ export default function AuthModal({ isOpen, onClose }: AuthModalProps) {
       } else {
         setError(result.error || 'Authentication failed')
       }
-    } catch (err) {
+    } catch {
       setError('An unexpected error occurred')
     }
   }

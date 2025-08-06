@@ -1,5 +1,5 @@
 import express, { Request, Response } from "express";
-import { supabaseClient } from "../lib/supabaseClient";
+// import { supabaseClient } from "../lib/supabaseClient"; // Removed unused import
 import React from "react";
 import { renderToStaticMarkup } from "react-dom/server";
 import { ExportPdfDocument } from "./components/ExportPdfDocument";
@@ -20,10 +20,12 @@ router.post("/api/export-pdf", async (req: Request, res: Response) => {
     }
 
     // Recreate Supabase client with user's access token for RLS
-    const { createClient } = require('@supabase/supabase-js');
-    const supabaseUrl = process.env.SUPABASE_URL;
+    // Use dynamic import for createClient
+    const { createClient } = await import('@supabase/supabase-js');
+    const supabaseUrl = process.env.SUPABASE_URL ?? '';
+    const supabaseAnonKey = process.env.SUPABASE_ANON_KEY ?? '';
     // Use anon key for client creation, but pass user's JWT for auth
-    const supabase = createClient(supabaseUrl, process.env.SUPABASE_ANON_KEY, {
+    const supabase = createClient(supabaseUrl, supabaseAnonKey, {
       global: { headers: { Authorization: `Bearer ${accessToken}` } }
     });
 
@@ -84,11 +86,15 @@ router.post("/api/export-pdf", async (req: Request, res: Response) => {
       "Content-Length": pdfBuffer.length,
     });
     res.send(pdfBuffer);
-  } catch (err: any) {
+  } catch (err) {
+    let errorMsg = 'Unknown error';
+    if (err && typeof err === 'object' && 'message' in err) {
+      errorMsg = String((err as { message?: string }).message);
+    }
     console.error("PDF export error:", err);
     res.status(500).json({
       error: "Failed to generate PDF",
-      details: err.message || "Unknown error",
+      details: errorMsg,
     });
   }
 });

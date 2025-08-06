@@ -37,7 +37,7 @@ export interface GeneratedQuestion {
 const getErrorMessage = (error: unknown): string => {
   if (error instanceof Error) return error.message
   if (typeof error === 'object' && error !== null && 'message' in error) {
-    return String((error as any).message)
+    return typeof error === 'object' && error !== null && 'message' in error ? String((error as { message: string }).message) : String(error)
   }
   return 'Unknown error occurred'
 }
@@ -283,12 +283,12 @@ export const deleteUserQuestion = async (
   }
 }
 
-// Export all functions for easy importing
-export default {
+const databaseApi = {
   saveQuestions,
   getQuestions,
   deleteUserQuestion,
   getUserQuestions,
   softDeleteUserQuestion,
   restoreUserQuestion
-}
+};
+export default databaseApi;

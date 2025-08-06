@@ -7,7 +7,7 @@ interface AuthContextType {
   user: (User & { accessToken?: string }) | null;
   session?: {
     access_token?: string;
-    [key: string]: any;
+    [key: string]: unknown;
   };
   loading: boolean;
   signIn: (email: string, password: string) => Promise<{ success: boolean; error?: string }>;
@@ -27,14 +27,14 @@ export const useAuth = () => {
 
 export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
   const [user, setUser] = useState<(User & { accessToken?: string }) | null>(null)
-  const [session, setSession] = useState<any>(null)
+  const [session, setSession] = useState<{ [key: string]: unknown; access_token?: string } | null>(null)
   const [loading, setLoading] = useState(true)
 
   useEffect(() => {
     // Get initial user
     const getInitialSession = async () => {
       const { data } = await supabase.auth.getSession();
-      setSession(data.session ? { ...data.session, access_token: data.session.access_token } : undefined);
+      setSession(data.session ? { ...data.session, access_token: data.session.access_token } : null);
       setUser(data.session?.user ? { ...data.session.user, accessToken: data.session.access_token } : null);
       setLoading(false);
     };
@@ -43,7 +43,7 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
 
     const { data: { subscription } } = supabase.auth.onAuthStateChange(
       async (event, session) => {
-        setSession(session ? { ...session, access_token: session.access_token } : undefined);
+        setSession(session ? { ...session, access_token: session.access_token } : null);
         setUser(session?.user ? { ...session.user, accessToken: session.access_token } : null);
         setLoading(false);
       }
@@ -62,8 +62,12 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
       if (error) throw error
 
       return { success: true }
-    } catch (error: any) {
-      return { success: false, error: error.message }
+    } catch (error) {
+      let errorMsg = 'Unknown error';
+      if (error && typeof error === 'object' && 'message' in error) {
+        errorMsg = String((error as { message?: string }).message);
+      }
+      return { success: false, error: errorMsg }
     }
   }
 
@@ -77,8 +81,12 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
       if (error) throw error
 
       return { success: true }
-    } catch (error: any) {
-      return { success: false, error: error.message }
+    } catch (error) {
+      let errorMsg = 'Unknown error';
+      if (error && typeof error === 'object' && 'message' in error) {
+        errorMsg = String((error as { message?: string }).message);
+      }
+      return { success: false, error: errorMsg }
     }
   }
 
@@ -89,7 +97,7 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
   return (
     <AuthContext.Provider value={{
       user,
-      session,
+      session: session ?? undefined,
       loading,
       signIn: handleSignIn,
       signUp: handleSignUp,

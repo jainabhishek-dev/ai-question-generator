@@ -1,4 +1,6 @@
 import React, { useMemo } from "react";
+import Head from "next/head";
+import Image from "next/image";
 import { QuestionRecord } from "../../types/question";
 import ReactMarkdown from "react-markdown";
 import { BlockMath, InlineMath } from "react-katex";
@@ -132,7 +134,6 @@ function processOption(option: string, index: number): { cleanedOption: string; 
       };
     }
   }
-  
   return {
     cleanedOption: option.trim(),
     showLabel: true
@@ -180,7 +181,7 @@ export const ExportPdfDocument: React.FC<Props> = ({
 
   return (
     <html>
-      <head>
+      <Head>
         <meta charSet="utf-8" />
         <title>{brandingTitle}</title>
         <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/katex@0.16.9/dist/katex.min.css" />
@@ -374,7 +375,7 @@ export const ExportPdfDocument: React.FC<Props> = ({
             .question {
               /* allow splitting across pages */
             }
-            .answer-section {
+                <Image src={brandingLogo} alt="Logo" className="branding-logo" aria-label="Branding logo" />
               /* allow breaking across pages for long explanations */
             }
           }
@@ -415,7 +416,7 @@ export const ExportPdfDocument: React.FC<Props> = ({
             margin-bottom: 0;
           }
         `}</style>
-      </head>
+      </Head>
       <body>
         {showHeaders && (
           <div className="header" role="banner">
@@ -426,7 +427,7 @@ export const ExportPdfDocument: React.FC<Props> = ({
           {!showHeaders && (
             <>
               {brandingLogo && (
-                <img src={brandingLogo} alt="Logo" className="branding-logo" aria-label="Branding logo" />
+                <Image src={brandingLogo} alt="Logo" className="branding-logo" aria-label="Branding logo" width={250} height={60} />
               )}
               <h1>{brandingTitle}</h1>
             </>
