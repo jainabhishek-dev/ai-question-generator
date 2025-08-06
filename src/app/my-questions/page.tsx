@@ -11,7 +11,7 @@ import { QuestionRecord } from '@/types/question'
 import { getUserQuestions, softDeleteUserQuestion } from '@/lib/database'
 
 export default function MyQuestionsPage() {
-  const { user, loading } = useAuth()
+  const { user } = useAuth()
   const [questions, setQuestions] = useState<QuestionRecord[]>([])
   const [isLoading, setIsLoading] = useState(true)
   const [error, setError] = useState<string | null>(null)
@@ -110,8 +110,11 @@ export default function MyQuestionsPage() {
         setShowDeleteModal(false)
         setPendingDeleteId(null)
       }
-    } catch (err: any) {
-      setError(`Failed to delete question: ${err.message || 'Unknown error'}`)
+    } catch (err: unknown) {
+      const errorMessage = typeof err === 'object' && err !== null && 'message' in err
+        ? (err as { message?: string }).message
+        : undefined;
+      setError(`Failed to delete question: ${errorMessage || 'Unknown error'}`)
     } finally {
       setDeletingId(null)
     }
@@ -169,8 +172,11 @@ export default function MyQuestionsPage() {
       a.click()
       a.remove()
       window.URL.revokeObjectURL(url)
-    } catch (err: any) {
-      setError(`Failed to export Worksheet: ${err.message || 'Unknown error'}`)
+    } catch (err: unknown) {
+      const errorMessage = typeof err === 'object' && err !== null && 'message' in err
+        ? (err as { message?: string }).message
+        : undefined;
+      setError(`Failed to export Worksheet: ${errorMessage || 'Unknown error'}`)
     }
   }
 
@@ -226,8 +232,11 @@ export default function MyQuestionsPage() {
       a.click()
       a.remove()
       window.URL.revokeObjectURL(url)
-    } catch (err: any) {
-      setError(`Failed to export Answer Key: ${err.message || 'Unknown error'}`)
+    } catch (err: unknown) {
+      const errorMessage = typeof err === 'object' && err !== null && 'message' in err
+        ? (err as { message?: string }).message
+        : undefined;
+      setError(`Failed to export Answer Key: ${errorMessage || 'Unknown error'}`)
     }
   }
 
@@ -379,7 +388,7 @@ export default function MyQuestionsPage() {
             <div className="space-y-2">
               <label className="text-sm font-semibold text-gray-700 flex items-center space-x-2">
                 <span className="w-2 h-2 bg-indigo-500 rounded-full"></span>
-                <span>Bloom's Level</span>
+                <span>Bloom&apos;s Level</span>
               </label>
               <select 
                 value={bloomsDraft} 

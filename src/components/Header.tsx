@@ -39,7 +39,7 @@ export default function Header({ onSignIn }: HeaderProps): ReactElement {
         {/* Left: Logo & Nav */}
         <div className="flex items-center gap-8">
           <Link href="/">
-            <span className="font-bold text-xl text-blue-700 tracking-tight">AI Question Generator</span>
+            <span className="font-bold text-xl text-blue-700 tracking-tight">Create Questions</span>
           </Link>
           <nav className="flex gap-6">
             <Link href="/my-questions">

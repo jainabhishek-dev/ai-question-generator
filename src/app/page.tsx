@@ -29,7 +29,7 @@ export default function Home() {
   const [saveStatus, setSaveStatus] = useState<'idle' | 'saving' | 'saved' | 'error'>('idle')
   const [saveError, setSaveError] = useState<string | null>(null)
   const [showAuthModal, setShowAuthModal] = useState(false)
-  const { user, loading, signOut } = useAuth()
+  const { user } = useAuth()
   
   const parseQuestions = (text: string): Question[] => {
     let cleanText = text.trim();
@@ -44,7 +44,7 @@ export default function Home() {
     const arrayMatch = cleanText.match(/\[[\s\S]*\]/);
     const objectMatch = cleanText.match(/\{[\s\S]*\}/);
 
-    let jsonString = arrayMatch ? arrayMatch[0] : objectMatch ? objectMatch[0] : cleanText;
+    const jsonString = arrayMatch ? arrayMatch[0] : objectMatch ? objectMatch[0] : cleanText;
 
     try {
       const parsed = JSON.parse(jsonString);
@@ -67,34 +67,6 @@ export default function Home() {
   }
 
   // Fallback parsing method
-  const tryAlternativeParsing = (text: string): Question[] => {
-    try {
-      // Look for JSON-like structure and extract it
-      const lines = text.split('\n')
-      let jsonStart = -1
-      let jsonEnd = -1
-      
-      for (let i = 0; i < lines.length; i++) {
-        if (lines[i].includes('{') && jsonStart === -1) {
-          jsonStart = i
-        }
-        if (lines[i].includes('}') && jsonStart !== -1) {
-          jsonEnd = i
-        }
-      }
-      
-      if (jsonStart !== -1 && jsonEnd !== -1) {
-        const jsonText = lines.slice(jsonStart, jsonEnd + 1).join('\n')
-        const parsed = JSON.parse(jsonText)
-        return Array.isArray(parsed) ? parsed : [parsed]
-      }
-      
-      return []
-    } catch (error) {
-      console.error("Alternative parsing also failed:", error)
-      return []
-    }
-  }
 
   const getQuestionTypeDisplay = (type: string) => {
     const typeMap: Record<string, string> = {
@@ -138,7 +110,7 @@ export default function Home() {
             options = rawOptions.map(opt => {
               if (typeof opt === "string" || typeof opt === "number") return String(opt);
               // If option is an object with a 'text' property, use that
-              if (opt && typeof opt === "object" && Object.prototype.hasOwnProperty.call(opt, "text")) return String((opt as any).text);
+              if (opt && typeof opt === "object" && Object.prototype.hasOwnProperty.call(opt, "text")) return String((opt as { text: string }).text);
               // Otherwise, try JSON.stringify as last resort
               return typeof opt !== "undefined" ? JSON.stringify(opt) : "";
             });
@@ -341,195 +313,147 @@ export default function Home() {
 
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-slate-50 via-blue-50 to-indigo-100">
-      {/* Enhanced Header Section */}
-      <div className="bg-gradient-to-r from-white/80 to-blue-50/80 backdrop-blur-xl border-b border-white/20 py-12">
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-          <div className="text-center space-y-6">
-            <div className="w-20 h-20 mx-auto bg-gradient-to-r from-blue-500 to-purple-600 rounded-3xl flex items-center justify-center shadow-xl">
-              <svg className="w-10 h-10 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9.663 17h4.673M12 3v1m6.364 1.636l-.707.707M21 12h-1M4 12H3m3.343-5.657l-.707-.707m2.828 9.9a5 5 0 117.072 0l-.548.547A3.374 3.374 0 0014 18.469V19a2 2 0 11-4 0v-.531c0-.895-.356-1.754-.988-2.386l-.548-.547z" />
+    <main className="min-h-screen bg-gradient-to-br from-slate-50 via-blue-50 to-indigo-100 py-8">
+      <div className="max-w-4xl mx-auto px-4 space-y-8">
+        {/* Enhanced Header */}
+        <div className="text-center space-y-4">
+          <div className="w-16 h-16 mx-auto mb-6 bg-gradient-to-r from-blue-500 to-purple-600 rounded-2xl flex items-center justify-center shadow-lg">
+            <svg className="w-8 h-8 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9.663 17h4.673M12 3v1m6.364 1.636l-.707.707M21 12h-1M4 12H3m3.343-5.657l-.707-.707m2.828 9.9a5 5 0 117.072 0l-.548.547A3.374 3.374 0 0014 18.469V19a2 2 0 11-4 0v-.531c0-.895-.356-1.754-.988-2.386l-.548-.547z" />
+            </svg>
+          </div>
+          <h1 className="text-4xl font-bold bg-gradient-to-r from-gray-900 via-blue-900 to-purple-900 bg-clip-text text-transparent">
+            AI Question Generator
+          </h1>
+          <p className="text-lg text-gray-600 max-w-2xl mx-auto leading-relaxed">
+            Create engaging educational content with AI-powered question generation. 
+            Build customized assessments for your classroom in seconds.
+          </p>
+        </div>
+
+        {/* Full AdvancedQuestionForm in card layout */}
+        <AdvancedQuestionForm onGenerate={handleGenerate} />
+
+        {/* Enhanced Error Display */}
+        {saveError && (
+          <div className="backdrop-blur-xl bg-red-50/80 border border-red-200/50 text-red-700 px-6 py-4 rounded-2xl shadow-lg">
+            <div className="flex items-center space-x-3">
+              <svg className="w-5 h-5 text-red-500 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 8v4m0 4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
               </svg>
+              <span className="font-medium">{saveError}</span>
             </div>
-            <h1 className="text-5xl font-bold bg-gradient-to-r from-gray-900 via-blue-900 to-purple-900 bg-clip-text text-transparent">
-              AI Question Generator
-            </h1>
-            <p className="text-lg text-gray-600 max-w-2xl mx-auto leading-relaxed">
-              Create engaging educational content with AI-powered question generation. 
-              Build customized assessments for your classroom in seconds.
-            </p>
           </div>
-        </div>
-      </div>
+        )}
 
-      {/* Main Content Area */}
-      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
-        <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
-          {/* Left Column - Form Section */}
-          <div className="lg:col-span-1 space-y-6">
-            <div className="backdrop-blur-xl bg-white/80 border border-white/30 rounded-2xl shadow-xl p-8 sticky top-8">
-              <div className="flex items-center space-x-3 mb-6">
-                <div className="w-8 h-8 bg-gradient-to-r from-blue-500 to-purple-600 rounded-lg flex items-center justify-center">
-                  <svg className="w-4 h-4 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z" />
-                  </svg>
-                </div>
-                <h2 className="text-2xl font-bold bg-gradient-to-r from-gray-900 to-gray-600 bg-clip-text text-transparent">
-                  Question Parameters
-                </h2>
+        {/* Enhanced Results Section */}
+        {(questions.length > 0 || output || isLoading) && (
+          <div className="backdrop-blur-xl bg-white/70 border border-white/20 rounded-2xl shadow-xl p-6 space-y-6">
+            <div className="flex items-center space-x-3">
+              <div className="w-8 h-8 bg-gradient-to-r from-green-500 to-emerald-600 rounded-lg flex items-center justify-center">
+                <svg className="w-4 h-4 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
+                </svg>
               </div>
-              <AdvancedQuestionForm onGenerate={handleGenerate} />
-              {saveError && (
-                <div className="backdrop-blur-xl bg-red-50/80 border border-red-200/50 text-red-700 px-6 py-4 rounded-2xl shadow-lg mt-6">
+              <h2 className="text-2xl font-bold bg-gradient-to-r from-gray-900 to-gray-600 bg-clip-text text-transparent">
+                Generated Questions
+              </h2>
+            </div>
+
+            {/* Enhanced Success/Status Messages */}
+            {questions.length > 0 && (
+              <div className="space-y-4">
+                <div className="backdrop-blur-xl bg-green-50/80 border border-green-200/50 text-green-700 px-6 py-4 rounded-2xl shadow-lg">
                   <div className="flex items-center space-x-3">
-                    <svg className="w-5 h-5 text-red-500 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 8v4m0 4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
+                    <svg className="w-5 h-5 text-green-500 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z" />
                     </svg>
-                    <span className="font-medium">{saveError}</span>
+                    <span className="font-medium">
+                      Successfully generated {questions.length} question{questions.length !== 1 ? 's' : ''}
+                      {saveStatus === 'saving' && <span className="ml-2 text-blue-600">• Saving...</span>}
+                      {saveStatus === 'saved' && user && <span className="ml-2 text-green-600">• Saved to My Questions</span>}
+                      {saveStatus === 'saved' && !user && <span className="ml-2 text-orange-600">• Questions generated! Sign in to save to personal library</span>}
+                    </span>
                   </div>
                 </div>
-              )}
-            </div>
-          </div>
 
-          {/* Right Column - Results Section */}
-          <div className="lg:col-span-2">
-            <div className="backdrop-blur-xl bg-white/80 border border-white/30 rounded-2xl shadow-xl overflow-hidden">
-              {/* Results Header */}
-              <div className="bg-gradient-to-r from-gray-50 to-gray-100/50 p-8 border-b border-gray-200/50">
-                <div className="flex items-center space-x-4">
-                  <div className="w-12 h-12 bg-gradient-to-r from-green-500 to-emerald-600 rounded-xl flex items-center justify-center">
-                    <svg className="w-6 h-6 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
-                    </svg>
-                  </div>
-                  <div>
-                    <h2 className="text-3xl font-bold bg-gradient-to-r from-gray-900 to-gray-600 bg-clip-text text-transparent">Generated Questions</h2>
-                    <p className="text-gray-600 mt-2">
-                      {questions.length} question{questions.length !== 1 ? 's' : ''} generated successfully
-                    </p>
-                  </div>
-                </div>
-              </div>
-
-              {/* Results Content */}
-              <div className="p-8 space-y-8">
-                {/* Professional Empty State */}
-                {!isLoading && questions.length === 0 && !output && (
-                  <div className="backdrop-blur-xl bg-white/80 border border-white/30 rounded-2xl shadow-xl p-12 text-center">
-                    <div className="w-24 h-24 mx-auto mb-6 bg-gradient-to-r from-gray-100 to-gray-200 rounded-3xl flex items-center justify-center">
-                      <svg className="w-12 h-12 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9.663 17h4.673M12 3v1m6.364 1.636l-.707.707M21 12h-1M4 12H3m3.343-5.657l-.707-.707m2.828 9.9a5 5 0 117.072 0l-.548.547A3.374 3.374 0 0014 18.469V19a2 2 0 11-4 0v-.531c0-.895-.356-1.754-.988-2.386l-.548-.547z" />
+                {/* Enhanced CTA for non-authenticated users */}
+                {saveStatus === 'saved' && !user && (
+                  <div className="backdrop-blur-xl bg-blue-50/80 border border-blue-200/50 text-blue-700 px-6 py-4 rounded-2xl shadow-lg">
+                    <div className="flex items-center space-x-3">
+                      <svg className="w-5 h-5 text-blue-500 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
                       </svg>
+                      <div className="flex-1">
+                        <span className="font-medium">Want to build your personal question library?</span>
+                        <button
+                          onClick={() => setShowAuthModal(true)}
+                          className="ml-2 px-4 py-1 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors text-sm font-medium"
+                        >
+                          Sign up for free
+                        </button>
+                        <span className="ml-2">to save, organize, and manage your questions!</span>
+                      </div>
                     </div>
-                    <h3 className="text-2xl font-bold text-gray-900 mb-4">Ready to Generate Questions?</h3>
-                    <p className="text-lg text-gray-600 max-w-md mx-auto">
-                      Fill out the form on the left to start creating AI-powered educational questions tailored to your needs.
-                    </p>
                   </div>
                 )}
 
-                {/* Enhanced Results Section */}
-                {(questions.length > 0 || output || isLoading) && (
-                  <>
-                    {/* Enhanced Success/Status Messages */}
-                    {questions.length > 0 && (
-                      <div className="space-y-4">
-                        <div className="backdrop-blur-xl bg-green-50/80 border border-green-200/50 text-green-700 px-6 py-4 rounded-2xl shadow-lg">
-                          <div className="flex items-center space-x-3">
-                            <svg className="w-5 h-5 text-green-500 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z" />
-                            </svg>
-                            <span className="font-medium">
-                              Successfully generated {questions.length} question{questions.length !== 1 ? 's' : ''}
-                              {saveStatus === 'saving' && <span className="ml-2 text-blue-600">• Saving...</span>}
-                              {saveStatus === 'saved' && user && <span className="ml-2 text-green-600">• Saved to My Questions</span>}
-                              {saveStatus === 'saved' && !user && <span className="ml-2 text-orange-600">• Questions generated! Sign in to save to personal library</span>}
-                            </span>
-                          </div>
-                        </div>
-
-                        {/* Enhanced CTA for non-authenticated users */}
-                        {saveStatus === 'saved' && !user && (
-                          <div className="backdrop-blur-xl bg-blue-50/80 border border-blue-200/50 text-blue-700 px-6 py-4 rounded-2xl shadow-lg">
-                            <div className="flex items-center space-x-3">
-                              <svg className="w-5 h-5 text-blue-500 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
-                              </svg>
-                              <div className="flex-1">
-                                <span className="font-medium">Want to build your personal question library?</span>
-                                <button
-                                  onClick={() => setShowAuthModal(true)}
-                                  className="ml-2 px-4 py-1 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors text-sm font-medium"
-                                >
-                                  Sign up for free
-                                </button>
-                                <span className="ml-2">to save, organize, and manage your questions!</span>
-                              </div>
-                            </div>
-                          </div>
-                        )}
-
-                        {/* Enhanced Question Display */}
-                        <div className="space-y-8">
-                          {questions.map((q, i) => formatQuestion(q, i))}
-                        </div>
-                      </div>
-                    )}
-
-                    {/* Enhanced Loading State */}
-                    {isLoading && (
-                      <div className="text-center py-12">
-                        <div className="w-16 h-16 mx-auto mb-6 relative">
-                          <div className="w-16 h-16 border-4 border-blue-200 rounded-full animate-spin border-t-blue-600"></div>
-                          <div className="absolute top-4 left-4 w-8 h-8 bg-gradient-to-r from-blue-500 to-purple-600 rounded-full flex items-center justify-center">
-                            <svg className="w-4 h-4 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9.663 17h4.673M12 3v1m6.364 1.636l-.707.707M21 12h-1M4 12H3m3.343-5.657l-.707-.707m2.828 9.9a5 5 0 117.072 0l-.548.547A3.374 3.374 0 0014 18.469V19a2 2 0 11-4 0v-.531c0-.895-.356-1.754-.988-2.386l-.548-.547z" />
-                            </svg>
-                          </div>
-                        </div>
-                        <h3 className="text-xl font-bold text-gray-900 mb-2">Generating Questions</h3>
-                        <p className="text-gray-600">Our AI is crafting personalized questions for you...</p>
-                      </div>
-                    )}
-
-                    {/* Enhanced Raw Output Display */}
-                    {output && questions.length === 0 && !isLoading && (
-                      <div className="space-y-4">
-                        <div className="backdrop-blur-xl bg-yellow-50/80 border border-yellow-200/50 text-yellow-700 px-6 py-4 rounded-2xl shadow-lg">
-                          <div className="flex items-center space-x-3">
-                            <svg className="w-5 h-5 text-yellow-500 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-2.5L13.732 4c-.77-.833-1.964-.833-2.732 0L4.082 16.5c-.77.833.192 2.5 1.732 2.5z" />
-                            </svg>
-                            <span className="font-medium">Unable to parse AI response. See raw output below:</span>
-                          </div>
-                        </div>
-                        <div className="backdrop-blur-xl bg-white/90 border border-white/50 rounded-2xl p-6">
-                          <h3 className="text-lg font-semibold text-gray-800 mb-4 flex items-center space-x-2">
-                            <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M10 20l4-16m4 4l4 4-4 4M6 16l-4-4 4-4" />
-                            </svg>
-                            <span>Raw AI Response</span>
-                          </h3>
-                          <pre className="whitespace-pre-wrap bg-gray-100 p-4 rounded-xl text-sm text-gray-800 border border-gray-200 overflow-auto max-h-96">
-                            {output}
-                          </pre>
-                        </div>
-                      </div>
-                    )}
-                  </>
-                )}
+                {/* Enhanced Question Display */}
+                <div className="space-y-6">
+                  {questions.map((q, i) => formatQuestion(q, i))}
+                </div>
               </div>
-            </div>
-          </div>
-        </div>
-      </div>
+            )}
 
-      {/* Enhanced Authentication Modal */}
-      <AuthModal
-        isOpen={showAuthModal}
-        onClose={() => setShowAuthModal(false)}
-      />
-    </div>
+            {/* Enhanced Loading State */}
+            {isLoading && (
+              <div className="text-center py-12">
+                <div className="w-16 h-16 mx-auto mb-6 relative">
+                  <div className="w-16 h-16 border-4 border-blue-200 rounded-full animate-spin border-t-blue-600"></div>
+                  <div className="absolute top-4 left-4 w-8 h-8 bg-gradient-to-r from-blue-500 to-purple-600 rounded-full flex items-center justify-center">
+                    <svg className="w-4 h-4 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9.663 17h4.673M12 3v1m6.364 1.636l-.707.707M21 12h-1M4 12H3m3.343-5.657l-.707-.707m2.828 9.9a5 5 0 117.072 0l-.548.547A3.374 3.374 0 0014 18.469V19a2 2 0 11-4 0v-.531c0-.895-.356-1.754-.988-2.386l-.548-.547z" />
+                    </svg>
+                  </div>
+                </div>
+                <h3 className="text-xl font-bold text-gray-900 mb-2">Generating Questions</h3>
+                <p className="text-gray-600">Our AI is crafting personalized questions for you...</p>
+              </div>
+            )}
+
+            {/* Enhanced Raw Output Display */}
+            {output && questions.length === 0 && !isLoading && (
+              <div className="space-y-4">
+                <div className="backdrop-blur-xl bg-yellow-50/80 border border-yellow-200/50 text-yellow-700 px-6 py-4 rounded-2xl shadow-lg">
+                  <div className="flex items-center space-x-3">
+                    <svg className="w-5 h-5 text-yellow-500 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-2.5L13.732 4c-.77-.833-1.964-.833-2.732 0L4.082 16.5c-.77.833.192 2.5 1.732 2.5z" />
+                    </svg>
+                    <span className="font-medium">Unable to parse AI response. See raw output below:</span>
+                  </div>
+                </div>
+                <div className="backdrop-blur-xl bg-white/90 border border-white/50 rounded-2xl p-6">
+                  <h3 className="text-lg font-semibold text-gray-800 mb-4 flex items-center space-x-2">
+                    <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M10 20l4-16m4 4l4 4-4 4M6 16l-4-4 4-4" />
+                    </svg>
+                    <span>Raw AI Response</span>
+                  </h3>
+                  <pre className="whitespace-pre-wrap bg-gray-100 p-4 rounded-xl text-sm text-gray-800 border border-gray-200 overflow-auto max-h-96">
+                    {output}
+                  </pre>
+                </div>
+              </div>
+            )}
+          </div>
+        )}
+
+        {/* Enhanced Authentication Modal */}
+        <AuthModal
+          isOpen={showAuthModal}
+          onClose={() => setShowAuthModal(false)}
+        />
+      </div>
+    </main>
   );
 }
