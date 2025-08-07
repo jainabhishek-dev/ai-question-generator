@@ -21,14 +21,21 @@ export type QuestionRecord = {
 };
 
 export type ExportPdfRequest = {
-  questions: QuestionRecord[];
+  selectedIds: number[] | string[];
+  userId: string;
   exportType: 'worksheet' | 'answer-key';
   preferences?: {
-    selectedIds?: number[];
     formatting?: {
       fontSize?: number;
       showHeaders?: boolean;
       showFooters?: boolean;
+      pageMargins?: string;
+      questionSpacing?: number;
+    };
+    branding?: {
+      title?: string;
+      logo?: string;
     };
   };
+  accessToken: string;
 };

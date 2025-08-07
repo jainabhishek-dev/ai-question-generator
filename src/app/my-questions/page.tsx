@@ -137,7 +137,7 @@ export default function MyQuestionsPage() {
         return
       }
 
-      const res = await fetch('http://localhost:4000/api/export-pdf', {
+      const res = await fetch('/api/export-pdf', {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
@@ -197,7 +197,7 @@ export default function MyQuestionsPage() {
         return
       }
 
-      const res = await fetch('http://localhost:4000/api/export-pdf', {
+      const res = await fetch('/api/export-pdf', {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
