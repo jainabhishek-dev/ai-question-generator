@@ -122,123 +122,163 @@ export default function MyQuestionsPage() {
 
   // Export as Worksheet (questions only)
   async function handleExportWorksheet(event: React.MouseEvent<HTMLButtonElement, MouseEvent>): Promise<void> {
-    event.preventDefault()
-    setError(null)
+  event.preventDefault();
+  setError(null);
 
-    if (selectedIds.length === 0) {
-      setError('No questions selected to export.')
-      return
+  if (selectedIds.length === 0) {
+    setError('No questions selected to export.');
+    return;
+  }
+
+  try {
+    const accessToken = user?.accessToken;
+    if (!accessToken) {
+      setError('Could not get user access token. Please log in again.');
+      return;
+    }
+
+    const res = await fetch('/api/export-pdf', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        selectedIds,
+        userId: user?.id,
+        exportType: 'worksheet',
+        preferences: {
+          formatting: {
+            fontSize: 14,
+            showHeaders: true,
+            showFooters: true,
+          },
+        },
+        accessToken,
+      }),
+    });
+
+    if (!res.ok) {
+      // Try to parse error response as JSON
+      let errMsg = 'Failed to export PDF';
+      try {
+        const err = await res.json();
+        errMsg = err.error || errMsg;
+      } catch {
+        // If not JSON, keep default
+      }
+      setError(errMsg);
+      return;
+    }
+
+    // Validate content type
+    const contentType = res.headers.get('content-type');
+    if (!contentType?.includes('application/pdf')) {
+      setError('Invalid response format - expected PDF');
+      return;
+    }
+
+    const blob = await res.blob();
+    if (blob.size === 0) {
+      setError('Received empty PDF file');
+      return;
     }
 
     try {
-      const accessToken = user?.accessToken
-      if (!accessToken) {
-        setError('Could not get user access token. Please log in again.')
-        return
-      }
-
-      const res = await fetch('/api/export-pdf', {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify({
-          selectedIds,
-          userId: user?.id,
-          exportType: 'worksheet',
-          preferences: {
-            formatting: {
-              fontSize: 14,
-              showHeaders: true,
-              showFooters: true,
-            },
-          },
-          accessToken,
-        }),
-      })
-
-      if (!res.ok) {
-        const err = await res.json()
-        setError(err.error || 'Failed to export PDF')
-        return
-      }
-
-      const blob = await res.blob()
-      const url = window.URL.createObjectURL(blob)
-      const a = document.createElement('a')
-      a.href = url
-      a.download = 'worksheet.pdf'
-      document.body.appendChild(a)
-      a.click()
-      a.remove()
-      window.URL.revokeObjectURL(url)
-    } catch (err: unknown) {
-      const errorMessage = typeof err === 'object' && err !== null && 'message' in err
-        ? (err as { message?: string }).message
-        : undefined;
-      setError(`Failed to export Worksheet: ${errorMessage || 'Unknown error'}`)
+      const url = window.URL.createObjectURL(new Blob([blob], { type: 'application/pdf' }));
+      const a = document.createElement('a');
+      a.href = url;
+      a.download = 'worksheet.pdf';
+      document.body.appendChild(a);
+      a.click();
+      a.remove();
+      window.URL.revokeObjectURL(url);
+    } catch (error) {
+      setError('Failed to download PDF file');
     }
+  } catch (err: unknown) {
+    const errorMessage = typeof err === 'object' && err !== null && 'message' in err
+      ? (err as { message?: string }).message
+      : undefined;
+    setError(`Failed to export Worksheet: ${errorMessage || 'Unknown error'}`);
   }
+}
 
   // Export as Answer Key (questions + answers)
   async function handleExportAnswerKey(event: React.MouseEvent<HTMLButtonElement, MouseEvent>): Promise<void> {
-    event.preventDefault()
-    setError(null)
+  event.preventDefault();
+  setError(null);
 
-    if (selectedIds.length === 0) {
-      setError('No questions selected to export.')
-      return
+  if (selectedIds.length === 0) {
+    setError('No questions selected to export.');
+    return;
+  }
+
+  try {
+    const accessToken = user?.accessToken;
+    if (!accessToken) {
+      setError('Could not get user access token. Please log in again.');
+      return;
+    }
+
+    const res = await fetch('/api/export-pdf', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        selectedIds,
+        userId: user?.id,
+        exportType: 'answer-key',
+        preferences: {
+          formatting: {
+            fontSize: 14,
+            showHeaders: true,
+            showFooters: true,
+          },
+        },
+        accessToken,
+      }),
+    });
+
+    if (!res.ok) {
+      let errMsg = 'Failed to export PDF';
+      try {
+        const err = await res.json();
+        errMsg = err.error || errMsg;
+      } catch {
+        // If not JSON, keep default
+      }
+      setError(errMsg);
+      return;
+    }
+
+    const contentType = res.headers.get('content-type');
+    if (!contentType?.includes('application/pdf')) {
+      setError('Invalid response format - expected PDF');
+      return;
+    }
+
+    const blob = await res.blob();
+    if (blob.size === 0) {
+      setError('Received empty PDF file');
+      return;
     }
 
     try {
-      const accessToken = user?.accessToken
-      if (!accessToken) {
-        setError('Could not get user access token. Please log in again.')
-        return
-      }
-
-      const res = await fetch('/api/export-pdf', {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify({
-          selectedIds,
-          userId: user?.id,
-          exportType: 'answer-key',
-          preferences: {
-            formatting: {
-              fontSize: 14,
-              showHeaders: true,
-              showFooters: true,
-            },
-          },
-          accessToken,
-        }),
-      })
-
-      if (!res.ok) {
-        const err = await res.json()
-        setError(err.error || 'Failed to export PDF')
-        return
-      }
-
-      const blob = await res.blob()
-      const url = window.URL.createObjectURL(blob)
-      const a = document.createElement('a')
-      a.href = url
-      a.download = 'answer-key.pdf'
-      document.body.appendChild(a)
-      a.click()
-      a.remove()
-      window.URL.revokeObjectURL(url)
-    } catch (err: unknown) {
-      const errorMessage = typeof err === 'object' && err !== null && 'message' in err
-        ? (err as { message?: string }).message
-        : undefined;
-      setError(`Failed to export Answer Key: ${errorMessage || 'Unknown error'}`)
+      const url = window.URL.createObjectURL(new Blob([blob], { type: 'application/pdf' }));
+      const a = document.createElement('a');
+      a.href = url;
+      a.download = 'answer-key.pdf';
+      document.body.appendChild(a);
+      a.click();
+      a.remove();
+      window.URL.revokeObjectURL(url);
+    } catch (error) {
+      setError('Failed to download PDF file');
     }
+  } catch (err: unknown) {
+    const errorMessage = typeof err === 'object' && err !== null && 'message' in err
+      ? (err as { message?: string }).message
+      : undefined;
+    setError(`Failed to export Answer Key: ${errorMessage || 'Unknown error'}`);
   }
+}
 
   const applyFilters = () => {
     setTypeFilter(typeDraft)

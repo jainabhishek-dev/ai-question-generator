@@ -2,7 +2,7 @@ import { config } from 'dotenv';
 config({ path: '.env.local' });
 import express from "express";
 import cors from "cors";
-import { exportPdfRouter } from "./exportPdf";
+import { exportPdfRouter } from "../server/exportPdf";
 import bodyParser from "body-parser";
 
 const app = express();
