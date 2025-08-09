@@ -221,7 +221,7 @@ export default function Home() {
                 {q.options.map((option, i) => {
                   if (typeof option !== "string") return null;
                   const label = String.fromCharCode(65 + i);
-                  const cleanedOption = option.replace(/^[A-Z][\)\.]\s*/i, "");
+                  const cleanedOption = typeof option === 'string' ? option.replace(/^[A-Za-z][\.\)]\s*/i, '') : option;
                   const isCorrect = q.correctAnswerLetter === label;
                   
                   return (

@@ -558,19 +558,6 @@ export default function MyQuestionsPage() {
                             <span className="inline-flex items-center px-3 py-1 rounded-full text-xs font-semibold bg-blue-100 text-blue-800 border border-blue-200">
                               {q.question_type?.replace(/-/g, ' ').replace(/\b\w/g, l => l.toUpperCase())}
                             </span>
-                            <span className="inline-flex items-center px-3 py-1 rounded-full text-xs font-semibold bg-purple-100 text-purple-800 border border-purple-200">
-                              Grade {q.grade}
-                            </span>
-                            <span className={`inline-flex items-center px-3 py-1 rounded-full text-xs font-semibold border ${
-                              q.difficulty === 'easy' ? 'bg-green-100 text-green-800 border-green-200' :
-                              q.difficulty === 'medium' ? 'bg-yellow-100 text-yellow-800 border-yellow-200' :
-                              'bg-red-100 text-red-800 border-red-200'
-                            }`}>
-                              {q.difficulty?.charAt(0).toUpperCase() + q.difficulty?.slice(1)}
-                            </span>
-                            <span className="inline-flex items-center px-3 py-1 rounded-full text-xs font-semibold bg-indigo-100 text-indigo-800 border border-indigo-200">
-                              {q.blooms_level}
-                            </span>
                           </div>
                           
                           {/* Question Text */}
@@ -622,7 +609,7 @@ export default function MyQuestionsPage() {
                         <h4 className="text-sm font-bold text-gray-700 uppercase tracking-wide">Options</h4>
                         <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
                           {q.options.map((opt, i) => {
-                            const cleanedOpt = typeof opt === 'string' ? opt.replace(/^[A-Z]\.\s*/i, '') : opt;
+                            const cleanedOpt = typeof opt === 'string' ? opt.replace(/^[A-Za-z][\.\)]\s*/i, '') : opt;
                             return (
                               <div key={i} className="flex items-start space-x-3 p-4 bg-gray-50/80 rounded-xl border border-gray-200/50">
                                 <div className="w-6 h-6 bg-gradient-to-r from-blue-500 to-purple-600 text-white rounded-full flex items-center justify-center text-sm font-bold flex-shrink-0">
