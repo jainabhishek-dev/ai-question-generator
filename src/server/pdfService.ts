@@ -172,9 +172,12 @@ export async function generatePdf({
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>PDF Export</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Roboto:wght@400;500;700&display=swap" rel="stylesheet">
   <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/katex@0.16.8/dist/katex.min.css">
   <style>
-    body { font-family: 'Times New Roman', serif; margin: 0; padding: 40px; line-height: 1.6; }
+    body { font-family: 'Roboto', 'Times New Roman', serif; margin: 0; padding: 40px; line-height: 1.6; }
     @media print { body { margin: 0; } }
     .katex { font-size: inherit !important; }
   </style>

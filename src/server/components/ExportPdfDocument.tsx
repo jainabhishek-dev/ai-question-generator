@@ -1,6 +1,8 @@
 // src/server/components/ExportPdfDocument.tsx
 import React from 'react';
 import { QuestionRecord } from '../../types/question';
+import ReactMarkdown from 'react-markdown';
+
 
 type Props = {
   questions: QuestionRecord[];
@@ -38,25 +40,11 @@ function processOption(option: string, index: number): { cleanedOption: string; 
   if (!option || typeof option !== 'string') {
     return { cleanedOption: '', showLabel: true };
   }
-  
-  const label = String.fromCharCode(65 + index);
-  const labelPatterns = [
-    new RegExp(`^${label}\\)\\s*`, 'i'),
-    new RegExp(`^${label}\\.\\s*`, 'i'),
-    new RegExp(`^${label}\\s+`, 'i'),
-    new RegExp(`^\\(${label}\\)\\s*`, 'i'),
-  ];
-  
-  for (const pattern of labelPatterns) {
-    if (pattern.test(option)) {
-      return {
-        cleanedOption: option.replace(pattern, '').trim(),
-        showLabel: false
-      };
-    }
-  }
+
+  const cleanedOption = option.replace(/^[A-Za-z][\.\)]\s*/i, '').trim();  
+
   return {
-    cleanedOption: option.trim(),
+    cleanedOption,
     showLabel: true
   };
 }
@@ -82,8 +70,8 @@ export const ExportPdfDocument: React.FC<Props> = ({
   exportType,
   preferences,
 }) => {
-  const fontSize = preferences?.formatting?.fontSize || 14;
-  const questionSpacing = preferences?.formatting?.questionSpacing || 24;
+  const fontSize = preferences?.formatting?.fontSize || 12;
+  const questionSpacing = preferences?.formatting?.questionSpacing || 20;
 
   return (
     <>
@@ -120,7 +108,7 @@ export const ExportPdfDocument: React.FC<Props> = ({
               <div style={{ display: 'flex', alignItems: 'flex-start', marginBottom: '8px' }}>
                 <div style={{
                   fontWeight: 'bold',
-                  fontSize: `${fontSize + 2}px`,
+                  fontSize: `${fontSize}px`,
                   marginRight: '12px',
                   minWidth: '30px',
                   color: '#2c3e50',
@@ -132,8 +120,9 @@ export const ExportPdfDocument: React.FC<Props> = ({
                   <div style={{
                     lineHeight: 1.7,
                     marginBottom: '4px',
+                    fontSize: `${fontSize}px`,
                   }}>
-                    {question.question || ''}
+                    <ReactMarkdown>{question.question || ''}</ReactMarkdown>
                   </div>
                   
                   <span style={{
@@ -155,7 +144,7 @@ export const ExportPdfDocument: React.FC<Props> = ({
                 <div style={{ marginLeft: '42px', marginTop: '12px' }}>
                   {parsedOptions.map((option, optIndex) => {
                     const { cleanedOption, showLabel } = processOption(option, optIndex);
-                    const label = String.fromCharCode(65 + optIndex);
+                    const label = String.fromCharCode(65 + optIndex) + '.';
                     
                     return (
                       <div 
@@ -164,6 +153,7 @@ export const ExportPdfDocument: React.FC<Props> = ({
                           display: 'flex',
                           alignItems: 'flex-start',
                           marginBottom: '8px',
+                          fontSize: `${fontSize}px`,
                           lineHeight: 1.6,
                         }}
                       >
@@ -172,13 +162,14 @@ export const ExportPdfDocument: React.FC<Props> = ({
                             fontWeight: 600,
                             marginRight: '10px',
                             minWidth: '26px',
+                            fontSize: `${fontSize}px`,
                             color: '#1976d2',
                           }}>
-                            {label})
+                            {label}
                           </div>
                         )}
                         <div style={{ flex: 1, paddingRight: '10px' }}>
-                          {cleanedOption || option}
+                          <ReactMarkdown>{cleanedOption || option}</ReactMarkdown>
                         </div>
                       </div>
                     );
@@ -194,6 +185,7 @@ export const ExportPdfDocument: React.FC<Props> = ({
                   backgroundColor: '#f9f9f9',
                   padding: '8px 12px',
                   borderRadius: '4px',
+                  fontSize: `${fontSize}px`,
                   borderLeft: '3px solid #dddddd',
                 }}>
                   <div style={{ fontStyle: 'italic', color: '#666666' }}>
@@ -210,6 +202,7 @@ export const ExportPdfDocument: React.FC<Props> = ({
                   backgroundColor: '#f9f9f9',
                   padding: '8px 12px',
                   borderRadius: '4px',
+                  fontSize: `${fontSize}px`,
                   borderLeft: '3px solid #dddddd',
                 }}>
                   <div style={{ fontStyle: 'italic', color: '#666666' }}>
@@ -227,6 +220,7 @@ export const ExportPdfDocument: React.FC<Props> = ({
                   padding: '12px 16px',
                   backgroundColor: '#f8fdf8',
                   borderRadius: '6px',
+                  fontSize: `${fontSize}px`,
                   borderLeft: '4px solid #4caf50',
                 }}>
                   <div style={{
@@ -235,7 +229,7 @@ export const ExportPdfDocument: React.FC<Props> = ({
                     marginBottom: '10px',
                     fontSize: `${fontSize}px`,
                   }}>
-                    <span style={{ fontWeight: 'bold' }}>Answer:</span> {formatAnswer(question.correct_answer || '', parsedOptions)}
+                    <span style={{ fontWeight: 'bold' }}>Answer:</span> <ReactMarkdown>{formatAnswer(question.correct_answer || '', parsedOptions)}</ReactMarkdown>
                   </div>
                   
                   {question.explanation && (
@@ -244,16 +238,17 @@ export const ExportPdfDocument: React.FC<Props> = ({
                         fontWeight: 'bold',
                         color: '#424242',
                         marginTop: '8px',
+                        fontSize: `${fontSize}px`,
                         marginBottom: '4px',
                       }}>
                         Explanation:
                       </div>
                       <div style={{
                         color: '#424242',
-                        fontSize: `${fontSize - 1}px`,
+                        fontSize: `${fontSize}px`,
                         lineHeight: 1.6,
                       }}>
-                        {question.explanation}
+                        <ReactMarkdown>{question.explanation}</ReactMarkdown>
                       </div>
                     </div>
                   )}
