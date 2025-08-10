@@ -38,13 +38,13 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
     // Send the buffer
     res.status(200).send(buffer);
 
-  } catch (error: any) {
+  } catch (error: unknown) {
     console.error('PDF export error:', error);
 
     // Only send JSON error if headers haven't been sent
     if (!res.headersSent) {
       res.status(500).json({
-        error: error.message || 'PDF generation failed',
+        error: typeof error === 'object' && error !== null && 'message' in error ? (error as { message?: string }).message : 'PDF generation failed',
         timestamp: new Date().toISOString()
       });
     } else {

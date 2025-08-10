@@ -13,8 +13,12 @@ router.post("/api/export-pdf", async (req: Request, res: Response) => {
       "Cache-Control": "no-cache",
     });
     res.send(buffer);
-  } catch (err: any) {
-    res.status(500).json({ error: err.message });
+  } catch (err: unknown) {
+    if (err instanceof Error) {
+      res.status(500).json({ error: err.message });
+    } else {
+      res.status(500).json({ error: "Unknown error" });
+    }
   }
 });
 

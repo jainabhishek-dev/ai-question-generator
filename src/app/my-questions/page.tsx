@@ -191,7 +191,8 @@ export default function MyQuestionsPage() {
       a.remove();
       window.URL.revokeObjectURL(url);
     } catch (error) {
-      setError('Failed to download PDF file');
+      console.error("Error occurred:", error);
+      setError(error instanceof Error ? error.message : "Failed to download PDF file");
     }
   } catch (err: unknown) {
     const errorMessage = typeof err === 'object' && err !== null && 'message' in err
@@ -270,7 +271,8 @@ export default function MyQuestionsPage() {
       a.remove();
       window.URL.revokeObjectURL(url);
     } catch (error) {
-      setError('Failed to download PDF file');
+      console.error("Error occurred:", error);
+      setError(error instanceof Error ? error.message : "Failed to download PDF file")
     }
   } catch (err: unknown) {
     const errorMessage = typeof err === 'object' && err !== null && 'message' in err
