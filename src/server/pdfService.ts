@@ -2,7 +2,6 @@ import React from "react";
 import { renderToStaticMarkup } from "react-dom/server";
 import { ExportPdfDocument } from "./components/ExportPdfDocument";
 import { QuestionRecord } from "../types/question";
-import type { Browser, LaunchOptions } from "puppeteer-core";
 
 interface PdfPreferences {
   formatting?: {
@@ -27,7 +26,7 @@ export async function generatePdf({
   preferences,
   accessToken,
 }: GeneratePdfParams): Promise<{ buffer: Buffer; filename: string }> {
-  let browser: Browser | null = null;
+  let browser: import('puppeteer').Browser | import('puppeteer-core').Browser | null = null;
 
   try {
     // Validate input
@@ -94,13 +93,19 @@ export async function generatePdf({
 
     // Puppeteer setup
     console.log('Setting up Puppeteer...');
-    
-    const puppeteerCore = await import("puppeteer-core");
-    const chromium = (await import("@sparticuz/chromium")).default;
 
-    const launchOptions: LaunchOptions = {
-      headless: true,
-      args: [
+    const isVercel = !!process.env.VERCEL_ENV;
+
+    // Define proper launch options type
+    interface CustomLaunchOptions {
+    headless: boolean;
+    args: string[];
+    executablePath?: string;
+    }
+
+    let launchOptions: CustomLaunchOptions = {
+    headless: true,
+    args: [
         '--no-sandbox',
         '--disable-setuid-sandbox',
         '--disable-dev-shm-usage',
@@ -111,20 +116,35 @@ export async function generatePdf({
         '--disable-background-timer-throttling',
         '--disable-backgrounding-occluded-windows',
         '--disable-renderer-backgrounding',
-        ...chromium.args // Add Chromium-specific args
-      ],
-      executablePath: await chromium.executablePath(), // Use Chromium binary
+    ],
     };
+    // (Removed duplicate browser declaration to fix type inference)
 
-    // Launch browser (same setup for both local and Vercel)
-    browser = await puppeteerCore.launch(launchOptions);
+    if (isVercel) {
+    // Production: Use puppeteer-core + chromium
+    const puppeteerCore = await import("puppeteer-core");
+    const chromium = (await import("@sparticuz/chromium")).default;
     
+    launchOptions = {
+        ...launchOptions,
+        args: [...launchOptions.args, ...(chromium.args || [])],
+        executablePath: await chromium.executablePath(),
+    };
+    
+    browser = await puppeteerCore.launch(launchOptions);
+    } else {
+    // Development: Use regular puppeteer
+    const puppeteer = await import("puppeteer");
+    browser = await puppeteer.launch(launchOptions);
+    }
+
     if (!browser) {
-      throw new Error('Failed to launch browser');
+    throw new Error('Failed to launch browser');
     }
 
     console.log('Browser launched successfully');
     const page = await browser.newPage();
+
 
     // Set viewport and user agent
     await page.setViewport({ width: 1920, height: 1080 });
