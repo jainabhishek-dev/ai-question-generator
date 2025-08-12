@@ -1,5 +1,5 @@
 "use client"
-import { useState } from "react"
+import { useRef, useState } from "react"
 import AdvancedQuestionForm, { Inputs } from "@/components/AdvancedQuestionForm"
 import { generateQuestions } from "@/lib/gemini"
 import ReactMarkdown from "react-markdown";
@@ -23,6 +23,7 @@ interface Question {
 }
 
 export default function Home() {
+  const resultsRef = useRef<HTMLDivElement>(null)
   const [output, setOutput] = useState("")
   const [questions, setQuestions] = useState<Question[]>([])
   const [isLoading, setIsLoading] = useState(false)
@@ -84,6 +85,13 @@ export default function Home() {
     setQuestions([])
     setSaveStatus('idle')
     setSaveError(null)
+
+    // Scroll to results section when generation starts
+    setTimeout(() => {
+      if (resultsRef.current) {
+        resultsRef.current.scrollIntoView({ behavior: "smooth" })
+      }
+    }, 100)  
 
     try {
       const text = await generateQuestions(inputs)
@@ -316,23 +324,17 @@ export default function Home() {
     <main className="min-h-screen bg-gradient-to-br from-slate-50 via-blue-50 to-indigo-100 py-8">
       <div className="max-w-4xl mx-auto px-4 space-y-8">
         {/* Enhanced Header */}
-        <div className="text-center space-y-4">
-          <div className="w-16 h-16 mx-auto mb-6 bg-gradient-to-r from-blue-500 to-purple-600 rounded-2xl flex items-center justify-center shadow-lg">
-            <svg className="w-8 h-8 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9.663 17h4.673M12 3v1m6.364 1.636l-.707.707M21 12h-1M4 12H3m3.343-5.657l-.707-.707m2.828 9.9a5 5 0 117.072 0l-.548.547A3.374 3.374 0 0014 18.469V19a2 2 0 11-4 0v-.531c0-.895-.356-1.754-.988-2.386l-.548-.547z" />
-            </svg>
-          </div>
+        <div className="text-center space-y-2">
           <h1 className="text-4xl font-bold bg-gradient-to-r from-gray-900 via-blue-900 to-purple-900 bg-clip-text text-transparent">
             AI Question Generator
           </h1>
           <p className="text-lg text-gray-600 max-w-2xl mx-auto leading-relaxed">
-            Create engaging educational content with AI-powered question generation. 
-            Build customized assessments for your classroom in seconds.
+            Build AI-powered worksheets for your classroom in seconds.
           </p>
         </div>
 
         {/* Full AdvancedQuestionForm in card layout */}
-        <AdvancedQuestionForm onGenerate={handleGenerate} />
+        <AdvancedQuestionForm onGenerate={handleGenerate} isLoading={isLoading} />
 
         {/* Enhanced Error Display */}
         {saveError && (
@@ -348,7 +350,7 @@ export default function Home() {
 
         {/* Enhanced Results Section */}
         {(questions.length > 0 || output || isLoading) && (
-          <div className="backdrop-blur-xl bg-white/70 border border-white/20 rounded-2xl shadow-xl p-6 space-y-6">
+          <div ref={resultsRef} className="backdrop-blur-xl bg-white/70 border border-white/20 rounded-2xl shadow-xl p-6 space-y-6">
             <div className="flex items-center space-x-3">
               <div className="w-8 h-8 bg-gradient-to-r from-green-500 to-emerald-600 rounded-lg flex items-center justify-center">
                 <svg className="w-4 h-4 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">

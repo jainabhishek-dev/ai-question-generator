@@ -4,6 +4,7 @@ import { createAdvancedPrompt } from "@/lib/gemini"
 
 interface Props {
   onGenerate: (prompt: string, inputs: Inputs) => void
+  isLoading?: boolean
 }
 
 export interface Inputs {
@@ -35,18 +36,18 @@ const bloomsOptions = [
 
 const difficultyOptions = ["Easy","Medium","Hard"]
 
-export default function AdvancedQuestionForm({ onGenerate }: Props) {
+export default function AdvancedQuestionForm({ onGenerate, isLoading = false }: Props) {
   const [inputs, setInputs] = useState<Inputs>({
     subject: "",
     subSubject: "",
     topic: "",
     subTopic: "",
     grade: "Grade 6",
-    totalQuestions: 10,
-    numMCQ: 4,
-    numFillBlank: 2,
-    numShortAnswer: 3,
-    numLongAnswer: 1,
+    totalQuestions: 1,
+    numMCQ: 1,
+    numFillBlank: 0,
+    numShortAnswer: 0,
+    numLongAnswer: 0,
     difficulty: "Medium",
     bloomsLevel: "Understand",
     pdfContent: "",
@@ -290,12 +291,32 @@ export default function AdvancedQuestionForm({ onGenerate }: Props) {
       </div>
 
       {/* Submit Button Card */}
-      <div className="backdrop-blur-xl bg-white/70 border border-white/20 rounded-2xl shadow-xl p-6 text-center">
+      {/* Submit Button Card */}
+      <div className="backdrop-blur-xl bg-white/70 border border-white/20 rounded-2xl shadow-xl p-6 text-center hover:shadow-2xl transition-shadow duration-300">
         <button 
           type="submit" 
-          className="w-full bg-blue-600 hover:bg-blue-700 text-white font-medium py-3 px-4 rounded-md transition-colors duration-200 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2"
+          className={`
+            w-full font-medium py-4 px-6 rounded-xl transition-all duration-200
+            focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2
+            ${isLoading 
+              ? 'bg-blue-500 cursor-not-allowed' 
+              : 'bg-blue-600 hover:bg-blue-700 hover:shadow-lg'
+            }
+            text-white shadow-md
+          `}
+          disabled={isLoading}
         >
-          Generate Questions
+          {isLoading ? (
+            <div className="flex items-center justify-center space-x-3">
+              <svg className="animate-spin h-5 w-5 text-white" viewBox="0 0 24 24">
+                <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4" fill="none" />
+                <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8v8z" />
+              </svg>
+              <span>Generating Questions...</span>
+            </div>
+          ) : (
+            <span className="text-lg">Generate Questions ✨</span>
+          )}
         </button>
       </div>
     </form>

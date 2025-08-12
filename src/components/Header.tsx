@@ -43,7 +43,7 @@ export default function Header({ onSignIn }: HeaderProps): ReactElement {
           </Link>
           <nav className="flex gap-6">
             <Link href="/my-questions">
-              <span className="text-gray-700 hover:text-blue-600 font-medium">My Questions</span>
+              <span className="font-bold text-xl text-blue-700 tracking-tight">My Questions</span>
             </Link>
           </nav>
         </div>

@@ -304,8 +304,8 @@ export default function MyQuestionsPage() {
     <main className="min-h-screen bg-gradient-to-br from-slate-50 via-blue-50 to-indigo-100 py-8">
       <div className="max-w-6xl mx-auto px-4 space-y-8">
         {/* Page Header */}
-        <div className="text-center space-y-4">
-          <h1 className="text-4xl font-bold bg-gradient-to-r from-gray-900 via-blue-900 to-purple-900 bg-clip-text text-transparent">
+        <div className="text-center space-y-2">
+          <h1 className="text-2xl font-bold bg-gradient-to-r from-gray-900 via-blue-900 to-purple-900 bg-clip-text text-transparent">
             My Questions
           </h1>
           <p className="text-lg text-gray-600 max-w-2xl mx-auto">
@@ -540,7 +540,7 @@ export default function MyQuestionsPage() {
             <p className="text-gray-600 mb-8 max-w-md mx-auto leading-relaxed">
               Get started by creating your first question. Build engaging content for your students!
             </p>
-            <Link href="/create" className="inline-flex items-center px-8 py-3 bg-gradient-to-r from-blue-600 to-purple-600 text-white font-semibold rounded-xl hover:from-blue-700 hover:to-purple-700 transform hover:scale-105 transition-all duration-200 shadow-lg hover:shadow-xl">
+            <Link href="/" className="inline-flex items-center px-8 py-3 bg-gradient-to-r from-blue-600 to-purple-600 text-white font-semibold rounded-xl hover:from-blue-700 hover:to-purple-700 transform hover:scale-105 transition-all duration-200 shadow-lg hover:shadow-xl">
               Create Your First Question
             </Link>
           </div>
