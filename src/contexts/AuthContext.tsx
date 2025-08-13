@@ -13,6 +13,8 @@ interface AuthContextType {
   signIn: (email: string, password: string) => Promise<{ success: boolean; error?: string }>;
   signUp: (email: string, password: string) => Promise<{ success: boolean; error?: string }>;
   signOut: () => Promise<void>;
+  updateEmail: (newEmail: string) => Promise<{ success: boolean; error?: string }>;      // 👈 Add this
+  updatePassword: (newPassword: string) => Promise<{ success: boolean; error?: string }>; // 👈 Add this  
 }
 
 const AuthContext = createContext<AuthContextType | undefined>(undefined)
@@ -93,7 +95,33 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
   const handleSignOut = async () => {
     await supabase.auth.signOut()
   }
+  const updateEmail = async (newEmail: string) => {
+    try {
+      const { error } = await supabase.auth.updateUser({ email: newEmail });
+      if (error) throw error;
+      return { success: true };
+    } catch (error) {
+      let errorMsg = 'Unknown error';
+      if (error && typeof error === 'object' && 'message' in error) {
+        errorMsg = String((error as { message?: string }).message);
+      }
+      return { success: false, error: errorMsg };
+    }
+  };
 
+  const updatePassword = async (newPassword: string) => {
+    try {
+      const { error } = await supabase.auth.updateUser({ password: newPassword });
+      if (error) throw error;
+      return { success: true };
+    } catch (error) {
+      let errorMsg = 'Unknown error';
+      if (error && typeof error === 'object' && 'message' in error) {
+        errorMsg = String((error as { message?: string }).message);
+      }
+      return { success: false, error: errorMsg };
+    }
+  };
   return (
     <AuthContext.Provider value={{
       user,
@@ -102,6 +130,8 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
       signIn: handleSignIn,
       signUp: handleSignUp,
       signOut: handleSignOut,
+      updateEmail,
+      updatePassword,
     }}>
       {children}
     </AuthContext.Provider>
