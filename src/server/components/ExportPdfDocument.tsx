@@ -105,7 +105,7 @@ export const ExportPdfDocument: React.FC<Props> = ({
               }}
             >
               {/* Question Header */}
-              <div style={{ display: 'flex', alignItems: 'flex-start', marginBottom: '8px' }}>
+              <div style={{ display: 'flex', alignItems: 'baseline', marginBottom: '8px' }}>
                 <div style={{
                   fontWeight: 'bold',
                   fontSize: `${fontSize}px`,
@@ -151,7 +151,7 @@ export const ExportPdfDocument: React.FC<Props> = ({
                         key={optIndex} 
                         style={{
                           display: 'flex',
-                          alignItems: 'flex-start',
+                          alignItems: 'baseline',
                           marginBottom: '8px',
                           fontSize: `${fontSize}px`,
                           lineHeight: 1.6,
