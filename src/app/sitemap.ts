@@ -1,7 +1,7 @@
 import { MetadataRoute } from 'next'
 
 export default function sitemap(): MetadataRoute.Sitemap {
-  const baseUrl = 'https://makinsec.com'  // Replace with your actual domain
+  const baseUrl = 'https://instaku.com'  // Replace with your actual domain
 
   return [
     {

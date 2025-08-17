@@ -222,7 +222,7 @@ export async function generatePdf({
     `;
     footerTemplate = `
         <div style="font-size:11px; color:#757575; text-align:center; width:100%;">
-        &copy; ${new Date().getFullYear()} MakInSec. All rights reserved.
+        &copy; ${new Date().getFullYear()} Instaku. All rights reserved.
         </div>
     `;
     } else if (exportType === 'answer-key') {
@@ -233,7 +233,7 @@ export async function generatePdf({
     `;
     footerTemplate = `
         <div style="font-size:11px; color:#757575; text-align:center; width:100%;">
-        &copy; ${new Date().getFullYear()} MakInSec. All rights reserved.
+        &copy; ${new Date().getFullYear()} Instaku. All rights reserved.
         </div>
     `;
     }
