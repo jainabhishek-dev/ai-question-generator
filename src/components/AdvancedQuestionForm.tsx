@@ -5,6 +5,7 @@ import { createAdvancedPrompt } from "@/lib/gemini"
 interface Props {
   onGenerate: (prompt: string, inputs: Inputs) => void
   isLoading?: boolean
+  currentQuestionCount: number
 }
 
 export interface Inputs {
@@ -36,7 +37,7 @@ const bloomsOptions = [
 
 const difficultyOptions = ["Easy","Medium","Hard"]
 
-export default function AdvancedQuestionForm({ onGenerate, isLoading = false }: Props) {
+export default function AdvancedQuestionForm({ onGenerate, isLoading = false, currentQuestionCount }: Props) {
   const [inputs, setInputs] = useState<Inputs>({
     subject: "",
     subSubject: "",
@@ -54,6 +55,14 @@ export default function AdvancedQuestionForm({ onGenerate, isLoading = false }: 
     additionalNotes: ""
   })
   const [error, setError] = useState("")
+  if (currentQuestionCount >= 40) {
+    return (
+      <div className="bg-yellow-50 border border-yellow-200 text-yellow-800 px-6 py-8 rounded-xl text-center mt-8">
+        <h2 className="text-xl font-bold mb-2">Question Limit Reached</h2>
+        <p>You have reached your free limit of 40 questions. To create more, please subscribe.</p>
+      </div>
+    )
+  }
 
   const handleChange = (key: keyof Inputs, value: string | number) =>
     setInputs(prev => ({ ...prev, [key]: value }))
@@ -61,6 +70,10 @@ export default function AdvancedQuestionForm({ onGenerate, isLoading = false }: 
   const validateDistribution = () => {
     const { totalQuestions, numMCQ, numFillBlank, numShortAnswer, numLongAnswer } = inputs
     const sum = numMCQ + numFillBlank + numShortAnswer + numLongAnswer
+    if (totalQuestions > 10) {
+    setError("You can generate a maximum of 10 questions at a time.")
+    return false
+  }
     if (totalQuestions !== sum) {
       setError(`Total Questions (${totalQuestions}) must equal sum of distribution (${sum})`)
       return false
@@ -71,6 +84,14 @@ export default function AdvancedQuestionForm({ onGenerate, isLoading = false }: 
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault()
+      if (currentQuestionCount >= 40) {
+      setError("You have reached your free limit of 40 questions. To create more, please subscribe.")
+    return
+  }
+    if (currentQuestionCount + inputs.totalQuestions > 40) {
+      setError(`You can only create ${40 - currentQuestionCount} more questions. Reduce the total or delete some questions.`)
+      return
+  }
     if (!validateDistribution()) return
     const prompt = createAdvancedPrompt(inputs)
     onGenerate(prompt, inputs)
@@ -201,7 +222,7 @@ export default function AdvancedQuestionForm({ onGenerate, isLoading = false }: 
             <input
               type="number"
               min={1}
-              max={50}
+              max={10}
               value={inputs.totalQuestions}
               onChange={e => handleChange("totalQuestions", Number(e.target.value))}
               className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500 text-gray-900"
@@ -298,13 +319,13 @@ export default function AdvancedQuestionForm({ onGenerate, isLoading = false }: 
           className={`
             w-full font-medium py-4 px-6 rounded-xl transition-all duration-200
             focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2
-            ${isLoading 
+            ${isLoading || currentQuestionCount >= 40
               ? 'bg-blue-500 cursor-not-allowed' 
               : 'bg-blue-600 hover:bg-blue-700 hover:shadow-lg'
             }
             text-white shadow-md
           `}
-          disabled={isLoading}
+          disabled={isLoading || currentQuestionCount >= 40}
         >
           {isLoading ? (
             <div className="flex items-center justify-center space-x-3">

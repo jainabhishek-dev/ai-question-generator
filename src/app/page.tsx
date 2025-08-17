@@ -1,6 +1,6 @@
 "use client"
 
-import { useRef, useState } from "react"
+import { useEffect, useRef, useState } from "react"
 import AdvancedQuestionForm, { Inputs } from "@/components/AdvancedQuestionForm"
 import { generateQuestions } from "@/lib/gemini"
 import ReactMarkdown from "react-markdown"
@@ -10,6 +10,8 @@ import "katex/dist/katex.min.css"
 import { saveQuestions } from '@/lib/database'
 import { useAuth } from '@/contexts/AuthContext'
 import AuthModal from '@/components/AuthModal'
+import { getUserQuestions } from '@/lib/database'
+import Link from "next/link"
 
 interface Question {
   type: string
@@ -32,6 +34,19 @@ export default function Home() {
   const [saveError, setSaveError] = useState<string | null>(null)
   const [showAuthModal, setShowAuthModal] = useState(false)
   const { user } = useAuth()
+  const [userQuestions, setUserQuestions] = useState(0)
+
+  useEffect(() => {
+    if (user?.id) {
+      getUserQuestions(user.id).then((res) => {
+        if (res.success && res.data) {
+          setUserQuestions(res.data.length)
+        } else {
+          setUserQuestions(0);// fallback if no data
+        }
+      })
+    }
+  }, [user])
 
   const parseQuestions = (text: string): Question[] => {
     let cleanText = text.trim();
@@ -333,10 +348,21 @@ export default function Home() {
             AI-powered worksheets in seconds.
           </p>
         </div>
+        {user && (
+          <div className="mb-4 text-center text-sm text-gray-700">
+            You have <span className="font-bold">{userQuestions}</span> question{userQuestions !== 1 ? "s" : ""} in your{" "}
+            <Link href="/my-questions" className="text-blue-600 underline hover:text-blue-800">
+              library
+            </Link>.
+            {userQuestions >= 40 && (
+              <span className="ml-2 text-red-600 font-semibold">You have reached your free limit.</span>
+            )}
+          </div>
+        )}
 
         {/* AdvancedQuestionForm */}
         <div className="card p-4 sm:p-6">
-          <AdvancedQuestionForm onGenerate={handleGenerate} isLoading={isLoading} />
+          <AdvancedQuestionForm onGenerate={handleGenerate} isLoading={isLoading} currentQuestionCount={userQuestions} />
         </div>
 
         {/* Errors */}
