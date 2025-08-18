@@ -195,6 +195,14 @@
   overflow-x: auto;
   font-size: 0.875em;
 }
+.prose ul, .prose ol {
+  list-style: revert !important;
+  margin-left: 1.5em !important;
+  padding-left: 0 !important;
+}
+.prose li {
+  margin-bottom: 0.25em !important;
+}
 
 /* KaTeX */
 .katex { font-size: 1em !important; }

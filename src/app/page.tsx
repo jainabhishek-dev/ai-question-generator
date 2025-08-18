@@ -12,6 +12,7 @@ import { useAuth } from '@/contexts/AuthContext'
 import AuthModal from '@/components/AuthModal'
 import { getUserQuestions } from '@/lib/database'
 import Link from "next/link"
+import remarkGfm from "remark-gfm"
 
 interface Question {
   type: string
@@ -202,7 +203,7 @@ export default function Home() {
                 {/* Question Text */}
                 <div className="prose max-w-none sm:prose-lg">
                   <ReactMarkdown
-                    remarkPlugins={[remarkMath]}
+                    remarkPlugins={[remarkMath, remarkGfm]}
                     rehypePlugins={[rehypeKatex]}
                     components={{
                       p: ({ children }) => (
@@ -256,7 +257,7 @@ export default function Home() {
                       </div>
                       <div className="flex-1 prose max-w-none">
                         <ReactMarkdown
-                          remarkPlugins={[remarkMath]}
+                          remarkPlugins={[remarkMath, remarkGfm]}
                           rehypePlugins={[rehypeKatex]}
                           components={{
                             p: ({ children }) => (
@@ -294,7 +295,7 @@ export default function Home() {
             </h4>
             <div className="prose max-w-none">
               <ReactMarkdown
-                remarkPlugins={[remarkMath]}
+                remarkPlugins={[remarkMath, remarkGfm]}
                 rehypePlugins={[rehypeKatex]}
                 components={{
                   p: ({ children }) => (
@@ -318,7 +319,7 @@ export default function Home() {
               </h4>
               <div className="prose max-w-none">
                 <ReactMarkdown
-                  remarkPlugins={[remarkMath]}
+                  remarkPlugins={[remarkMath, remarkGfm]}
                   rehypePlugins={[rehypeKatex]}
                   components={{
                     p: ({ children }) => (

@@ -9,6 +9,7 @@ import 'katex/dist/katex.min.css'
 import Link from 'next/link'
 import { QuestionRecord } from '@/types/question'
 import { getUserQuestions, softDeleteUserQuestion } from '@/lib/database'
+import remarkGfm from 'remark-gfm'
 
 export default function MyQuestionsPage() {
   const { user } = useAuth()
@@ -569,13 +570,8 @@ export default function MyQuestionsPage() {
                               {/* Question Text */}
                               <div className="prose max-w-none sm:prose-lg">
                                 <ReactMarkdown
-                                  remarkPlugins={[remarkMath]}
+                                  remarkPlugins={[remarkMath, remarkGfm]}
                                   rehypePlugins={[rehypeKatex]}
-                                  components={{
-                                    p: ({ children }) => (
-                                      <div className="text-gray-900 font-medium leading-relaxed text-base sm:text-lg">{children}</div>
-                                    )
-                                  }}
                                 >
                                   {q.question}
                                 </ReactMarkdown>
@@ -629,7 +625,7 @@ export default function MyQuestionsPage() {
                                     </div>
                                     <div className="flex-1 prose max-w-none">
                                       <ReactMarkdown
-                                        remarkPlugins={[remarkMath]}
+                                        remarkPlugins={[remarkMath, remarkGfm]}
                                         rehypePlugins={[rehypeKatex]}
                                         components={{
                                           p: ({ children }) => (
@@ -657,7 +653,7 @@ export default function MyQuestionsPage() {
                           </h4>
                           <div className="prose max-w-none">
                             <ReactMarkdown
-                              remarkPlugins={[remarkMath]}
+                              remarkPlugins={[remarkMath, remarkGfm]}
                               rehypePlugins={[rehypeKatex]}
                               components={{
                                 p: ({ children }) => (

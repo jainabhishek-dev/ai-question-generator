@@ -69,9 +69,14 @@ Total questions must equal ${totalQuestions}.`
     contextInfo,
     pdfContext,
     distributionInfo,
+    "Formatting requirements:",
+    "Use Unicode characters (e.g., ₹) and standard LaTeX for math, wrapped in single dollar signs ($...$). Avoid encoding artifacts.",
+    "When writing dollar currency, always use text to represent dollars (e.g., USD $45 or 45 dollars). Do not use single dollar signs for currency.",
+    "All fields must be plain text or Markdown, and explanations should be concise but clear.",
     "Provide each question followed immediately by its correct answer and a brief explanation, separated clearly.",
     "Return the result as structured JSON with keys: type, question, options (if MCQ), correctAnswer, explanation.",
-    "Return the result as a JSON array of question objects, even if there is only one MCQ Question"
+    "Return the result as a JSON array of question objects, even if there is only one Question",
+    "For multiple-choice questions - The 'correctAnswer' field must be the option label only (e.g., 'A', 'B', etc.), not the answer text.",
   ].filter(Boolean).join("\n\n")
 }
 
