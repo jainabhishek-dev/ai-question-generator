@@ -677,7 +677,7 @@ export default function MyQuestionsPage() {
                             </h4>
                             <div className="prose max-w-none">
                               <ReactMarkdown
-                                remarkPlugins={[remarkMath]}
+                                remarkPlugins={[remarkMath, remarkGfm]}
                                 rehypePlugins={[rehypeKatex]}
                                 components={{
                                   p: ({ children }) => (
