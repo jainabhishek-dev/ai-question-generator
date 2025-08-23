@@ -292,3 +292,30 @@ const databaseApi = {
   restoreUserQuestion
 };
 export default databaseApi;
+
+export interface ContactMessage {
+  contact_id?: number
+  name: string
+  email: string
+  message: string
+  created_at?: string
+}
+
+export const saveContactMessage = async (
+  name: string,
+  email: string,
+  message: string
+): Promise<{ success: boolean; error?: string }> => {
+  try {
+    const { error } = await supabase
+      .from('contact_messages')
+      .insert([{ name, email, message }])
+    if (error) {
+      console.error('Error saving contact message:', error)
+      return { success: false, error: error.message }
+    }
+    return { success: true }
+  } catch (err) {
+    return { success: false, error: (err as Error).message }
+  }
+}
