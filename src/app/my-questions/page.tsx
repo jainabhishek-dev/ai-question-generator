@@ -276,23 +276,23 @@ export default function MyQuestionsPage() {
   }
 
   return (
-    <main className="min-h-screen overflow-x-hidden bg-gradient-to-br from-slate-50 via-blue-50 to-indigo-100 py-4 sm:py-8">
+    <main className="min-h-screen overflow-x-hidden bg-gradient-to-br from-slate-50 via-blue-50 to-indigo-100 py-4 sm:py-8 dark:from-gray-950 dark:via-gray-900 dark:to-gray-800">
       <div className="max-w-full sm:max-w-6xl mx-auto px-2 sm:px-4 space-y-5 sm:space-y-8">
         {/* Page Header */}
         <div className="text-center space-y-1 sm:space-y-2">
-          <h1 className="text-lg sm:text-xl md:text-2xl font-bold bg-gradient-to-r from-gray-900 via-blue-900 to-purple-900 bg-clip-text text-transparent">
+          <h1 className="text-lg sm:text-xl md:text-2xl font-bold bg-gradient-to-r from-gray-900 via-blue-900 to-purple-900 bg-clip-text text-transparent dark:from-gray-100 dark:via-blue-400 dark:to-purple-400">
             My Questions
           </h1>
-          <p className="text-sm sm:text-base md:text-lg text-gray-600 max-w-xs sm:max-w-2xl mx-auto">
+          <p className="text-sm sm:text-base md:text-lg text-gray-600 max-w-xs sm:max-w-2xl mx-auto dark:text-gray-300">
             Manage, filter, and export your educational content with ease
           </p>
         </div>
 
         {/* Error Display */}
         {error && (
-          <div className="backdrop-blur-xl bg-red-50/80 border border-red-200/50 text-red-700 px-4 sm:px-6 py-3 sm:py-4 rounded-xl sm:rounded-2xl shadow-lg">
+          <div className="backdrop-blur-xl bg-red-50/80 border border-red-200/50 text-red-700 px-4 sm:px-6 py-3 sm:py-4 rounded-xl sm:rounded-2xl shadow-lg dark:bg-red-900/40 dark:border-red-700 dark:text-red-300">
             <div className="flex items-center space-x-2 sm:space-x-3">
-              <svg className="w-5 h-5 text-red-500 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <svg className="w-5 h-5 text-red-500 flex-shrink-0 dark:text-red-300" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 8v4m0 4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
               </svg>
               <span className="font-medium">{error}</span>
@@ -301,7 +301,7 @@ export default function MyQuestionsPage() {
         )}
 
         {/* Filters */}
-        <div className="card p-4 sm:p-6">
+        <div className="card p-4 sm:p-6 bg-white border border-gray-200 dark:bg-gray-900 dark:border-gray-700">
           <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between mb-4 sm:mb-6 gap-2 sm:gap-0">
             <div className="flex items-center space-x-2 sm:space-x-3">
               <div className="w-7 h-7 sm:w-8 sm:h-8 bg-gradient-to-r from-blue-500 to-purple-600 rounded-lg flex items-center justify-center">
@@ -309,7 +309,7 @@ export default function MyQuestionsPage() {
                   <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M3 4a1 1 0 011-1h16a1 1 0 011 1v2.586a1 1 0 01-.293.707l-6.414 6.414a1 1 0 00-.293.707V17l-4 4v-6.586a1 1 0 00-.293-.707L3.293 7.293A1 1 0 013 6.586V4z" />
                 </svg>
               </div>
-              <h2 className="text-base sm:text-xl font-bold bg-gradient-to-r from-gray-900 to-gray-600 bg-clip-text text-transparent">
+              <h2 className="text-base sm:text-xl font-bold bg-gradient-to-r from-gray-900 to-gray-600 bg-clip-text text-transparent dark:from-gray-100 dark:to-gray-400">
                 Filter Questions
               </h2>
             </div>
@@ -322,7 +322,7 @@ export default function MyQuestionsPage() {
                   className={`w-5 h-5 rounded border-2 transition-all duration-200 ${
                     isAllSelected
                       ? 'bg-gradient-to-r from-blue-500 to-purple-600 border-blue-500'
-                      : 'border-gray-300 group-hover:border-blue-400'
+                      : 'border-gray-300 group-hover:border-blue-400 dark:border-gray-600 dark:group-hover:border-blue-500'
                   }`}
                 >
                   {isAllSelected && (
@@ -336,7 +336,7 @@ export default function MyQuestionsPage() {
                   )}
                 </div>
               </div>
-              <span className="text-xs sm:text-sm font-medium text-gray-700 group-hover:text-gray-900 transition-colors">
+              <span className="text-xs sm:text-sm font-medium text-gray-700 group-hover:text-gray-900 transition-colors dark:text-gray-200 dark:group-hover:text-gray-100">
                 Select All on Page ({paginatedQuestions.length})
               </span>
             </label>
@@ -346,11 +346,11 @@ export default function MyQuestionsPage() {
           <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-2 sm:gap-4 mb-4 sm:mb-6">
             {/* Type */}
             <div className="space-y-2">
-              <label className="text-xs sm:text-sm font-semibold text-gray-700 flex items-center space-x-2">
+              <label className="text-xs sm:text-sm font-semibold text-gray-700 flex items-center space-x-2 dark:text-gray-200">
                 <span className="w-2 h-2 bg-blue-500 rounded-full"></span>
                 <span>Question Type</span>
               </label>
-              <select value={typeDraft} onChange={e => setTypeDraft(e.target.value)} className="form-select">
+              <select value={typeDraft} onChange={e => setTypeDraft(e.target.value)} className="form-select dark:bg-gray-900 dark:text-gray-100 dark:border-gray-700">
                 <option value="">All Types</option>
                 {typeOptions.map(type => (
                   <option key={type} value={type}>
@@ -362,11 +362,11 @@ export default function MyQuestionsPage() {
 
             {/* Grade */}
             <div className="space-y-2">
-              <label className="text-xs sm:text-sm font-semibold text-gray-700 flex items-center space-x-2">
+              <label className="text-xs sm:text-sm font-semibold text-gray-700 flex items-center space-x-2 dark:text-gray-200">
                 <span className="w-2 h-2 bg-purple-500 rounded-full"></span>
                 <span>Grade Level</span>
               </label>
-              <select value={gradeDraft} onChange={e => setGradeDraft(e.target.value)} className="form-select">
+              <select value={gradeDraft} onChange={e => setGradeDraft(e.target.value)} className="form-select dark:bg-gray-900 dark:text-gray-100 dark:border-gray-700">
                 <option value="">All Grades</option>
                 {gradeOptions.map(grade => (
                   <option key={grade} value={grade}>
@@ -378,11 +378,11 @@ export default function MyQuestionsPage() {
 
             {/* Difficulty */}
             <div className="space-y-2">
-              <label className="text-xs sm:text-sm font-semibold text-gray-700 flex items-center space-x-2">
+              <label className="text-xs sm:text-sm font-semibold text-gray-700 flex items-center space-x-2 dark:text-gray-200">
                 <span className="w-2 h-2 bg-yellow-500 rounded-full"></span>
                 <span>Difficulty</span>
               </label>
-              <select value={difficultyDraft} onChange={e => setDifficultyDraft(e.target.value)} className="form-select">
+              <select value={difficultyDraft} onChange={e => setDifficultyDraft(e.target.value)} className="form-select dark:bg-gray-900 dark:text-gray-100 dark:border-gray-700">
                 <option value="">All Levels</option>
                 {difficultyOptions.map(diff => (
                   <option key={diff} value={diff}>
@@ -394,11 +394,11 @@ export default function MyQuestionsPage() {
 
             {/* Bloom's */}
             <div className="space-y-2">
-              <label className="text-xs sm:text-sm font-semibold text-gray-700 flex items-center space-x-2">
+              <label className="text-xs sm:text-sm font-semibold text-gray-700 flex items-center space-x-2 dark:text-gray-200">
                 <span className="w-2 h-2 bg-indigo-500 rounded-full"></span>
                 <span>Bloom&apos;s Level</span>
               </label>
-              <select value={bloomsDraft} onChange={e => setBloomsDraft(e.target.value)} className="form-select">
+              <select value={bloomsDraft} onChange={e => setBloomsDraft(e.target.value)} className="form-select dark:bg-gray-900 dark:text-gray-100 dark:border-gray-700">
                 <option value="">All Levels</option>
                 {bloomsOptions.map(bloom => (
                   <option key={bloom} value={bloom}>
@@ -413,7 +413,7 @@ export default function MyQuestionsPage() {
           <div className="flex justify-between items-center">
             <button
               onClick={clearFilters}
-              className="px-3 py-2 text-sm sm:text-base text-gray-600 hover:text-gray-800 font-medium transition-colors duration-200 flex items-center space-x-2"
+              className="px-3 py-2 text-sm sm:text-base text-gray-600 hover:text-gray-800 font-medium transition-colors duration-200 flex items-center space-x-2 dark:text-gray-300 dark:hover:text-gray-100"
             >
               <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
@@ -470,17 +470,17 @@ export default function MyQuestionsPage() {
         {isLoading ? (
           <div className="space-y-5 sm:space-y-6">
             {[...Array(3)].map((_, i) => (
-              <div key={i} className="card p-4 sm:p-6 animate-pulse">
+              <div key={i} className="card p-4 sm:p-6 animate-pulse bg-white dark:bg-gray-900 border border-gray-200 dark:border-gray-700">
                 <div className="flex space-x-4">
-                  <div className="w-5 h-5 bg-gray-300 rounded"></div>
+                  <div className="w-5 h-5 bg-gray-300 dark:bg-gray-700 rounded"></div>
                   <div className="flex-1 space-y-3 sm:space-y-4">
                     <div className="flex space-x-2">
-                      <div className="w-20 h-6 bg-gray-300 rounded-full"></div>
-                      <div className="w-16 h-6 bg-gray-300 rounded-full"></div>
-                      <div className="w-18 h-6 bg-gray-300 rounded-full"></div>
+                      <div className="w-20 h-6 bg-gray-300 dark:bg-gray-700 rounded-full"></div>
+                      <div className="w-16 h-6 bg-gray-300 dark:bg-gray-700 rounded-full"></div>
+                      <div className="w-18 h-6 bg-gray-300 dark:bg-gray-700 rounded-full"></div>
                     </div>
-                    <div className="w-full h-4 bg-gray-300 rounded"></div>
-                    <div className="w-3/4 h-4 bg-gray-300 rounded"></div>
+                    <div className="w-full h-4 bg-gray-300 dark:bg-gray-700 rounded"></div>
+                    <div className="w-3/4 h-4 bg-gray-300 dark:bg-gray-700 rounded"></div>
                   </div>
                 </div>
               </div>
@@ -488,13 +488,13 @@ export default function MyQuestionsPage() {
           </div>
         ) : questions.length === 0 ? (
           <div className="text-center py-12 sm:py-16">
-            <div className="w-20 h-20 sm:w-24 sm:h-24 mx-auto mb-6 sm:mb-8 bg-gradient-to-r from-blue-100 to-purple-100 rounded-full flex items-center justify-center">
-              <svg className="w-10 h-10 sm:w-12 sm:h-12 text-blue-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <div className="w-20 h-20 sm:w-24 sm:h-24 mx-auto mb-6 sm:mb-8 bg-gradient-to-r from-blue-100 to-purple-100 dark:from-blue-900 dark:to-purple-900 rounded-full flex items-center justify-center">
+              <svg className="w-10 h-10 sm:w-12 sm:h-12 text-blue-500 dark:text-blue-300" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9.663 17h4.673M12 3v1m6.364 1.636l-.707.707M21 12h-1M4 12H3m3.343-5.657l-.707-.707m2.828 9.9a5 5 0 117.072 0l-.548.547A3.374 3.374 0 0014 18.469V19a2 2 0 11-4 0v-.531c0-.895-.356-1.754-.988-2.386l-.548-.547z" />
               </svg>
             </div>
-            <h3 className="text-xl sm:text-2xl font-bold text-gray-900 mb-3 sm:mb-4">No Questions Yet</h3>
-            <p className="text-gray-600 mb-6 sm:mb-8 max-w-md mx-auto leading-relaxed text-sm sm:text-base">
+            <h3 className="text-xl sm:text-2xl font-bold text-gray-900 dark:text-gray-100 mb-3 sm:mb-4">No Questions Yet</h3>
+            <p className="text-gray-600 dark:text-gray-300 mb-6 sm:mb-8 max-w-md mx-auto leading-relaxed text-sm sm:text-base">
               Get started by creating your first question. Build engaging content for your students!
             </p>
             <Link
@@ -508,27 +508,26 @@ export default function MyQuestionsPage() {
           <div className="space-y-5 sm:space-y-6">
             {filteredQuestions.length === 0 ? (
               <div className="text-center py-10 sm:py-12">
-                <div className="w-14 h-14 sm:w-16 sm:h-16 mx-auto mb-5 sm:mb-6 bg-gradient-to-r from-gray-100 to-gray-200 rounded-full flex items-center justify-center">
-                  <svg className="w-7 h-7 sm:w-8 sm:h-8 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <div className="w-14 h-14 sm:w-16 sm:h-16 mx-auto mb-5 sm:mb-6 bg-gradient-to-r from-gray-100 to-gray-200 dark:from-gray-800 dark:to-gray-700 rounded-full flex items-center justify-center">
+                  <svg className="w-7 h-7 sm:w-8 sm:h-8 text-gray-400 dark:text-gray-300" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                     <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" />
                   </svg>
                 </div>
-                <h3 className="text-lg sm:text-xl font-bold text-gray-900 mb-2">No Questions Match</h3>
-                <p className="text-gray-600 mb-5 text-sm sm:text-base">Try adjusting your filters to see more results.</p>
+                <h3 className="text-lg sm:text-xl font-bold text-gray-900 dark:text-gray-100 mb-2">No Questions Match</h3>
+                <p className="text-gray-600 dark:text-gray-300 mb-5 text-sm sm:text-base">Try adjusting your filters to see more results.</p>
                 <button onClick={clearFilters} className="btn-primary">Clear Filters</button>
               </div>
             ) : (
               <div className="space-y-5 sm:space-y-6">
                 {paginatedQuestions.length === 0 ? (
                   <div className="text-center py-8">
-                    <p className="text-gray-600">No questions on this page.</p>
+                    <p className="text-gray-600 dark:text-gray-300">No questions on this page.</p>
                   </div>
                 ) : (
                   paginatedQuestions.map((q, idx) => (
-                    <div key={`${q.id}-${idx}`} className="group card overflow-hidden">
+                    <div key={`${q.id}-${idx}`} className="group card overflow-hidden bg-white dark:bg-gray-900 border border-gray-200 dark:border-gray-700">
                       {/* Card Header */}
-                      <div className="card-header">
-                        <div className="flex items-start justify-between">
+                      <div className=" bg-gray-800 text-white px-6 py-4 relative">
                           <div className="flex items-start space-x-3 sm:space-x-4">
                             {/* Checkbox */}
                             <label className="flex items-center cursor-pointer group/checkbox mt-1">
@@ -543,7 +542,7 @@ export default function MyQuestionsPage() {
                                   className={`w-5 h-5 rounded border-2 transition-all duration-200 ${
                                     q.id && selectedIds.includes(q.id)
                                       ? 'bg-gradient-to-r from-blue-500 to-purple-600 border-blue-500'
-                                      : 'border-gray-300 group-hover/checkbox:border-blue-400'
+                                      : 'border-gray-300 group-hover/checkbox:border-blue-400 dark:border-gray-600 dark:group-hover/checkbox:border-blue-500'
                                   }`}
                                 >
                                   {q.id && selectedIds.includes(q.id) && (
@@ -562,13 +561,13 @@ export default function MyQuestionsPage() {
                             <div className="flex-1 space-y-2 sm:space-y-3">
                               {/* Tags */}
                               <div className="flex flex-wrap gap-2">
-                                <span className="badge-blue">
+                                <span className="badge-blue dark:bg-blue-900 dark:text-blue-200 dark:border-blue-700">
                                   {q.question_type?.replace(/-/g, ' ').replace(/\b\w/g, l => l.toUpperCase())}
                                 </span>
                               </div>
 
                               {/* Question Text */}
-                              <div className="prose max-w-none sm:prose-lg">
+                              <div className="prose max-w-none sm:prose-lg text-justify">
                                 <ReactMarkdown
                                   remarkPlugins={[remarkMath, remarkGfm]}
                                   rehypePlugins={[rehypeKatex]}
@@ -586,7 +585,7 @@ export default function MyQuestionsPage() {
                               setPendingDeleteId(q.id!)
                             }}
                             disabled={deletingId === q.id}
-                            className="px-3 py-2 text-sm sm:text-base bg-red-50 text-red-600 rounded-lg sm:rounded-xl hover:bg-red-100 transition-all duration-200 border border-red-200 hover:border-red-300 flex items-center space-x-2 font-medium"
+                            className="absolute top-4 right-4 px-3 py-2 text-sm sm:text-base bg-red-50 text-red-600 rounded-lg sm:rounded-xl hover:bg-red-100 transition-all duration-200 border border-red-200 hover:border-red-300 flex items-center space-x-2 font-medium dark:bg-red-900/40 dark:text-red-300 dark:border-red-700 dark:hover:bg-red-900/60"
                             title="Delete"
                             aria-label="Delete"
                           >
@@ -603,24 +602,23 @@ export default function MyQuestionsPage() {
                               </>
                             )}
                           </button>
-                        </div>
                       </div>
 
                       {/* Card Body */}
-                      <div className="card-body space-y-4 sm:space-y-6">
+                      <div className="card-body space-y-4 sm:space-y-6 text-justify">
                         {/* Options */}
                         {q.options && q.options.length > 0 && (
                           <div className="space-y-3">
-                            <h4 className="text-xs sm:text-sm font-bold text-gray-700 uppercase tracking-wide">Options</h4>
+                            <h4 className="text-xs sm:text-sm font-bold text-gray-700 uppercase tracking-wide dark:text-gray-300">Options</h4>
                             <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
                               {q.options.map((opt, i) => {
                                 const cleanedOpt = typeof opt === 'string' ? opt.replace(/^[A-Za-z][\.\)]\s*/i, '') : opt
                                 return (
                                   <div
                                     key={i}
-                                    className="flex items-start space-x-3 p-3 sm:p-4 bg-gray-50/80 rounded-xl border border-gray-200/50"
+                                    className="flex items-start space-x-3 p-3 sm:p-4 bg-gray-50/80 rounded-xl border border-gray-200/50 dark:bg-gray-800/80 dark:border-gray-700/50"
                                   >
-                                    <div className="w-6 h-6 bg-gradient-to-r from-blue-500 to-purple-600 text-white rounded-full flex items-center justify-center text-xs sm:text-sm font-bold flex-shrink-0">
+                                    <div className="w-6 h-6 bg-gradient-to-r from-blue-500 to-purple-600 text-white rounded-full flex items-center justify-center text-xs sm:text-sm font-bold flex-shrink-0 dark:from-blue-800 dark:to-purple-800">
                                       {String.fromCharCode(65 + i)}
                                     </div>
                                     <div className="flex-1 prose max-w-none">
@@ -629,7 +627,7 @@ export default function MyQuestionsPage() {
                                         rehypePlugins={[rehypeKatex]}
                                         components={{
                                           p: ({ children }) => (
-                                            <div className="text-gray-800 leading-relaxed text-sm sm:text-base">{children}</div>
+                                            <div className="text-gray-800 leading-relaxed text-sm sm:text-base dark:text-gray-200">{children}</div>
                                           )
                                         }}
                                       >
@@ -644,8 +642,8 @@ export default function MyQuestionsPage() {
                         )}
 
                         {/* Answer */}
-                        <div className="bg-gradient-to-r from-green-50 to-emerald-50 p-3 sm:p-4 rounded-xl border border-green-200/50">
-                          <h4 className="text-xs sm:text-sm font-bold text-green-800 uppercase tracking-wide mb-2 flex items-center space-x-2">
+                        <div className="bg-gradient-to-r from-green-50 to-emerald-50 p-3 sm:p-4 rounded-xl border border-green-200/50 dark:from-green-900 dark:to-emerald-900 dark:border-green-700">
+                          <h4 className="text-xs sm:text-sm font-bold text-green-800 uppercase tracking-wide mb-2 flex items-center space-x-2 dark:text-green-200">
                             <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                               <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z" />
                             </svg>
@@ -657,7 +655,7 @@ export default function MyQuestionsPage() {
                               rehypePlugins={[rehypeKatex]}
                               components={{
                                 p: ({ children }) => (
-                                  <div className="text-green-800 font-medium leading-relaxed text-sm sm:text-base">{children}</div>
+                                  <div className="text-green-800 font-medium leading-relaxed text-sm sm:text-base dark:text-green-200">{children}</div>
                                 )
                               }}
                             >
@@ -668,8 +666,8 @@ export default function MyQuestionsPage() {
 
                         {/* Explanation */}
                         {q.explanation && (
-                          <div className="bg-gradient-to-r from-blue-50 to-indigo-50 p-3 sm:p-4 rounded-xl border border-blue-200/50">
-                            <h4 className="text-xs sm:text-sm font-bold text-blue-800 uppercase tracking-wide mb-2 flex items-center space-x-2">
+                          <div className="bg-gradient-to-r from-blue-50 to-indigo-50 p-3 sm:p-4 rounded-xl border border-blue-200/50 dark:from-blue-900 dark:to-indigo-900 dark:border-blue-700">
+                            <h4 className="text-xs sm:text-sm font-bold text-blue-800 uppercase tracking-wide mb-2 flex items-center space-x-2 dark:text-blue-200">
                               <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
                               </svg>
@@ -681,7 +679,7 @@ export default function MyQuestionsPage() {
                                 rehypePlugins={[rehypeKatex]}
                                 components={{
                                   p: ({ children }) => (
-                                    <div className="text-blue-800 leading-relaxed text-sm sm:text-base">{children}</div>
+                                    <div className="text-blue-800 leading-relaxed text-sm sm:text-base dark:text-blue-200">{children}</div>
                                   )
                                 }}
                               >
@@ -694,13 +692,13 @@ export default function MyQuestionsPage() {
 
                       {/* Card Footer */}
                       <div className="card-footer">
-                        <div className="flex items-center justify-between text-xs text-gray-500">
+                        <div className="flex items-center justify-between text-xs text-gray-500 dark:text-gray-400">
                           <span>
-                            Subject: <span className="font-medium text-gray-700">{q.subject}</span>
+                            Subject: <span className="font-medium text-gray-700 dark:text-gray-200">{q.subject}</span>
                           </span>
                           <span>
                             Created:{' '}
-                            <span className="font-medium text-gray-700">
+                            <span className="font-medium text-gray-700 dark:text-gray-200">
                               {q.created_at ? new Date(q.created_at).toLocaleDateString() : '-'}
                             </span>
                           </span>
@@ -716,9 +714,9 @@ export default function MyQuestionsPage() {
 
         {/* Pagination */}
         {totalPages > 1 && (
-          <div className="flex items-center justify-between card p-4 sm:p-6">
+          <div className="flex items-center justify-between card p-4 sm:p-6 bg-white dark:bg-gray-900 border border-gray-200 dark:border-gray-700">
             <div className="flex items-center space-x-4">
-              <span className="text-xs sm:text-sm text-gray-600">
+              <span className="text-xs sm:text-sm text-gray-600 dark:text-gray-300">
                 Showing {startIndex + 1} to {Math.min(endIndex, filteredQuestions.length)} of {filteredQuestions.length}{' '}
                 questions
               </span>
@@ -728,7 +726,7 @@ export default function MyQuestionsPage() {
               <button
                 onClick={() => setCurrentPage(prev => Math.max(prev - 1, 1))}
                 disabled={currentPage === 1}
-                className="px-3 py-2 bg-white border border-gray-300 rounded-lg hover:bg-gray-50 disabled:opacity-50 disabled:cursor-not-allowed transition-all duration-200 flex items-center space-x-2"
+                className="px-3 py-2 bg-white border border-gray-300 rounded-lg hover:bg-gray-50 disabled:opacity-50 disabled:cursor-not-allowed transition-all duration-200 flex items-center space-x-2 dark:bg-gray-900 dark:border-gray-700 dark:hover:bg-gray-800"
               >
                 <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                   <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 19l-7-7 7-7" />
@@ -742,14 +740,14 @@ export default function MyQuestionsPage() {
                   const showPage = pageNum === 1 || pageNum === totalPages || Math.abs(pageNum - currentPage) <= 1
                   if (!showPage && pageNum === 2 && currentPage > 4) {
                     return (
-                      <span key={`l-${pageNum}`} className="px-2 text-gray-400">
+                      <span key={`l-${pageNum}`} className="px-2 text-gray-400 dark:text-gray-500">
                         ...
                       </span>
                     )
                   }
                   if (!showPage && pageNum === totalPages - 1 && currentPage < totalPages - 3) {
                     return (
-                      <span key={`r-${pageNum}`} className="px-2 text-gray-400">
+                      <span key={`r-${pageNum}`} className="px-2 text-gray-400 dark:text-gray-500">
                         ...
                       </span>
                     )
@@ -762,7 +760,7 @@ export default function MyQuestionsPage() {
                       className={`w-8 h-8 sm:w-9 sm:h-9 md:w-10 md:h-10 rounded-lg font-medium transition-all duration-200 ${
                         currentPage === pageNum
                           ? 'bg-gradient-to-r from-blue-600 to-purple-600 text-white shadow-lg'
-                          : 'bg-white border border-gray-300 text-gray-700 hover:bg-gray-50'
+                          : 'bg-white border border-gray-300 text-gray-700 hover:bg-gray-50 dark:bg-gray-900 dark:border-gray-700 dark:text-gray-200 dark:hover:bg-gray-800'
                       }`}
                     >
                       {pageNum}
@@ -775,7 +773,7 @@ export default function MyQuestionsPage() {
               <button
                 onClick={() => setCurrentPage(prev => Math.min(prev + 1, totalPages))}
                 disabled={currentPage === totalPages}
-                className="px-3 py-2 bg-white border border-gray-300 rounded-lg hover:bg-gray-50 disabled:opacity-50 disabled:cursor-not-allowed transition-all duration-200 flex items-center space-x-2"
+                className="px-3 py-2 bg-white border border-gray-300 rounded-lg hover:bg-gray-50 disabled:opacity-50 disabled:cursor-not-allowed transition-all duration-200 flex items-center space-x-2 dark:bg-gray-900 dark:border-gray-700 dark:hover:bg-gray-800"
               >
                 <span className="hidden sm:block">Next</span>
                 <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -790,7 +788,7 @@ export default function MyQuestionsPage() {
         <div className="pt-8 text-center">
           <Link
             href="/"
-            className="inline-flex items-center px-4 py-2 sm:px-6 sm:py-3 text-blue-600 hover:text-blue-800 font-medium transition-colors space-x-2 bg-white/50 rounded-lg sm:rounded-xl hover:bg-white/80 backdrop-blur-sm border border-white/30"
+            className="inline-flex items-center px-4 py-2 sm:px-6 sm:py-3 text-blue-600 hover:text-blue-800 font-medium transition-colors space-x-2 bg-white/50 rounded-lg sm:rounded-xl hover:bg-white/80 backdrop-blur-sm border border-white/30 dark:bg-gray-900/50 dark:text-blue-300 dark:hover:text-blue-200 dark:hover:bg-gray-900/80 dark:border-gray-700/50"
           >
             <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
               <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M10 19l-7-7m0 0l7-7m-7 7h18" />
@@ -803,15 +801,15 @@ export default function MyQuestionsPage() {
         {showDeleteModal && (
           <div className="fixed inset-0 z-50 flex items-center justify-center p-4">
             <div className="fixed inset-0 bg-black/50 backdrop-blur-sm transition-opacity" onClick={() => setShowDeleteModal(false)}></div>
-            <div className="relative bg-white rounded-2xl shadow-2xl p-6 sm:p-8 w-full max-w-md transform transition-all">
-              <div className="flex items-center justify-center w-14 h-14 sm:w-16 sm:h-16 mx-auto mb-5 sm:mb-6 bg-red-100 rounded-full">
-                <svg className="w-7 h-7 sm:w-8 sm:h-8 text-red-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <div className="relative bg-white rounded-2xl shadow-2xl p-6 sm:p-8 w-full max-w-md transform transition-all dark:bg-gray-900">
+              <div className="flex items-center justify-center w-14 h-14 sm:w-16 sm:h-16 mx-auto mb-5 sm:mb-6 bg-red-100 rounded-full dark:bg-red-900/40">
+                <svg className="w-7 h-7 sm:w-8 sm:h-8 text-red-600 dark:text-red-300" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                   <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-2.5L13.732 4c-.77-.833-1.964-.833-2.732 0L4.082 16.5c-.77.833.192 2.5 1.732 2.5z" />
                 </svg>
               </div>
 
-              <h3 className="text-lg sm:text-xl font-bold text-center text-gray-900 mb-3 sm:mb-4">Delete Question?</h3>
-              <p className="text-gray-600 text-center mb-6 sm:mb-8 leading-relaxed text-sm sm:text-base">
+              <h3 className="text-lg sm:text-xl font-bold text-center text-gray-900 dark:text-gray-100 mb-3 sm:mb-4">Delete Question?</h3>
+              <p className="text-gray-600 dark:text-gray-300 text-center mb-6 sm:mb-8 leading-relaxed text-sm sm:text-base">
                 Are you sure you want to delete this question? This action cannot be undone for your account,
                 but the question will remain in the database.
               </p>
@@ -822,7 +820,7 @@ export default function MyQuestionsPage() {
                     setShowDeleteModal(false)
                     setPendingDeleteId(null)
                   }}
-                  className="flex-1 px-4 py-2 sm:px-6 sm:py-3 bg-gray-100 text-gray-700 rounded-lg sm:rounded-xl hover:bg-gray-200 transition-colors font-medium"
+                  className="flex-1 px-4 py-2 sm:px-6 sm:py-3 bg-gray-100 text-gray-700 rounded-lg sm:rounded-xl hover:bg-gray-200 transition-colors font-medium dark:bg-gray-800 dark:text-gray-200 dark:hover:bg-gray-700"
                 >
                   Cancel
                 </button>
@@ -847,4 +845,5 @@ export default function MyQuestionsPage() {
       </div>
     </main>
   )
+// ...existing code...
 }

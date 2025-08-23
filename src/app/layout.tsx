@@ -23,12 +23,12 @@ export default function RootLayout({
   const [collapsed,   setCollapsed]     = useState(true)   // 56-px rail on ≥ md
 
   return (
-    <html lang="en" className={`${geistSans.variable} ${geistMono.variable} antialiased`}>
+    <html lang="en" className={`${geistSans.variable} ${geistMono.variable} antialiased dark`}>
       <head>
         <meta name="viewport" content="width=device-width, initial-scale=1" />
       </head>
 
-      <body className="min-h-screen bg-white text-gray-900 overflow-x-hidden">
+      <body className="min-h-screen bg-white dark:bg-gray-950 text-gray-900 dark:text-gray-100 overflow-x-hidden">
         <ClientProviders>
           <div className="flex min-h-screen w-full">
 
@@ -39,7 +39,7 @@ export default function RootLayout({
                 transition-all duration-300 ease-in-out
                 overflow-y-auto overflow-x-hidden
                 ${sidebarOpen ? "translate-x-0" : "-translate-x-full md:translate-x-0"}
-                ${collapsed ? "w-14" : "w-64"}
+                ${collapsed ? "w-20" : "w-60"}
               `}
             >
               {/* collapse / expand button (desktop only) */}
@@ -104,13 +104,13 @@ export default function RootLayout({
             </button>
 
             {/* ─────────── Main content ─────────── */}
-            <main
-              className={`
-                flex-1 min-h-screen bg-white overflow-x-hidden
-                ${collapsed ? "md:ml-14" : "md:ml-64"}
-              `}
-            >
-              <div className="px-4 pt-16 pb-8 md:px-8 md:pt-8">
+              <main
+                className={`
+                  flex-1 min-h-screen bg-white dark:bg-gray-950 overflow-x-hidden
+                  ${collapsed ? "md:ml-14" : "md:ml-64"}
+                `}
+              >
+              <div className="px-4 pb-8 pt-16 md:px-8 md:pt-2">
                 {children}
                 <Footer />
               </div>

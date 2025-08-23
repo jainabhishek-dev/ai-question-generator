@@ -8,6 +8,7 @@ import {
   DocumentTextIcon,
   ClipboardDocumentListIcon,
   RectangleGroupIcon,
+  ArrowRightStartOnRectangleIcon
 } from "@heroicons/react/24/outline"
 import Portal from "./Portal";    
 
@@ -137,7 +138,9 @@ if (vertical) {
             <button
               ref={avatarBtnRef}
               onClick={handleAvatarClick}
-              className={`flex items-center gap-3 py-2 rounded-lg hover:bg-gray-800 w-full text-left transition-all ${pad}`}
+              className={`flex items-center py-2 rounded-lg hover:bg-gray-800 transition-all
+                ${collapsed ? "justify-center px-3" : "text-left px-3 w-full gap-3"}
+              `}
               aria-haspopup="menu"
               aria-expanded={dropdownOpen}
             >
@@ -163,18 +166,16 @@ if (vertical) {
                 onSignIn?.()
                 handleNavClick()
               }}
-              className={`bg-blue-600 hover:bg-blue-700 text-white font-medium rounded-lg w-full transition-colors py-2 ${pad}`}
+              className={`bg-blue-600 hover:bg-blue-700 text-white font-medium rounded-lg transition-colors py-1 ${pad} flex items-center justify-center mx-6 my-2`}
             >
-              <span className={hide}>Sign In / Sign Up</span>
-              <svg
-                className={`w-5 h-5 mx-auto ${collapsed ? "" : "hidden"}`}
-                fill="none"
-                stroke="currentColor"
-                strokeWidth="2"
-                viewBox="0 0 24 24"
-              >
-                <path strokeLinecap="round" strokeLinejoin="round" d="M15 12H9m3 3l-3-3 3-3" />
-              </svg>
+              {collapsed ? (
+                <ArrowRightStartOnRectangleIcon className="w-7 h-5" />
+              ) : (
+                <>
+                  <span className={hide}>Sign In / Sign Up</span>
+                  <ArrowRightStartOnRectangleIcon className="w-5 h-5 ml-2" />
+                </>
+              )}
             </button>
           )}
 

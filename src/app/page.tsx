@@ -196,7 +196,7 @@ export default function Home() {
 
               <div className="flex-1 space-y-2 sm:space-y-3">
                 {/* Question Type Badge */}
-                <span className="inline-flex items-center px-2 py-1 rounded-full text-[11px] sm:text-xs font-semibold border bg-blue-100 text-blue-800 border-blue-200 sm:px-3">
+                <span className="inline-flex items-center px-2 py-1 rounded-full text-[11px] sm:text-xs font-semibold border bg-blue-100 text-blue-800 border-blue-200 sm:px-3 dark:bg-blue-900 dark:text-blue-200 dark:border-blue-700">
                   {getQuestionTypeDisplay(q.type)}
                 </span>
 
@@ -207,7 +207,7 @@ export default function Home() {
                     rehypePlugins={[rehypeKatex]}
                     components={{
                       p: ({ children }) => (
-                        <div className="text-gray-900 font-medium leading-relaxed text-base sm:text-lg">{children}</div>
+                        <div className="text-gray-900 font-medium leading-relaxed text-base sm:text-lg dark:text-gray-100">{children}</div>
                       )
                     }}
                   >
@@ -224,7 +224,7 @@ export default function Home() {
           {/* Options for Multiple Choice */}
           {isMultipleChoice && q.options && q.options.length > 0 && (
             <div className="space-y-3">
-              <h4 className="text-xs sm:text-sm font-bold text-gray-700 uppercase tracking-wide flex items-center space-x-2">
+              <h4 className="text-xs sm:text-sm font-bold text-gray-700 uppercase tracking-wide flex items-center space-x-2 dark:text-gray-300">
                 <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                   <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5H7a2 2 0 00-2 2v10a2 2 0 002 2h8a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2" />
                 </svg>
@@ -242,15 +242,15 @@ export default function Home() {
                       key={i}
                       className={`flex items-start space-x-3 p-3 sm:p-4 rounded-xl border transition-all duration-200 ${
                         isCorrect
-                          ? 'bg-gradient-to-r from-green-50 to-emerald-50 border-green-200/50 ring-2 ring-green-200'
-                          : 'bg-gray-50/80 border-gray-200/50 hover:bg-gray-100/80'
+                          ? 'bg-gradient-to-r from-green-50 to-emerald-50 border-green-200/50 ring-2 ring-green-200 dark:from-green-900 dark:to-emerald-900 dark:border-green-700 dark:ring-green-700'
+                          : 'bg-gray-50/80 border-gray-200/50 hover:bg-gray-100/80 dark:bg-gray-800/80 dark:border-gray-700/50 dark:hover:bg-gray-700/80'
                       }`}
                     >
                       <div
                         className={`w-6 h-6 rounded-full flex items-center justify-center text-xs sm:text-sm font-bold flex-shrink-0 ${
                           isCorrect
-                            ? 'bg-gradient-to-r from-green-500 to-emerald-600 text-white'
-                            : 'bg-gradient-to-r from-blue-500 to-purple-600 text-white'
+                            ? 'bg-gradient-to-r from-green-500 to-emerald-600 text-white dark:from-green-700 dark:to-emerald-700'
+                            : 'bg-gradient-to-r from-blue-500 to-purple-600 text-white dark:from-blue-800 dark:to-purple-800'
                         }`}
                       >
                         {label}
@@ -261,7 +261,7 @@ export default function Home() {
                           rehypePlugins={[rehypeKatex]}
                           components={{
                             p: ({ children }) => (
-                              <div className={`leading-relaxed text-sm sm:text-base ${isCorrect ? 'text-green-800 font-semibold' : 'text-gray-800'}`}>
+                              <div className={`leading-relaxed text-sm sm:text-base ${isCorrect ? 'text-green-800 font-semibold dark:text-green-200' : 'text-gray-800 dark:text-gray-200'}`}>
                                 {children}
                               </div>
                             )
@@ -271,7 +271,7 @@ export default function Home() {
                         </ReactMarkdown>
                       </div>
                       {isCorrect && (
-                        <div className="flex items-center space-x-1 text-green-600">
+                        <div className="flex items-center space-x-1 text-green-600 dark:text-green-300">
                           <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                             <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
                           </svg>
@@ -286,8 +286,8 @@ export default function Home() {
           )}
 
           {/* Answer Section */}
-          <div className="bg-gradient-to-r from-green-50 to-emerald-50 p-3 sm:p-4 rounded-xl border border-green-200/50">
-            <h4 className="text-xs sm:text-sm font-bold text-green-800 uppercase tracking-wide mb-2 sm:mb-3 flex items-center space-x-2">
+          <div className="bg-gradient-to-r from-green-50 to-emerald-50 p-3 sm:p-4 rounded-xl border border-green-200/50 dark:from-green-900 dark:to-emerald-900 dark:border-green-700">
+            <h4 className="text-xs sm:text-sm font-bold text-green-800 uppercase tracking-wide mb-2 sm:mb-3 flex items-center space-x-2 dark:text-green-200">
               <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z" />
               </svg>
@@ -299,7 +299,7 @@ export default function Home() {
                 rehypePlugins={[rehypeKatex]}
                 components={{
                   p: ({ children }) => (
-                    <div className="text-green-800 font-semibold leading-relaxed text-sm sm:text-base">{children}</div>
+                    <div className="text-green-800 font-semibold leading-relaxed text-sm sm:text-base dark:text-green-200">{children}</div>
                   )
                 }}
               >
@@ -310,8 +310,8 @@ export default function Home() {
 
           {/* Explanation */}
           {q.explanation && (
-            <div className="bg-gradient-to-r from-blue-50 to-indigo-50 p-3 sm:p-4 rounded-xl border border-blue-200/50">
-              <h4 className="text-xs sm:text-sm font-bold text-blue-800 uppercase tracking-wide mb-2 sm:mb-3 flex items-center space-x-2">
+            <div className="bg-gradient-to-r from-blue-50 to-indigo-50 p-3 sm:p-4 rounded-xl border border-blue-200/50 dark:from-blue-900 dark:to-indigo-900 dark:border-blue-700">
+              <h4 className="text-xs sm:text-sm font-bold text-blue-800 uppercase tracking-wide mb-2 sm:mb-3 flex items-center space-x-2 dark:text-blue-200">
                 <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                   <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
                 </svg>
@@ -323,7 +323,7 @@ export default function Home() {
                   rehypePlugins={[rehypeKatex]}
                   components={{
                     p: ({ children }) => (
-                      <div className="text-blue-800 leading-relaxed text-sm sm:text-base">{children}</div>
+                      <div className="text-blue-800 leading-relaxed text-sm sm:text-base dark:text-blue-200">{children}</div>
                     )
                   }}
                 >
@@ -338,39 +338,39 @@ export default function Home() {
   }
 
   return (
-    <main className="min-h-screen overflow-x-hidden bg-gradient-to-br from-slate-50 via-blue-50 to-indigo-100 py-6 sm:py-8">
+    <main className="min-h-screen overflow-x-hidden bg-gradient-to-br from-slate-50 via-blue-50 to-indigo-100 py-6 sm:py-8 dark:from-gray-950 dark:via-gray-900 dark:to-gray-800">
       <div className="max-w-full sm:max-w-4xl mx-auto px-3 sm:px-4 space-y-6 sm:space-y-8">
         {/* Header */}
         <div className="text-center space-y-1 sm:space-y-2">
-          <h1 className="text-2xl sm:text-3xl md:text-4xl font-bold bg-gradient-to-r from-gray-900 via-blue-900 to-purple-900 bg-clip-text text-transparent">
+          <h1 className="text-2xl sm:text-3xl md:text-4xl font-bold bg-gradient-to-r from-gray-900 via-blue-900 to-purple-900 bg-clip-text text-transparent dark:from-gray-100 dark:via-blue-400 dark:to-purple-400">
             Instaku - Create Instantly
           </h1>
-          <p className="text-sm sm:text-base text-gray-600 max-w-lg sm:max-w-2xl mx-auto leading-relaxed">
+          <p className="text-sm sm:text-base text-gray-600 max-w-lg sm:max-w-2xl mx-auto leading-relaxed dark:text-gray-300">
             AI-powered worksheets in seconds.
           </p>
         </div>
         {user && (
-          <div className="mb-4 text-center text-sm text-gray-700">
+          <div className="mb-4 text-center text-sm text-gray-700 dark:text-gray-200">
             You have <span className="font-bold">{userQuestions}</span> question{userQuestions !== 1 ? "s" : ""} in your{" "}
-            <Link href="/my-questions" className="text-blue-600 underline hover:text-blue-800">
+            <Link href="/my-questions" className="text-blue-600 underline hover:text-blue-800 dark:text-blue-400 dark:hover:text-blue-300">
               library
             </Link>.
             {userQuestions >= 40 && (
-              <span className="ml-2 text-red-600 font-semibold">You have reached your free limit.</span>
+              <span className="ml-2 text-red-600 font-semibold dark:text-red-400">You have reached your free limit.</span>
             )}
           </div>
         )}
 
         {/* AdvancedQuestionForm */}
-        <div className="card p-4 sm:p-6">
+        <div className="card p-4 sm:p-6 bg-white border border-gray-200 dark:bg-gray-900 dark:border-gray-700">
           <AdvancedQuestionForm onGenerate={handleGenerate} isLoading={isLoading} currentQuestionCount={userQuestions} />
         </div>
 
         {/* Errors */}
         {saveError && (
-          <div className="card p-4 sm:p-6 bg-red-50/80 border-red-200/50 text-red-700">
+          <div className="card p-4 sm:p-6 bg-red-50/80 border-red-200/50 text-red-700 dark:bg-red-900/40 dark:border-red-700 dark:text-red-300">
             <div className="flex items-center space-x-2 sm:space-x-3">
-              <svg className="w-5 h-5 text-red-500 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <svg className="w-5 h-5 text-red-500 flex-shrink-0 dark:text-red-300" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 8v4m0 4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
               </svg>
               <span className="font-medium text-sm sm:text-base">{saveError}</span>
@@ -380,14 +380,14 @@ export default function Home() {
 
         {/* Results */}
         {(questions.length > 0 || output || isLoading) && (
-          <div ref={resultsRef} className="card p-4 sm:p-6 space-y-5 sm:space-y-6">
+          <div ref={resultsRef} className="card p-4 sm:p-6 space-y-5 sm:space-y-6 bg-white border border-gray-200 dark:bg-gray-900 dark:border-gray-700">
             <div className="flex items-center space-x-3">
-              <div className="w-8 h-8 bg-gradient-to-r from-green-500 to-emerald-600 rounded-lg flex items-center justify-center">
+              <div className="w-8 h-8 bg-gradient-to-r from-green-500 to-emerald-600 rounded-lg flex items-center justify-center dark:from-green-700 dark:to-emerald-700">
                 <svg className="w-4 h-4 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                   <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
                 </svg>
               </div>
-              <h2 className="text-lg sm:text-2xl font-bold bg-gradient-to-r from-gray-900 to-gray-600 bg-clip-text text-transparent">
+              <h2 className="text-lg sm:text-2xl font-bold bg-gradient-to-r from-gray-900 to-gray-600 bg-clip-text text-transparent dark:from-gray-100 dark:to-gray-400">
                 Generated Questions
               </h2>
             </div>
@@ -395,17 +395,17 @@ export default function Home() {
             {/* Success/status */}
             {questions.length > 0 && (
               <div className="space-y-4">
-                <div className="card p-4 sm:p-6 bg-green-50/80 border-green-200/50 text-green-700">
+                <div className="card p-4 sm:p-6 bg-green-50/80 border-green-200/50 text-green-700 dark:bg-green-900/40 dark:border-green-700 dark:text-green-300">
                   <div className="flex items-center space-x-2 sm:space-x-3">
-                    <svg className="w-5 h-5 text-green-500 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <svg className="w-5 h-5 text-green-500 flex-shrink-0 dark:text-green-300" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                       <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z" />
                     </svg>
                     <span className="font-medium text-sm sm:text-base">
                       Successfully generated {questions.length} question{questions.length !== 1 ? 's' : ''}
-                      {saveStatus === 'saving' && <span className="ml-2 text-blue-600">• Saving...</span>}
-                      {saveStatus === 'saved' && user && <span className="ml-2 text-green-600">• Saved to My Questions</span>}
+                      {saveStatus === 'saving' && <span className="ml-2 text-blue-600 dark:text-blue-400">• Saving...</span>}
+                      {saveStatus === 'saved' && user && <span className="ml-2 text-green-600 dark:text-green-300">• Saved to My Questions</span>}
                       {saveStatus === 'saved' && !user && (
-                        <span className="ml-2 text-orange-600">• Questions generated! Sign in to save to personal library</span>
+                        <span className="ml-2 text-orange-600 dark:text-orange-300">• Questions generated! Sign in to save to personal library</span>
                       )}
                     </span>
                   </div>
@@ -413,10 +413,10 @@ export default function Home() {
 
                 {/* CTA for non-authenticated users */}
                 {saveStatus === 'saved' && !user && (
-                  <div className="card p-4 sm:p-6 bg-blue-50/80 border-blue-200/50 text-blue-700">
+                  <div className="card p-4 sm:p-6 bg-blue-50/80 border-blue-200/50 text-blue-700 dark:bg-blue-900/40 dark:border-blue-700 dark:text-blue-300">
                     <div className="flex flex-col sm:flex-row sm:items-center gap-2 sm:gap-3">
                       <div className="flex items-center space-x-2">
-                        <svg className="w-5 h-5 text-blue-500 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <svg className="w-5 h-5 text-blue-500 flex-shrink-0 dark:text-blue-300" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                           <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
                         </svg>
                         <span className="font-medium text-sm sm:text-base">Want to build a personal question library?</span>
@@ -428,7 +428,7 @@ export default function Home() {
                         >
                           Sign up for free
                         </button>
-                        <span className="ml-2 text-sm text-blue-800">to save, organize, and manage questions.</span>
+                        <span className="ml-2 text-sm text-blue-800 dark:text-blue-200">to save, organize, and manage questions.</span>
                       </div>
                     </div>
                   </div>
@@ -445,37 +445,37 @@ export default function Home() {
             {isLoading && (
               <div className="text-center py-10 sm:py-12">
                 <div className="w-14 h-14 sm:w-16 sm:h-16 mx-auto mb-5 sm:mb-6 relative">
-                  <div className="w-full h-full border-4 border-blue-200 rounded-full animate-spin border-t-blue-600"></div>
-                  <div className="absolute top-3.5 left-3.5 w-7 h-7 sm:top-4 sm:left-4 sm:w-8 sm:h-8 bg-gradient-to-r from-blue-500 to-purple-600 rounded-full flex items-center justify-center">
+                  <div className="w-full h-full border-4 border-blue-200 rounded-full animate-spin border-t-blue-600 dark:border-blue-800 dark:border-t-blue-400"></div>
+                  <div className="absolute top-3.5 left-3.5 w-7 h-7 sm:top-4 sm:left-4 sm:w-8 sm:h-8 bg-gradient-to-r from-blue-500 to-purple-600 rounded-full flex items-center justify-center dark:from-blue-800 dark:to-purple-800">
                     <svg className="w-4 h-4 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                       <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9.663 17h4.673M12 3v1m6.364 1.636l-.707.707M21 12h-1M4 12H3m3.343-5.657l-.707-.707m2.828 9.9a5 5 0 117.072 0l-.548.547A3.374 3.374 0 0014 18.469V19a2 2 0 11-4 0v-.531c0-.895-.356-1.754-.988-2.386l-.548-.547z" />
                     </svg>
                   </div>
                 </div>
-                <h3 className="text-lg sm:text-xl font-bold text-gray-900 mb-2">Generating Questions</h3>
-                <p className="text-sm sm:text-base text-gray-600">Our AI is crafting personalized questions...</p>
+                <h3 className="text-lg sm:text-xl font-bold text-gray-900 mb-2 dark:text-gray-100">Generating Questions</h3>
+                <p className="text-sm sm:text-base text-gray-600 dark:text-gray-300">Our AI is crafting personalized questions...</p>
               </div>
             )}
 
             {/* Raw output fallback */}
             {output && questions.length === 0 && !isLoading && (
               <div className="space-y-4">
-                <div className="card p-4 sm:p-6 bg-yellow-50/80 border-yellow-200/50 text-yellow-700">
+                <div className="card p-4 sm:p-6 bg-yellow-50/80 border-yellow-200/50 text-yellow-700 dark:bg-yellow-900/40 dark:border-yellow-700 dark:text-yellow-300">
                   <div className="flex items-center space-x-2 sm:space-x-3">
-                    <svg className="w-5 h-5 text-yellow-500 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <svg className="w-5 h-5 text-yellow-500 flex-shrink-0 dark:text-yellow-300" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                       <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-2.5L13.732 4c-.77-.833-1.964-.833-2.732 0L4.082 16.5c-.77.833.192 2.5 1.732 2.5z" />
                     </svg>
                     <span className="font-medium text-sm sm:text-base">Unable to parse AI response. See raw output below:</span>
                   </div>
                 </div>
-                <div className="card p-4 sm:p-6 bg-white/90 border-white/50">
-                  <h3 className="text-base sm:text-lg font-semibold text-gray-800 mb-3 sm:mb-4 flex items-center space-x-2">
+                <div className="card p-4 sm:p-6 bg-white/90 border-white/50 dark:bg-gray-900/90 dark:border-gray-700/50">
+                  <h3 className="text-base sm:text-lg font-semibold text-gray-800 mb-3 sm:mb-4 flex items-center space-x-2 dark:text-gray-200">
                     <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                       <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M10 20l4-16m4 4l4 4-4 4M6 16l-4-4 4-4" />
                     </svg>
                     <span>Raw AI Response</span>
                   </h3>
-                  <pre className="whitespace-pre-wrap bg-gray-100 p-3 sm:p-4 rounded-xl text-xs sm:text-sm text-gray-800 border border-gray-200 overflow-auto max-h-96">
+                  <pre className="whitespace-pre-wrap bg-gray-100 p-3 sm:p-4 rounded-xl text-xs sm:text-sm text-gray-800 border border-gray-200 overflow-auto max-h-96 dark:bg-gray-800 dark:text-gray-200 dark:border-gray-700">
                     {output}
                   </pre>
                 </div>

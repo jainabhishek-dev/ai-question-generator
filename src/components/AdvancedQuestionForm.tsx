@@ -1,6 +1,7 @@
 "use client"
 import { useState } from "react"
 import { createAdvancedPrompt } from "@/lib/gemini"
+import { BookOpenIcon } from "@heroicons/react/24/outline";
 
 interface Props {
   onGenerate: (prompt: string, inputs: Inputs) => void
