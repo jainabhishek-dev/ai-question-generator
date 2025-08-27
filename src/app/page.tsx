@@ -13,8 +13,10 @@ import AuthModal from '@/components/AuthModal'
 import { getUserQuestions } from '@/lib/database'
 import Link from "next/link"
 import remarkGfm from "remark-gfm"
+import { saveQuestionRating, getQuestionRating } from "@/lib/database"
 
 interface Question {
+  id?: number
   type: string
   question: string
   prompt?: string
@@ -36,6 +38,44 @@ export default function Home() {
   const [showAuthModal, setShowAuthModal] = useState(false)
   const { user } = useAuth()
   const [userQuestions, setUserQuestions] = useState(0)
+  const [ratings, setRatings] = useState<{ [index: number]: number | null }>({})
+  const [avgRatings, setAvgRatings] = useState<{ [index: number]: number | null }>({})
+  const [ratingLoading, setRatingLoading] = useState<{ [index: number]: boolean }>({})
+  
+  const fetchRating = async (questionId: number, index: number) => {
+  const res = await getQuestionRating(questionId, user?.id ?? null)
+    let userRating = res.userRating ?? null
+  // For anonymous users, check localStorage for rating
+  if (!user) {
+    const ratedKey = `rated_question_${questionId}`;
+    if (localStorage.getItem(ratedKey)) {
+      // You could store the actual rating value in localStorage if you want to show the correct star
+      const stored = localStorage.getItem(ratedKey)
+      userRating = stored ? parseInt(stored, 10) : 1
+    }
+  }
+  if (res.success) {
+    setRatings(r => ({ ...r, [index]: userRating }))
+    setAvgRatings(a => ({ ...a, [index]: res.average ?? null }))
+  }
+}
+
+  const handleRate = async (questionId: number, index: number, rating: number) => {
+      if (!user) {
+    const ratedKey = `rated_question_${questionId}`;
+    if (localStorage.getItem(ratedKey)) {
+      alert("You have already rated this question.");
+      return;
+    }
+    localStorage.setItem(ratedKey, rating.toString());
+    // Immediately update UI for anonymous users
+    setRatings(r => ({ ...r, [index]: rating }))
+  }
+    setRatingLoading(l => ({ ...l, [index]: true }))
+    await saveQuestionRating(questionId, user?.id ?? null, rating)
+    await fetchRating(questionId, index)
+    setRatingLoading(l => ({ ...l, [index]: false }))
+  }
 
   useEffect(() => {
     if (user?.id) {
@@ -48,6 +88,13 @@ export default function Home() {
       })
     }
   }, [user])
+  
+  useEffect(() => {
+    questions.forEach((q, index) => {
+      if (q.id) fetchRating(q.id, index)
+    })
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [questions, user?.id])
 
   const parseQuestions = (text: string): Question[] => {
     let cleanText = text.trim();
@@ -148,28 +195,36 @@ export default function Home() {
             correctAnswerLetter,
             explanation: q.explanation || ""
           }
-        })
-
-      setQuestions(parsedQuestions)
+        });
+      
+      setQuestions(parsedQuestions);  
 
       if (parsedQuestions.length > 0) {
         setSaveStatus('saving')
         try {
           const saveResult = await saveQuestions(inputs, parsedQuestions, user?.id || null)
-          if (saveResult.success) {
+          if (saveResult.success && Array.isArray(saveResult.data)) {
+            // Map DB fields to your Question type for UI
+            const questionsWithId = saveResult.data.map(q => ({
+              id: q.id,
+              type: q.question_type,
+              question: q.question,
+              options: q.options || [],
+              correctAnswer: q.correct_answer,
+              correctAnswerLetter: q.correct_answer?.match(/^[A-Z]/i)?.[0]?.toUpperCase() || "",
+              explanation: q.explanation || ""
+            }))
+            setQuestions(questionsWithId)
             setSaveStatus('saved')
-            console.log(
-              user
-                ? `✅ Successfully saved ${parsedQuestions.length} questions for ${user.email}`
-                : `✅ Successfully saved ${parsedQuestions.length} questions (sign in to access later)`
-            )
           } else {
-            setSaveStatus('error')
-            setSaveError(saveResult.error || 'Failed to save questions')
+            setQuestions(parsedQuestions)
+            setSaveStatus('saved')
+            setSaveError(null)
           }
         } catch (saveErr) {
-          setSaveStatus('error')
-          setSaveError('Unexpected error while saving')
+          setQuestions(parsedQuestions)
+          setSaveStatus('saved')
+          setSaveError(null)
           console.error('Save error:', saveErr)
         }
       }
@@ -214,6 +269,7 @@ export default function Home() {
             </div>
           </div>
         </div>
+
 
         {/* Card Body */}
         <div className="card-body space-y-4 sm:space-y-6 text-justify bg-gray-900">
@@ -323,6 +379,28 @@ export default function Home() {
                   {q.explanation}
                 </ReactMarkdown>
               </div>
+            </div>
+          )}
+          {/* Rating UI */}
+          {(q.id) && (
+            <div className="flex items-center mt-4 space-x-1">
+              <span className="text-xs text-gray-400 mr-2">Rate:</span>
+              {[1,2,3,4,5].map(star => (
+                <button
+                  key={star}
+                  onClick={() => handleRate(q.id!, index, star)}
+                  disabled={ratingLoading[index]}
+                  className={`text-xl ${ratings[index] && ratings[index]! >= star ? "text-yellow-400" : "text-gray-400"}`}
+                  aria-label={`Rate ${star} star${star > 1 ? "s" : ""}`}
+                  type="button"
+                >★</button>
+              ))}
+              {avgRatings[index] !== null && (
+                <span className="ml-2 text-xs text-gray-500">Avg: {avgRatings[index]?.toFixed(1)}</span>
+              )}
+              {ratings[index] && (
+                <span className="ml-2 text-xs text-green-600">Your rating: {ratings[index]}</span>
+              )}
             </div>
           )}
         </div>

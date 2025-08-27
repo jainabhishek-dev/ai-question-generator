@@ -2,6 +2,7 @@
 import { useState } from "react"
 import { createAdvancedPrompt } from "@/lib/gemini"
 import { BookOpenIcon } from "@heroicons/react/24/outline";
+import { subjectMap } from "./subjectMap"
 
 interface Props {
   onGenerate: (prompt: string, inputs: Inputs) => void
@@ -31,6 +32,8 @@ const gradeOptions = [
   "Grade 6","Grade 7","Grade 8","Grade 9","Grade 10","Grade 11","Grade 12",
   "Undergraduate","Graduate"
 ]
+
+const subjectOptions = Object.keys(subjectMap)
 
 const bloomsOptions = [
   "Remember","Understand","Apply","Analyze","Evaluate","Create"
@@ -64,6 +67,7 @@ export default function AdvancedQuestionForm({ onGenerate, isLoading = false, cu
       </div>
     )
   }
+  const subSubjectOptions = subjectMap[inputs.subject] || []
 
   const handleChange = (key: keyof Inputs, value: string | number) =>
     setInputs(prev => ({ ...prev, [key]: value }))
@@ -116,24 +120,35 @@ export default function AdvancedQuestionForm({ onGenerate, isLoading = false, cu
         <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
           <div>
             <label className="block text-sm font-medium text-gray-700 mb-1">Subject *</label>
-            <input
-              type="text"
-              placeholder="e.g., Mathematics, Science, History"
+            <select
               value={inputs.subject}
-              onChange={e => handleChange("subject", e.target.value)}
+              onChange={e => {
+                handleChange("subject", e.target.value)
+                handleChange("subSubject", "") // Reset sub-subject
+              }}
               className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500 text-gray-900"
               required
-            />
+            >
+              <option value="">Select subject</option>
+              {subjectOptions.map(s => (
+                <option key={s} value={s}>{s}</option>
+              ))}
+            </select>
           </div>
-          <div>
+         <div>
             <label className="block text-sm font-medium text-gray-700 mb-1">Sub-Subject</label>
-            <input
-              type="text"
-              placeholder="e.g., Algebra, Biology, World War II"
+            <select
               value={inputs.subSubject}
               onChange={e => handleChange("subSubject", e.target.value)}
               className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500 text-gray-900"
-            />
+              disabled={!inputs.subject}
+              required={!!inputs.subject}
+            >
+              <option value="">Select sub-subject</option>
+              {subSubjectOptions.map(sub => (
+                <option key={sub} value={sub}>{sub}</option>
+              ))}
+            </select>
           </div>
         </div>
         <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mt-4">
