@@ -28,13 +28,15 @@ export default function FAQ() {
   const [openIndex, setOpenIndex] = useState<number | null>(null);
 
   return (
-    <div className="space-y-2">
-      <h2 className="text-lg sm:text-xl font-semibold text-blue-800 dark:text-blue-200">Frequently Asked Questions</h2>
+    <section className="space-y-2" aria-labelledby="faq-heading">
+      <h2 id="faq-heading" className="text-base sm:text-lg font-bold text-gray-800 dark:text-gray-100 mb-2 text-left">
+        Frequently Asked Questions
+      </h2>
       <div className="space-y-1">
         {faqs.map((faq, idx) => (
           <div key={faq.question} className="border rounded-lg bg-white/60 dark:bg-gray-800/60">
             <button
-              className="w-full text-left px-3 py-2 font-medium text-blue-900 dark:text-blue-200 focus:outline-none flex justify-between items-center text-sm sm:text-base"
+              className="w-full text-left px-3 py-2 font-medium text-blue-900 dark:text-blue-200 focus:outline-none flex justify-between items-center text-xs sm:text-sm"
               onClick={() => setOpenIndex(openIndex === idx ? null : idx)}
               aria-expanded={openIndex === idx}
               aria-controls={`faq-${idx}`}
@@ -43,7 +45,7 @@ export default function FAQ() {
               <span className="ml-2">{openIndex === idx ? "−" : "+"}</span>
             </button>
             {openIndex === idx && (
-              <div id={`faq-${idx}`} className="px-3 pb-3 text-gray-700 dark:text-gray-200 animate-fade-in text-sm sm:text-base">
+              <div id={`faq-${idx}`} className="px-3 pb-3 text-gray-700 dark:text-gray-200 animate-fade-in text-xs sm:text-sm">
                 {faq.answer}
               </div>
             )}
@@ -59,6 +61,6 @@ export default function FAQ() {
           to { opacity: 1; transform: translateY(0);}
         }
       `}</style>
-    </div>
+    </section>
   );
 }
