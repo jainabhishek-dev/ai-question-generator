@@ -18,6 +18,7 @@ export interface Inputs {
   grade: string
   totalQuestions: number
   numMCQ: number
+  numTrueFalse: number
   numFillBlank: number
   numShortAnswer: number
   numLongAnswer: number
@@ -48,11 +49,12 @@ export default function AdvancedQuestionForm({ onGenerate, isLoading = false, cu
     topic: "",
     subTopic: "",
     grade: "Grade 6",
-    totalQuestions: 1,
+    totalQuestions: 5,
     numMCQ: 1,
-    numFillBlank: 0,
-    numShortAnswer: 0,
-    numLongAnswer: 0,
+    numTrueFalse: 1,
+    numFillBlank: 1,
+    numShortAnswer: 1,
+    numLongAnswer: 1,
     difficulty: "Medium",
     bloomsLevel: "Understand",
     pdfContent: "",
@@ -73,8 +75,8 @@ export default function AdvancedQuestionForm({ onGenerate, isLoading = false, cu
     setInputs(prev => ({ ...prev, [key]: value }))
 
   const validateDistribution = () => {
-    const { totalQuestions, numMCQ, numFillBlank, numShortAnswer, numLongAnswer } = inputs
-    const sum = numMCQ + numFillBlank + numShortAnswer + numLongAnswer
+    const { totalQuestions, numMCQ, numFillBlank, numShortAnswer, numLongAnswer, numTrueFalse } = inputs
+    const sum = numMCQ + numFillBlank + numShortAnswer + numLongAnswer + numTrueFalse
     if (totalQuestions > 10) {
     setError("You can generate a maximum of 10 questions at a time.")
     return false
@@ -90,7 +92,7 @@ export default function AdvancedQuestionForm({ onGenerate, isLoading = false, cu
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault()
       if (currentQuestionCount >= 40) {
-      setError("You have reached your free limit of 40 questions. To create more, please subscribe.")
+      setError("You have reached your free limit of 100 questions. To create more, please subscribe.")
     return
   }
     if (currentQuestionCount + inputs.totalQuestions > 40) {
@@ -246,7 +248,7 @@ export default function AdvancedQuestionForm({ onGenerate, isLoading = false, cu
             />
           </div>
           <div>
-            <label className="block text-sm font-medium text-gray-700 mb-1">Multiple Choice</label>
+            <label className="block text-sm font-medium text-gray-700 mb-1">MCQ</label>
             <input
               type="number"
               min={0}
@@ -262,6 +264,16 @@ export default function AdvancedQuestionForm({ onGenerate, isLoading = false, cu
               min={0}
               value={inputs.numFillBlank}
               onChange={e => handleChange("numFillBlank", Number(e.target.value))}
+              className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500 text-gray-900"
+            />
+          </div>
+          <div>
+            <label className="block text-sm font-medium text-gray-700 mb-1">True-False</label>
+            <input
+              type="number"
+              min={0}
+              value={inputs.numTrueFalse}
+              onChange={e => handleChange("numTrueFalse", Number(e.target.value))}
               className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500 text-gray-900"
             />
           </div>
@@ -287,7 +299,7 @@ export default function AdvancedQuestionForm({ onGenerate, isLoading = false, cu
           </div>
         </div>
         <p className="text-sm text-gray-600 mt-2">
-          Distribution total: {inputs.numMCQ + inputs.numFillBlank + inputs.numShortAnswer + inputs.numLongAnswer}
+          Distribution total: {inputs.numMCQ + inputs.numFillBlank + inputs.numTrueFalse + inputs.numShortAnswer + inputs.numLongAnswer}
         </p>
         {error && (
           <div className="bg-red-50 border border-red-200 text-red-700 px-4 py-3 rounded-md mt-4">
@@ -328,20 +340,19 @@ export default function AdvancedQuestionForm({ onGenerate, isLoading = false, cu
       </div>
 
       {/* Submit Button Card */}
-      {/* Submit Button Card */}
       <div className="backdrop-blur-xl bg-white/70 border border-white/20 rounded-2xl shadow-xl p-6 text-center hover:shadow-2xl transition-shadow duration-300">
         <button 
           type="submit" 
           className={`
             w-full font-medium py-4 px-6 rounded-xl transition-all duration-200
             focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2
-            ${isLoading || currentQuestionCount >= 40
+            ${isLoading || currentQuestionCount >= 100
               ? 'bg-blue-500 cursor-not-allowed' 
               : 'bg-blue-600 hover:bg-blue-700 hover:shadow-lg'
             }
             text-white shadow-md
           `}
-          disabled={isLoading || currentQuestionCount >= 40}
+          disabled={isLoading || currentQuestionCount >= 100}
         >
           {isLoading ? (
             <div className="flex items-center justify-center space-x-3">

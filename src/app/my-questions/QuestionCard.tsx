@@ -22,6 +22,9 @@ const QuestionCard: React.FC<QuestionCardProps> = ({
   setPendingDeleteId,
   deletingId
 }) => {
+
+  const isTrueFalse = q.question_type === 'true-false'
+  
   return (
     <div className="group card overflow-hidden bg-white dark:bg-gray-900 border border-gray-200 dark:border-gray-700">
       {/* Card Header */}
@@ -67,7 +70,7 @@ const QuestionCard: React.FC<QuestionCardProps> = ({
             {/* Question Text */}
             <div className="prose max-w-none sm:prose-lg text-justify">
               <ReactMarkdown
-                remarkPlugins={[remarkMath, remarkGfm]}
+                remarkPlugins={[remarkMath, [remarkGfm, { breaks: true }]]}
                 rehypePlugins={[rehypeKatex]}
               >
                 {q.question}
@@ -121,11 +124,11 @@ const QuestionCard: React.FC<QuestionCardProps> = ({
                     </div>
                     <div className="flex-1 prose max-w-none">
                       <ReactMarkdown
-                        remarkPlugins={[remarkMath, remarkGfm]}
+                        remarkPlugins={[remarkMath, [remarkGfm, { breaks: true }]]}
                         rehypePlugins={[rehypeKatex]}
                         components={{
                           p: ({ children }) => (
-                            <div className="text-gray-800 leading-relaxed text-sm sm:text-base dark:text-gray-200">{children}</div>
+                            <p className="text-gray-800 leading-relaxed text-sm sm:text-base dark:text-gray-200">{children}</p>
                           )
                         }}
                       >
@@ -135,6 +138,26 @@ const QuestionCard: React.FC<QuestionCardProps> = ({
                   </div>
                 )
               })}
+            </div>
+          </div>
+        )}
+        {isTrueFalse && (
+          <div className="space-y-3">
+            <h4 className="text-xs sm:text-sm font-bold text-gray-700 uppercase tracking-wide dark:text-gray-300">Options</h4>
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
+              {["True", "False"].map((option, i) => (
+                <div
+                  key={option}
+                  className="flex items-start space-x-3 p-3 sm:p-4 bg-gray-50/80 rounded-xl border border-gray-200/50 dark:bg-gray-800/80 dark:border-gray-700/50"
+                >
+                  <div className="w-6 h-6 bg-gradient-to-r from-blue-500 to-purple-600 text-white rounded-full flex items-center justify-center text-xs sm:text-sm font-bold flex-shrink-0 dark:from-blue-800 dark:to-purple-800">
+                    {option[0]}
+                  </div>
+                  <div className="flex-1 text-gray-800 leading-relaxed text-sm sm:text-base dark:text-gray-200">
+                    {option}
+                  </div>
+                </div>
+              ))}
             </div>
           </div>
         )}
@@ -149,11 +172,11 @@ const QuestionCard: React.FC<QuestionCardProps> = ({
           </h4>
           <div className="prose max-w-none">
             <ReactMarkdown
-              remarkPlugins={[remarkMath, remarkGfm]}
+              remarkPlugins={[remarkMath, [remarkGfm, { breaks: true }]]}
               rehypePlugins={[rehypeKatex]}
               components={{
                 p: ({ children }) => (
-                  <div className="text-green-800 font-medium leading-relaxed text-sm sm:text-base dark:text-green-200">{children}</div>
+                  <p className="text-green-800 font-medium leading-relaxed text-sm sm:text-base dark:text-green-200">{children}</p>
                 )
               }}
             >
@@ -173,11 +196,11 @@ const QuestionCard: React.FC<QuestionCardProps> = ({
             </h4>
             <div className="prose max-w-none">
               <ReactMarkdown
-                remarkPlugins={[remarkMath, remarkGfm]}
+                remarkPlugins={[remarkMath, [remarkGfm, { breaks: true }]]}
                 rehypePlugins={[rehypeKatex]}
                 components={{
                   p: ({ children }) => (
-                    <div className="text-blue-800 leading-relaxed text-sm sm:text-base dark:text-blue-200">{children}</div>
+                    <p className="text-blue-800 leading-relaxed text-sm sm:text-base dark:text-blue-200">{children}</p>
                   )
                 }}
               >

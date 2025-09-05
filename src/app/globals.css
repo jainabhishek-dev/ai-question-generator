@@ -179,7 +179,7 @@
   word-wrap: break-word;
   overflow-wrap: anywhere;
 }
-.prose p { margin: 0; line-height: 1.6; }
+.prose p { margin-bottom: 1.25em; line-height: 1.6; }
 .prose strong { font-weight: 600; color: inherit; }
 .prose em { font-style: italic; color: inherit; }
 .prose code {
@@ -187,6 +187,10 @@
   padding: 2px 6px;
   border-radius: 4px;
   font-size: 0.875em;
+}
+.prose ul,
+.prose ol {
+  margin-bottom: 1.25em;
 }
 .prose pre {
   background: rgba(0, 0, 0, 0.05);
@@ -244,4 +248,53 @@
     box-shadow: none !important;
     background: white !important;
   }
+}
+/* Add this to your globals.css */
+.prose table {
+  width: auto;
+  border-collapse: collapse;
+  margin: 1.5em 0;
+  font-size: 1em;
+}
+.prose th,
+.prose td {
+  border: 1px solid #d1d5db;
+  padding: 0.5em 1em;
+  text-align: left;
+}
+.prose th {
+  background: #f3f4f6;
+  font-weight: 600;
+}
+.prose tr:nth-child(even) td {
+  background: #f9fafb;
+}
+@media (prefers-color-scheme: dark) {
+  .prose th,
+  .prose td {
+    border-color: #3b4252 !important;
+  }
+  .prose tr:nth-child(even) td {
+    background: #2d323c !important;
+  }
+  .prose th {
+    background: #445371 !important;
+    color: #fff !important;
+  }
+}
+
+/* Slide-in animations for question carousel */
+@keyframes slide-in-right {
+  from { transform: translateX(100%); opacity: 0; }
+  to   { transform: translateX(0); opacity: 1; }
+}
+@keyframes slide-in-left {
+  from { transform: translateX(-100%); opacity: 0; }
+  to   { transform: translateX(0); opacity: 1; }
+}
+.animate-slide-in-right {
+  animation: slide-in-right 0.3s;
+}
+.animate-slide-in-left {
+  animation: slide-in-left 0.3s;
 }
