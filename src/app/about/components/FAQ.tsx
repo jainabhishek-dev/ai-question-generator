@@ -3,26 +3,62 @@ import { useState } from "react";
 
 const faqs = [
   {
-    question: "What is Instaku?",
+    question: "How many questions can I generate at once?",
     answer:
-      "Instaku is an innovative tool that helps educators, students, and lifelong learners create high-quality, curriculum-aligned questions instantly using artificial intelligence.",
+      "You can generate up to 10 questions in a single request. The distribution of question types must match your selected total. If you reach your free limit of 40 saved questions, you’ll need to delete some or subscribe for more.",
   },
   {
-    question: "How does Instaku ensure question quality?",
+    question: "What types of questions can I generate?",
     answer:
-      "Our AI is trained on educational best practices and reviewed regularly to ensure accuracy, clarity, and alignment with learning objectives.",
+      "Instaku currently supports multiple-choice, fill-in-the-blank, true-false, short answer, and long answer questions. You can customize the mix and difficulty for each batch.",
   },
   {
-    question: "Is my data safe?",
+    question: "Can I export generated questions as a PDF?",
     answer:
-      "Absolutely. We respect your privacy. Your questions and data are never shared or sold. All information is securely stored and handled with care.",
+      "Yes! You can export your selected questions as a PDF worksheet or an answer key. Use the Export options in your 'My Questions' library to download either format.",
+  },
+  {
+    question: "Can I save the questions I have generated?",
+    answer:
+      "If you are signed in, generated questions are saved to your personal library. You can manage, filter, and export them anytime. Anonymous users can generate questions but need to sign in to save them.",
+  },
+  {
+    question: "Is there a limit to how many questions I can save?",
+    answer:
+      "Free users can save up to 40 questions in their library. To save more, consider subscribing for expanded access.",
+  },
+  {
+    question: "Can I filter or organize my saved questions?",
+    answer:
+      "Yes, you can filter your questions by type, grade level, difficulty, and Bloom’s taxonomy level in the 'My Questions' section.",
+  },
+  {
+    question: "Can I customize the difficulty and grade level of generated questions?",
+    answer:
+      "Yes, you can select the grade level and difficulty for each batch of questions before generating them.",
+  },
+  {
+    question: "Do I need an account to use Instaku?",
+    answer:
+      "You can generate questions without an account, but you need to sign in to save, organize, or export your questions.",
+  },
+  {
+    question: "Can I edit or delete questions after saving them?",
+    answer:
+      "Yes, you can edit or delete any question in your personal library at any time.",
+  },
+  {
+    question: "How do I contact support if I have an issue?",
+    answer:
+      "You can reach out to our support team via the Contact Us page for help with any issues or feedback.",
   },
   {
     question: "Who can use Instaku?",
     answer:
       "Anyone! Whether you're a teacher, student, tutor, or parent, our platform is designed to make question creation easy and accessible.",
   },
-];
+
+]
 
 export default function FAQ() {
   const [openIndex, setOpenIndex] = useState<number | null>(null);

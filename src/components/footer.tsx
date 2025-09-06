@@ -18,6 +18,20 @@ export default function Footer() {
       >
         Contact Us
       </Link>
+      {' | '}
+      <Link
+        href="/terms"
+        className="text-blue-600 hover:text-blue-800 dark:text-blue-400 dark:hover:text-blue-300 underline transition-colors"
+      >
+        Terms of Service
+      </Link>
+      {' | '}
+      <Link
+        href="/privacy"
+        className="text-blue-600 hover:text-blue-800 dark:text-blue-400 dark:hover:text-blue-300 underline transition-colors"
+      >
+        Privacy Policy
+      </Link>
     </footer>
   )
 }
