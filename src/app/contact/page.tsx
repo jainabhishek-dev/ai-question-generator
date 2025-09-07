@@ -49,6 +49,9 @@ export default function ContactPage() {
           <p className="text-gray-600 dark:text-gray-300">
             Have a question, suggestion, or need help? Fill out the form below and we’ll get back to you!
           </p>
+          <p className="text-blue-700 dark:text-blue-300 font-semibold">
+            Or email us directly at <a href="mailto:hello@instaku.com" className="underline">hello@instaku.com</a>
+          </p>
         </div>
 
         {/* Form Card */}

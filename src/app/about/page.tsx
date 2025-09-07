@@ -80,6 +80,9 @@ export default function AboutPage() {
                 <p className="text-xs text-gray-500 dark:text-gray-400">
                   Free to use for a limited time. Enjoy creating!
                 </p>
+                <p className="text-xs text-blue-700 dark:text-blue-300 mt-2">
+                  Contact us: <a href="mailto:hello@instaku.com" className="underline">hello@instaku.com</a>
+                </p>
               </div>
             </footer>
           </div>
