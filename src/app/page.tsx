@@ -15,6 +15,9 @@ import SuccessStatus from "@/components/SuccessStatus"
 import LoadingSpinner from "@/components/LoadingSpinner"
 import RawOutputFallback from "@/components/RawOutputFallback"
 import SwipeableQuestions from "@/components/SwipeableQuestions"
+import QuestionModeToggle from "@/components/QuestionModeToggle"
+import NCERTQuestionForm from "@/components/NCERTQuestionForm"
+import { generateNCERTQuestions } from "@/lib/gemini"
 
 interface Question {
   id?: number
@@ -42,7 +45,10 @@ export default function Home() {
   const [ratings, setRatings] = useState<{ [index: number]: number | null }>({})
   const [avgRatings, setAvgRatings] = useState<{ [index: number]: number | null }>({})
   const [ratingLoading, setRatingLoading] = useState<{ [index: number]: boolean }>({})
+  const [questionMode, setQuestionMode] = useState<"general" | "ncert">("general")
   
+  
+
   const fetchRating = async (questionId: number, index: number) => {
   const res = await getQuestionRating(questionId, user?.id ?? null)
     let userRating = res.userRating ?? null
@@ -273,6 +279,111 @@ export default function Home() {
     }
   }
 
+  const handleGenerateNCERT = async (inputs: Inputs) => {
+  setIsLoading(true)
+  setOutput("Generating questions...")
+  setQuestions([])
+  setSaveStatus('idle')
+  setSaveError(null)
+
+  setTimeout(() => {
+    resultsRef.current?.scrollIntoView({ behavior: "smooth" })
+  }, 100)
+
+  try {
+    // 1. Generate questions using Gemini AI
+    const text = await generateNCERTQuestions(inputs)
+    setOutput(text)
+
+    // 2. Parse the AI output into question objects
+    let parsedQuestions = parseQuestions(text)
+    console.log("Parsed NCERT questions:", parsedQuestions)
+
+    // 3. Normalize and clean up each question (same as general)
+    parsedQuestions = parsedQuestions
+      .filter(q => q && (q.question || q.prompt || q.correctAnswer || q.answer))
+      .map(q => {
+        let options: string[] = [];
+        if (q.type === "multiple-choice") {
+          let rawOptions = q.options || q.choices || [];
+          if (rawOptions && typeof rawOptions === "object" && !Array.isArray(rawOptions)) {
+            rawOptions = Object.keys(rawOptions)
+              .sort()
+              .map(key => ((rawOptions as unknown) as Record<string, string>)[key]);
+          }
+          if (Array.isArray(rawOptions)) {
+            options = rawOptions.map(opt => {
+              if (typeof opt === "string" || typeof opt === "number") return String(opt);
+              if (opt && typeof opt === "object" && Object.prototype.hasOwnProperty.call(opt, "text")) return String((opt as { text: string }).text);
+              return typeof opt !== "undefined" ? JSON.stringify(opt) : "";
+            });
+          }
+        }
+
+        let correctAnswer = "";
+        let correctAnswerLetter = "";
+
+        if (Array.isArray(q.correctAnswer)) {
+          correctAnswer = q.correctAnswer.join("\n");
+        } else if (typeof q.correctAnswer === "string") {
+          correctAnswer = q.correctAnswer;
+          const match = q.correctAnswer.match(/^[A-Z]/i);
+          correctAnswerLetter = match ? match[0].toUpperCase() : "";
+        } else if (typeof q.answer === "string") {
+          correctAnswer = q.answer;
+        }
+
+        return {
+          type: q.type,
+          question: escapeCurrencyDollarsSmart(q.question || q.prompt || ""),
+          options: options.map(escapeCurrencyDollarsSmart),
+          correctAnswer: escapeCurrencyDollarsSmart(correctAnswer),
+          correctAnswerLetter,
+          explanation: escapeCurrencyDollarsSmart(q.explanation || "")
+        }
+      });
+
+    setQuestions(parsedQuestions);
+
+    // 4. Save questions to database (same as general)
+    if (parsedQuestions.length > 0) {
+      setSaveStatus('saving')
+      try {
+        // You may want to add a field to inputs to mark these as NCERT questions
+        const saveResult = await saveQuestions(inputs, parsedQuestions, user?.id || null)
+        console.log("DB save result:", saveResult)
+        if (saveResult.success && Array.isArray(saveResult.data)) {
+          const questionsWithId = saveResult.data.map(q => ({
+            id: q.id,
+            type: q.question_type,
+            question: q.question,
+            options: q.options || [],
+            correctAnswer: q.correct_answer,
+            correctAnswerLetter: q.correct_answer?.match(/^[A-Z]/i)?.[0]?.toUpperCase() || "",
+            explanation: q.explanation || ""
+          }))
+          setQuestions(questionsWithId)
+          setSaveStatus('saved')
+        } else {
+          setQuestions(parsedQuestions)
+          setSaveStatus('saved')
+          setSaveError(null)
+        }
+      } catch (saveErr) {
+        setQuestions(parsedQuestions)
+        setSaveStatus('saved')
+        setSaveError(null)
+        console.error('Save error:', saveErr)
+      }
+    }
+  } catch (err) {
+    setOutput("Error generating questions. Check console.")
+    console.error(err)
+  } finally {
+    setIsLoading(false)
+  }
+}
+
   return (
     <main className="min-h-screen overflow-x-hidden bg-gradient-to-br from-slate-50 via-blue-50 to-indigo-100 py-6 sm:py-8 dark:from-gray-950 dark:via-gray-900 dark:to-gray-800">
       <div className="max-w-full sm:max-w-4xl mx-auto px-3 sm:px-4 space-y-6 sm:space-y-8">
@@ -280,9 +391,14 @@ export default function Home() {
         <PageHeader />
         {user && <UserInfoBar userQuestions={userQuestions} />}
 
-        {/* AdvancedQuestionForm */}
+        <QuestionModeToggle mode={questionMode} onChange={setQuestionMode} />
+
         <div className="card p-4 sm:p-6 bg-white border border-gray-200 dark:bg-gray-900 dark:border-gray-700">
-          <AdvancedQuestionForm onGenerate={handleGenerate} isLoading={isLoading} currentQuestionCount={userQuestions} />
+          {questionMode === "general" ? (
+            <AdvancedQuestionForm onGenerate={handleGenerate} isLoading={isLoading} currentQuestionCount={userQuestions} />
+          ) : (
+            <NCERTQuestionForm onGenerate={handleGenerateNCERT} isLoading={isLoading} />
+          )}
         </div>
 
         {/* Errors */}

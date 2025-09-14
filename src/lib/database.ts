@@ -18,6 +18,9 @@ export interface QuestionRecord {
   blooms_level: string
   pdf_content?: string
   additional_notes?: string
+  chapter_number?: string
+  chapter_name?: string
+  learning_outcome?: string
   user_id: string | null  // UPDATED: Allow null for non-authenticated users
   deleted_at?: string | null  // NEW: Add soft delete field
   created_at?: string
@@ -25,6 +28,7 @@ export interface QuestionRecord {
   is_public: boolean
   is_shared: boolean
   shared_with: string[] | null
+  question_source?: string
 }
 
 export interface GeneratedQuestion {
@@ -68,10 +72,15 @@ export const saveQuestions = async (
       blooms_level: inputs.bloomsLevel,
       pdf_content: inputs.pdfContent || null,
       additional_notes: inputs.additionalNotes || null,
+      chapter_number: inputs.chapterNumber || null,
+      chapter_name: inputs.chapterName || null,
+      learning_outcome: inputs.learningOutcome || null,
+      question_source: inputs.question_source || 'general', // <-- add this line
       user_id: userId || null,
       is_public: !userId,        // true if no userId (anonymous), false if logged in
       is_shared: false,          // always false on creation
       shared_with: null          // always null on creation      
+      
     }))
 
     // FIXED: Execute different queries based on user authentication
@@ -105,7 +114,6 @@ export const saveQuestions = async (
   }
 }
 
-// ...existing code...
 
 export interface QuestionRating {
   id?: number

@@ -1,29 +1,6 @@
-import { GoogleGenerativeAI } from "@google/generative-ai"
 import { Inputs } from "@/components/AdvancedQuestionForm"
-import { createNCERTPrompt } from "@/lib/ncertPrompt"
 
-const genAI = new GoogleGenerativeAI(process.env.NEXT_PUBLIC_GEMINI_API_KEY!)
-
-/* ---------- STATIC MAPS ---------- */
-const gradeContexts: Record<string,string> = {
-  "Kindergarten": "Use very simple language...",
-  "Grade 1": "Use simple vocabulary...",
-  "Grade 2": "Use 1-2 sentence explanations...",
-  "Grade 3": "Use age-appropriate language...",
-  "Grade 4": "Introduce multi-step reasoning...",
-  "Grade 5": "Use moderate vocabulary...",
-  "Grade 6": "Ensure concepts are concrete and relatable...",
-  "Grade 7": "Bridge concrete to abstract ideas...",
-  "Grade 8": "Encourage analytical thinking...",
-  "Grade 9": "Introduce foundational high-school rigor...",
-  "Grade 10": "Use real-world scenarios and critical thinking...",
-  "Grade 11": "Prepare for standardized exams; deeper analysis...",
-  "Grade 12": "College-prep complexity; include evaluation tasks...",
-  "Undergraduate": "Assume foundational knowledge; emphasize application...",
-  "Graduate": "Expect advanced insight, synthesis, and research-level prompts..."
-}
-
-const bloomsDescriptions: Record<string,string> = {
+const bloomsDescriptions: Record<string, string> = {
   Remember: "Generate questions that require students to recall, recognize, or identify specific facts, terms, concepts, or procedures. Use verbs: define, list, name, identify, describe, match.",
   Understand: "Create questions requiring students to explain, interpret, summarize, or give examples. Use verbs: explain, compare, contrast, illustrate, classify, summarize.",
   Apply: "Design questions where students use learned information in new situations or solve problems. Use verbs: apply, demonstrate, calculate, solve, show, use.",
@@ -63,39 +40,34 @@ const questionTypeInstructions: Record<string, string[]> = {
   ]
 }
 
-/* ---------- PROMPT BUILDER ---------- */
-export const createAdvancedPrompt = (inputs: Inputs) => {
+export function createNCERTPrompt(inputs: Inputs) {
   const {
-    subject, subSubject, topic, subTopic, grade, difficulty,
-    bloomsLevel, totalQuestions, numMCQ, numFillBlank, numTrueFalse,
-    numShortAnswer, numLongAnswer, pdfContent, additionalNotes
+    subject, grade, chapterNumber, chapterName, learningOutcome,
+    difficulty, bloomsLevel, totalQuestions, numMCQ, numTrueFalse,
+    numFillBlank, numShortAnswer, numLongAnswer, additionalNotes
   } = inputs
 
   const contextInfo = [
-    `Subject: ${subject}${subSubject ? ` – ${subSubject}` : ""}`,
-    `Topic: ${topic}${subTopic ? ` – ${subTopic}` : ""}`,
-    `Grade Level: ${grade}`,
+    `Subject: ${subject}`,
+    `Grade: ${grade}`,
+    `Chapter Number: ${chapterNumber}`,
+    `Chapter Name: ${chapterName}`,
+    `Learning Outcomes: ${learningOutcome}`,
     `Difficulty: ${difficulty}`,
-    `Bloom's Level: ${bloomsLevel}`,
+    `Bloom's Taxonomy Level: ${bloomsLevel}`,
     additionalNotes && `Teacher Notes: ${additionalNotes}`
   ].filter(Boolean).join("\n")
 
   const distributionInfo = `Generate exactly:
-- ${numMCQ} multiple-choice questions
-- ${numFillBlank} fill-in-the-blank questions
-- ${numShortAnswer} short-answer questions
-- ${numLongAnswer} long-answer questions
-- ${numTrueFalse} true-false questions
-  Total questions must equal ${totalQuestions}.`
+    - ${numMCQ} multiple-choice questions
+    - ${numFillBlank} fill-in-the-blank questions
+    - ${numShortAnswer} short-answer questions
+    - ${numLongAnswer} long-answer questions
+    - ${numTrueFalse} true-false questions
+    Total questions must equal ${totalQuestions}.`
 
-  const gradeContext = gradeContexts[grade] ?? ""
   const bloomsContext = bloomsDescriptions[bloomsLevel] ?? ""
-
-  const pdfContext = pdfContent?.trim()
-    ? `Reference the following content when crafting questions. Do NOT quote it verbatim. You may use it to ensure factual accuracy:\n"""${pdfContent.trim().slice(0, 50_000)}"""`
-    : ""
   
-  // Dynamically include only relevant question type instructions
   const qTypeSections: string[] = []
   if (numMCQ > 0) qTypeSections.push(...questionTypeInstructions.mcq)
   if (numTrueFalse > 0) qTypeSections.push(...questionTypeInstructions.trueFalse)
@@ -149,52 +121,25 @@ export const createAdvancedPrompt = (inputs: Inputs) => {
   "- Ensure no duplicate questions or overly similar questions",
   "- Check that the total question count matches the requested distribution exactly"
 ].join("\n")
-  
+
   const validationInstructions = `
-  VALIDATION CHECKLIST - Verify before responding:
-  □ Total questions equal exactly ${totalQuestions}
-  □ Distribution matches: ${numMCQ} MCQ, ${numTrueFalse} T/F, ${numFillBlank} Fill, ${numShortAnswer} Short, ${numLongAnswer} Long
-  □ All MCQ have exactly 4 options (A, B, C, D) and correctAnswer is a single letter
-  □ All T/F have exactly 2 options ['True', 'False'] and correctAnswer matches
-  □ All questions include required fields
-  □ JSON syntax is valid (no trailing commas, proper escaping)
-  □ No placeholder text like "[Insert explanation]" remains
-  `
+    VALIDATION CHECKLIST - Verify before responding:
+    □ Total questions equal exactly ${totalQuestions}
+    □ Distribution matches: ${numMCQ} MCQ, ${numTrueFalse} T/F, ${numFillBlank} Fill, ${numShortAnswer} Short, ${numLongAnswer} Long
+    □ All MCQ have exactly 4 options (A, B, C, D) and correctAnswer is a single letter
+    □ All T/F have exactly 2 options ['True', 'False'] and correctAnswer matches
+    □ All questions include required fields
+    □ JSON syntax is valid (no trailing commas, proper escaping)
+    □ No placeholder text like "[Insert explanation]" remains
+    `
 
   return [
-    "You are an expert educational assessment designer with deep knowledge of pedagogy and learning sciences.",
-    
+    "You are an expert educational assessment designer with deep knowledge of NCERT curriculum and pedagogy.",
     `CONTEXT:\n${contextInfo}`,
-    
-    gradeContext,
-    
-    `BLOOM'S TAXONOMY TARGET:\n${bloomsDescriptions[bloomsLevel]}`,
-    
-    pdfContext,
-    
+    `BLOOM'S TAXONOMY TARGET:\n${bloomsContext}`,
     `QUESTION DISTRIBUTION REQUIREMENTS:\n${distributionInfo}`,
-    
     formattingRequirements,
-    
     validationInstructions,
-    
     "FINAL INSTRUCTION: Generate questions that are educationally meaningful, technically accurate, and perfectly formatted according to the specifications above. Double-check all requirements before responding."
   ].filter(Boolean).join("\n\n")
-}
-
-/* ---------- AI CALL ---------- */
-export const generateQuestions = async (inputs: Inputs) => {
-  const model = genAI.getGenerativeModel({ model: "gemini-2.5-flash" })
-  const prompt = createAdvancedPrompt(inputs)
-  console.log("Advanced Prompt:", prompt) // <-- Add this line
-  const res = await model.generateContent(prompt)
-  return res.response?.text() ?? ""
-}
-
-export const generateNCERTQuestions = async (inputs: Inputs) => {
-  const model = genAI.getGenerativeModel({ model: "gemini-2.5-flash" })
-  const prompt = createNCERTPrompt(inputs)
-  console.log("NCERT Prompt:", prompt) // <-- Add this line
-  const res = await model.generateContent(prompt)
-  return res.response?.text() ?? ""
 }

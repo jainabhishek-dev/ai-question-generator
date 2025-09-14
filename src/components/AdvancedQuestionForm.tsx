@@ -26,6 +26,9 @@ export interface Inputs {
   bloomsLevel: string
   pdfContent: string
   additionalNotes: string
+  learningOutcome?: string
+  question_source?: string // <-- add this
+  [key: string]: unknown
 }
 
 const gradeOptions = [
