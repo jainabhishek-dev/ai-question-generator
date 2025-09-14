@@ -1,9 +1,12 @@
 import React from 'react'
+import { PencilSquareIcon, TrashIcon } from '@heroicons/react/24/outline'
 import ReactMarkdown from 'react-markdown'
 import remarkMath from 'remark-math'
 import rehypeKatex from 'rehype-katex'
 import remarkGfm from 'remark-gfm'
 import { QuestionRecord } from '@/types/question'
+import { useState, useRef, useEffect } from 'react'
+
 
 interface QuestionCardProps {
   question: QuestionRecord
@@ -12,6 +15,7 @@ interface QuestionCardProps {
   setShowDeleteModal: (v: boolean) => void
   setPendingDeleteId: (id: number) => void
   deletingId: number | null
+  onEdit?: () => void
 }
 
 const QuestionCard: React.FC<QuestionCardProps> = ({
@@ -20,8 +24,23 @@ const QuestionCard: React.FC<QuestionCardProps> = ({
   toggleSelect,
   setShowDeleteModal,
   setPendingDeleteId,
-  deletingId
+  deletingId,
+  onEdit
 }) => {
+
+    // Dropdown state and ref for three dots menu
+  const [showDropdown, setShowDropdown] = useState(false)
+  const dropdownRef = useRef<HTMLDivElement>(null)
+ 
+  useEffect(() => {
+    const handleClickOutside = (event: MouseEvent) => {
+      if (dropdownRef.current && !dropdownRef.current.contains(event.target as Node)) {
+        setShowDropdown(false)
+      }
+    }
+    document.addEventListener('mousedown', handleClickOutside)
+    return () => document.removeEventListener('mousedown', handleClickOutside)
+  }, [])
 
   const isTrueFalse = q.question_type === 'true-false'
   
@@ -79,31 +98,66 @@ const QuestionCard: React.FC<QuestionCardProps> = ({
           </div>
         </div>
 
-        {/* Delete Button */}
-        <button
-          onClick={() => {
-            setShowDeleteModal(true)
-            setPendingDeleteId(q.id!)
-          }}
-          disabled={deletingId === q.id}
-          className="absolute top-4 right-4 px-3 py-2 text-sm sm:text-base bg-red-50 text-red-600 rounded-lg sm:rounded-xl hover:bg-red-100 transition-all duration-200 border border-red-200 hover:border-red-300 flex items-center space-x-2 font-medium dark:bg-red-900/40 dark:text-red-300 dark:border-red-700 dark:hover:bg-red-900/60"
-          title="Delete"
-          aria-label="Delete"
-        >
-          {deletingId === q.id ? (
-            <>
-              <div className="w-4 h-4 border-2 border-red-300 border-t-red-600 rounded-full animate-spin"></div>
-              <span>Deleting...</span>
-            </>
-          ) : (
-            <>
-              <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" />
-              </svg>
-            </>
-          )}
-        </button>
-      </div>
+          <div className="absolute top-4 right-4" ref={dropdownRef}>
+            <div className="relative">
+              {/* Three dots button */}
+              <button
+                onClick={() => setShowDropdown(!showDropdown)}
+                className="p-2 bg-gray-50 text-gray-600 rounded-full hover:bg-gray-100 border border-gray-200 hover:border-gray-300 transition-all duration-200 flex items-center justify-center dark:bg-gray-800 dark:text-gray-300 dark:border-gray-600 dark:hover:bg-gray-700"
+                title="More options"
+                aria-label="More options"
+              >
+                <svg className="w-4 h-4" fill="currentColor" viewBox="0 0 24 24">
+                  <circle cx="5" cy="12" r="2" />
+                  <circle cx="12" cy="12" r="2" />
+                  <circle cx="19" cy="12" r="2" />
+                </svg>
+              </button>
+
+              {/* Dropdown menu */}
+              {showDropdown && (
+                <div className="absolute right-0 top-full mt-2 w-40 bg-white dark:bg-gray-800 rounded-lg shadow-lg border border-gray-200 dark:border-gray-700 py-1 z-50">
+                  {/* Edit option */}
+                  {onEdit && (
+                    <button
+                      onClick={() => {
+                        onEdit()
+                        setShowDropdown(false)
+                      }}
+                      className="w-full px-4 py-2.5 text-left text-sm text-gray-700 dark:text-gray-300 hover:bg-blue-50 dark:hover:bg-blue-900/20 flex items-center space-x-3 transition-colors"
+                    >
+                      <PencilSquareIcon className="w-5 h-5 text-blue-600 dark:text-blue-400" />
+                      <span>Edit</span>
+                    </button>
+                  )}
+
+                  {/* Delete option */}
+                  <button
+                    onClick={() => {
+                      setShowDeleteModal(true)
+                      setPendingDeleteId(q.id!)
+                      setShowDropdown(false)
+                    }}
+                    disabled={deletingId === q.id}
+                    className="w-full px-4 py-2.5 text-left text-sm text-gray-700 dark:text-gray-300 hover:bg-red-50 dark:hover:bg-red-900/20 flex items-center space-x-3 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+                  >
+                    {deletingId === q.id ? (
+                      <>
+                        <div className="w-4 h-4 border-2 border-red-300 border-t-red-600 rounded-full animate-spin"></div>
+                        <span>Deleting...</span>
+                      </>
+                    ) : (
+                      <>
+                        <TrashIcon className="w-5 h-5 text-red-600 dark:text-red-400" />
+                        <span>Delete</span>
+                      </>
+                    )}
+                  </button>
+                </div>
+              )}
+            </div>
+          </div>
+        </div>
 
       {/* Card Body */}
       <div className="card-body space-y-4 sm:space-y-6 text-justify">

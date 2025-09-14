@@ -12,6 +12,8 @@ import QuestionCard from './QuestionCard'
 import Pagination from './Pagination'
 import DeleteModal from './DeleteModal'
 import LoadingSkeleton from './LoadingSkeleton'
+import EditQuestionModal from './EditQuestionModal' // (You'll create this file in Step 3)
+import { updateUserQuestion } from '@/lib/database' // Make sure this exists
 
 export default function MyQuestionsPage() {
   const { user } = useAuth()
@@ -34,6 +36,8 @@ export default function MyQuestionsPage() {
   const [deletingId, setDeletingId] = useState<number | null>(null)
   const [showDeleteModal, setShowDeleteModal] = useState(false)
   const [pendingDeleteId, setPendingDeleteId] = useState<number | null>(null)
+  
+  const [editingQuestion, setEditingQuestion] = useState<QuestionRecord | null>(null)
 
   // Selection + pagination
   const [selectedIds, setSelectedIds] = useState<number[]>([])
@@ -126,6 +130,32 @@ export default function MyQuestionsPage() {
       setError(`Failed to delete question: ${errorMessage || 'Unknown error'}`)
     } finally {
       setDeletingId(null)
+    }
+  }
+  
+  async function handleSaveEdit(updated: QuestionRecord) {
+    if (!updated.id || !user?.id) {
+      setError("Missing question ID or user ID.")
+      return
+    }
+    try {
+      const res = await updateUserQuestion(updated.id, user.id, updated)
+      if (res.success) {
+        setQuestions(prev =>
+          prev.map(q => q.id === updated.id ? { ...q, ...updated } : q)
+        )
+        setEditingQuestion(null)
+      } else {
+        setError(res.error || "Failed to update question.")
+      }
+    } catch (err) {
+      setError(
+        typeof err === "string"
+          ? err
+          : err instanceof Error
+          ? err.message
+          : "Failed to update question."
+      )
     }
   }
 
@@ -342,7 +372,7 @@ export default function MyQuestionsPage() {
             </div>
             <h3 className="text-xl sm:text-2xl font-bold text-gray-900 dark:text-gray-100 mb-3 sm:mb-4">No Questions Yet</h3>
             <p className="text-gray-600 dark:text-gray-300 mb-6 sm:mb-8 max-w-md mx-auto leading-relaxed text-sm sm:text-base">
-              Get started by creating your first question. Build engaging content for your students!
+              Get started by creating your first question!
             </p>
             <Link
               href="/"
@@ -380,6 +410,7 @@ export default function MyQuestionsPage() {
                     setShowDeleteModal={setShowDeleteModal}
                     setPendingDeleteId={setPendingDeleteId}
                     deletingId={deletingId}
+                    onEdit={() => setEditingQuestion(q)} // <-- Add this
                 />
               ))
             )}
@@ -426,6 +457,15 @@ export default function MyQuestionsPage() {
         />
         )}
       </div>
+
+      {editingQuestion && (
+        <EditQuestionModal
+          question={editingQuestion}
+          onSave={handleSaveEdit}
+          onClose={() => setEditingQuestion(null)}
+        />
+      )}
+
     </main>
   )
 }

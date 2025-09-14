@@ -1,4 +1,5 @@
 import React, { useEffect, useState } from "react"
+import { BookOpenIcon, Cog6ToothIcon, ChartPieIcon, DocumentTextIcon, ArrowPathIcon } from "@heroicons/react/24/outline";
 import { fetchNCERTMetadata } from "@/lib/fetchNCERTMetadata"
 import { Inputs } from "@/components/AdvancedQuestionForm"
 
@@ -133,11 +134,7 @@ export default function NCERTQuestionForm({ onGenerate, isLoading }: Props) {
       <div className="backdrop-blur-xl bg-white/70 border border-white/20 rounded-2xl shadow-xl p-6">
         <div className="flex items-center mb-4">
           <div className="w-10 h-10 bg-gradient-to-r from-blue-500 to-purple-600 rounded-xl flex items-center justify-center mr-3">
-            <svg className="w-6 h-6 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 20h9" />
-              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M3 6v14a1 1 0 001 1h16a1 1 0 001-1V6" />
-              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M3 6l9 6 9-6" />
-            </svg>
+            <BookOpenIcon className="w-7 h-7 text-white" />
           </div>
           <h3 className="text-lg font-semibold text-gray-700 border-b pb-2 flex-1">NCERT Chapter Selection</h3>
         </div>
@@ -223,9 +220,7 @@ export default function NCERTQuestionForm({ onGenerate, isLoading }: Props) {
       <div className="backdrop-blur-xl bg-white/70 border border-white/20 rounded-2xl shadow-xl p-6">
         <div className="flex items-center mb-4">
           <div className="w-10 h-10 bg-gradient-to-r from-green-400 to-blue-500 rounded-xl flex items-center justify-center mr-3">
-            <svg className="w-6 h-6 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 15.5A3.5 3.5 0 1 0 12 8.5a3.5 3.5 0 0 0 0 7zm7.5-3.5a7.5 7.5 0 0 1-1.1 3.9l1.6 2.8a1 1 0 0 1-1.3 1.4l-3.2-1.3a7.5 7.5 0 0 1-3.9 1.1V21a1 1 0 0 1-2 0v-1.1a7.5 7.5 0 0 1-3.9-1.1l-3.2 1.3a1 1 0 0 1-1.3-1.4l1.6-2.8A7.5 7.5 0 0 1 4.5 12c0-.7.1-1.4.2-2.1l-1.6-2.8a1 1 0 0 1 1.3-1.4l3.2 1.3a7.5 7.5 0 0 1 3.9-1.1V3a1 1 0 0 1 2 0v1.1a7.5 7.5 0 0 1 3.9 1.1l3.2-1.3a1 1 0 0 1 1.3 1.4l-1.6 2.8c.1.7.2 1.4.2 2.1z" />
-            </svg>
+            <Cog6ToothIcon className="w-7 h-7 text-white" />
           </div>
           <h3 className="text-lg font-semibold text-gray-700 border-b pb-2 flex-1">Question Settings</h3>
         </div>
@@ -257,9 +252,7 @@ export default function NCERTQuestionForm({ onGenerate, isLoading }: Props) {
       <div className="backdrop-blur-xl bg-white/70 border border-white/20 rounded-2xl shadow-xl p-6">
         <div className="flex items-center mb-4">
           <div className="w-10 h-10 bg-gradient-to-r from-yellow-400 to-pink-500 rounded-xl flex items-center justify-center mr-3">
-            <svg className="w-6 h-6 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M11 3v8h8a8 8 0 1 1-8-8z" />
-            </svg>
+            <ChartPieIcon className="w-7 h-7 text-white" />
           </div>
           <h3 className="text-lg font-semibold text-gray-700 border-b pb-2 flex-1">Question Distribution</h3>
         </div>
@@ -341,9 +334,7 @@ export default function NCERTQuestionForm({ onGenerate, isLoading }: Props) {
       <div className="backdrop-blur-xl bg-white/70 border border-white/20 rounded-2xl shadow-xl p-6">
         <div className="flex items-center mb-4">
           <div className="w-10 h-10 bg-gradient-to-r from-purple-500 to-indigo-600 rounded-xl flex items-center justify-center mr-3">
-            <svg className="w-6 h-6 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8 16h8M8 12h8M8 8h8M4 6a2 2 0 0 1 2-2h8l6 6v10a2 2 0 0 1-2 2H6a2 2 0 0 1-2-2V6z" />
-            </svg>
+            <DocumentTextIcon className="w-7 h-7 text-white" />
           </div>
           <h3 className="text-lg font-semibold text-gray-700 border-b pb-2 flex-1">Additional Notes to AI</h3>
         </div>
@@ -377,10 +368,7 @@ export default function NCERTQuestionForm({ onGenerate, isLoading }: Props) {
         >
           {isLoading ? (
             <div className="flex items-center justify-center space-x-3">
-              <svg className="animate-spin h-5 w-5 text-white" viewBox="0 0 24 24">
-                <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4" fill="none" />
-                <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8v8z" />
-              </svg>
+              <ArrowPathIcon className="animate-spin h-5 w-5 text-white" />
               <span>Generating Questions...</span>
             </div>
           ) : (

@@ -426,6 +426,40 @@ export const getPublicQuestions = async (filters?: {
   }
 }
 
+export const updateUserQuestion = async (
+  questionId: number,
+  userId: string,
+  updated: Partial<QuestionRecord>
+): Promise<{ success: boolean; error?: string }> => {
+  try {
+    // Remove fields that should not be updated directly
+    const {
+      id, user_id, created_at, updated_at, deleted_at, ...rest
+    } = updated
+
+    // Use Record<string, unknown> for safe assignment
+    const fieldsToUpdate: Record<string, unknown> = { ...rest }
+    fieldsToUpdate.updated_at = new Date().toISOString()
+
+    const { error } = await supabase
+      .from('questions')
+      .update(fieldsToUpdate)
+      .eq('id', questionId)
+      .eq('user_id', userId) // Security: only update if user owns it
+
+    if (error) {
+      console.error('Error updating question:', error)
+      return { success: false, error: error.message }
+    }
+
+    console.log(`✅ Question ${questionId} updated for user ${userId}`)
+    return { success: true }
+  } catch (err) {
+    console.error('Unexpected error updating question:', err)
+    return { success: false, error: getErrorMessage(err) }
+  }
+}
+
 const databaseApi = {
   saveQuestions,
   getQuestions,

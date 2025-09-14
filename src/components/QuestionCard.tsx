@@ -1,4 +1,5 @@
 import React, { useState } from "react"
+import { CheckIcon, XMarkIcon, CheckCircleIcon, InformationCircleIcon } from "@heroicons/react/24/outline";
 import ReactMarkdown from "react-markdown"
 import remarkMath from "remark-math"
 import rehypeKatex from "rehype-katex"
@@ -163,10 +164,11 @@ const QuestionCard: React.FC<QuestionCardProps> = ({
                     </div>
                     {showFeedback && (
                       <div className={`flex items-center space-x-1 ${isCorrect ? 'text-green-300' : 'text-red-300'}`}>
-                        <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2}
-                            d={isCorrect ? "M5 13l4 4L19 7" : "M6 18L18 6M6 6l12 12"} />
-                        </svg>
+                        {isCorrect ? (
+                          <CheckIcon className="w-4 h-4" />
+                        ) : (
+                          <XMarkIcon className="w-4 h-4" />
+                        )}
                         <span className="text-[10px] sm:text-xs font-semibold">
                           {isCorrect ? "CORRECT" : "INCORRECT"}
                         </span>
@@ -212,10 +214,11 @@ const QuestionCard: React.FC<QuestionCardProps> = ({
                     </div>
                     {showFeedback && (
                       <div className={`flex items-center space-x-1 ${isCorrect ? 'text-green-300' : 'text-red-300'}`}>
-                        <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2}
-                            d={isCorrect ? "M5 13l4 4L19 7" : "M6 18L18 6M6 6l12 12"} />
-                        </svg>
+                        {isCorrect ? (
+                          <CheckIcon className="w-4 h-4" />
+                        ) : (
+                          <XMarkIcon className="w-4 h-4" />
+                        )}
                         <span className="text-[10px] sm:text-xs font-semibold">
                           {isCorrect ? "CORRECT" : "INCORRECT"}
                         </span>
@@ -276,9 +279,7 @@ const QuestionCard: React.FC<QuestionCardProps> = ({
           {/* Answer Section */}
           <div className="bg-gradient-to-r from-green-900 to-emerald-900 p-3 sm:p-4 rounded-xl ring-2 ring-green-700">
             <h4 className="text-xs sm:text-sm font-bold text-green-200 uppercase tracking-wide mb-2 sm:mb-3 flex items-center space-x-2">
-              <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z" />
-              </svg>
+              <CheckCircleIcon className="w-4 h-4" />
               <span>Correct Answer</span>
             </h4>
             <div className="prose max-w-none">
@@ -300,9 +301,7 @@ const QuestionCard: React.FC<QuestionCardProps> = ({
           {q.explanation && (
             <div className="bg-gradient-to-r from-blue-900 to-indigo-900 p-3 sm:p-4 rounded-xl ring-2 ring-blue-800 mt-4">
               <h4 className="text-xs sm:text-sm font-bold text-blue-200 uppercase tracking-wide mb-2 sm:mb-3 flex items-center space-x-2">
-                <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
-                </svg>
+                <InformationCircleIcon className="w-4 h-4" />
                 <span>Explanation</span>
               </h4>
               <div className="prose max-w-none">

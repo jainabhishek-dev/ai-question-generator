@@ -1,4 +1,5 @@
 import React from "react"
+import { CheckCircleIcon, InformationCircleIcon } from "@heroicons/react/24/outline";
 
 interface SuccessStatusProps {
   questionCount: number
@@ -16,9 +17,7 @@ const SuccessStatus: React.FC<SuccessStatusProps> = ({
   <div className="space-y-4">
     <div className="card p-4 sm:p-6 bg-green-50/80 border-green-200/50 text-green-700 dark:bg-green-900/40 dark:border-green-700 dark:text-green-300">
       <div className="flex items-center space-x-2 sm:space-x-3">
-        <svg className="w-5 h-5 text-green-500 flex-shrink-0 dark:text-green-300" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z" />
-        </svg>
+        <CheckCircleIcon className="w-5 h-5 text-green-500 flex-shrink-0 dark:text-green-300" />
         <span className="font-medium text-sm sm:text-base">
           Successfully generated {questionCount} question{questionCount !== 1 ? 's' : ''}
           {saveStatus === 'saving' && <span className="ml-2 text-blue-600 dark:text-blue-400">• Saving...</span>}
@@ -35,9 +34,7 @@ const SuccessStatus: React.FC<SuccessStatusProps> = ({
       <div className="card p-4 sm:p-6 bg-blue-50/80 border-blue-200/50 text-blue-700 dark:bg-blue-900/40 dark:border-blue-700 dark:text-blue-300">
         <div className="flex flex-col sm:flex-row sm:items-center gap-2 sm:gap-3">
           <div className="flex items-center space-x-2">
-            <svg className="w-5 h-5 text-blue-500 flex-shrink-0 dark:text-blue-300" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
-            </svg>
+            <InformationCircleIcon className="w-5 h-5 text-blue-500 flex-shrink-0 dark:text-blue-300" />
             <span className="font-medium text-sm sm:text-base">Want to build a personal question library?</span>
           </div>
           <div>

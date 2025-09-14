@@ -1,4 +1,5 @@
 import React from 'react'
+import { ExclamationTriangleIcon, ArrowPathIcon } from "@heroicons/react/24/outline";
 
 interface DeleteModalProps {
   show: boolean
@@ -19,9 +20,7 @@ const DeleteModal: React.FC<DeleteModalProps> = ({
       <div className="fixed inset-0 bg-black/50 backdrop-blur-sm transition-opacity" onClick={onClose}></div>
       <div className="relative bg-white rounded-2xl shadow-2xl p-6 sm:p-8 w-full max-w-md transform transition-all dark:bg-gray-900">
         <div className="flex items-center justify-center w-14 h-14 sm:w-16 sm:h-16 mx-auto mb-5 sm:mb-6 bg-red-100 rounded-full dark:bg-red-900/40">
-          <svg className="w-7 h-7 sm:w-8 sm:h-8 text-red-600 dark:text-red-300" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-2.5L13.732 4c-.77-.833-1.964-.833-2.732 0L4.082 16.5c-.77.833.192 2.5 1.732 2.5z" />
-          </svg>
+          <ExclamationTriangleIcon className="w-7 h-7 sm:w-8 sm:h-8 text-red-600 dark:text-red-300" />
         </div>
 
         <h3 className="text-lg sm:text-xl font-bold text-center text-gray-900 dark:text-gray-100 mb-3 sm:mb-4">Delete Question?</h3>
@@ -44,7 +43,7 @@ const DeleteModal: React.FC<DeleteModalProps> = ({
           >
             {deleting ? (
               <>
-                <div className="w-4 h-4 border-2 border-white/30 border-t-white rounded-full animate-spin"></div>
+                <ArrowPathIcon className="w-4 h-4 animate-spin" />
                 <span>Deleting...</span>
               </>
             ) : (

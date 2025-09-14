@@ -8,7 +8,9 @@ import {
   DocumentTextIcon,
   ClipboardDocumentListIcon,
   RectangleGroupIcon,
-  ArrowRightStartOnRectangleIcon
+  ArrowRightStartOnRectangleIcon,
+  XMarkIcon,
+  ChevronDownIcon
 } from "@heroicons/react/24/outline"
 import Portal from "./Portal";    
 
@@ -88,18 +90,13 @@ if (vertical) {
       <button
         className="absolute top-4 left-4 z-50 md:hidden"
         onClick={() => {
-          // You should call a prop or context to close the sidebar here
-          // For example, if you pass a prop: onCloseSidebar?.()
           if (typeof window !== "undefined") {
-            // fallback: trigger a custom event or use a prop
             window.dispatchEvent(new Event("sidebar-close"));
           }
         }}
         aria-label="Close sidebar"
       >
-        <svg className="w-6 h-6 text-white" fill="none" stroke="currentColor" strokeWidth={2} viewBox="0 0 24 24">
-          <path strokeLinecap="round" strokeLinejoin="round" d="M6 18L18 6M6 6l12 12" />
-        </svg>
+        <XMarkIcon className="w-6 h-6 text-white" />
       </button>
 
       {/* ─── Logo and Navigation links, stacked and top-aligned below cross ─── */}
@@ -150,15 +147,9 @@ if (vertical) {
               <span className={`flex-1 min-w-0 text-gray-100 font-medium truncate ${hide}`}>
                 {user.email}
               </span>
-              <svg
+              <ChevronDownIcon
                 className={`w-4 h-4 text-gray-400 flex-shrink-0 transition-transform ${dropdownOpen ? "rotate-180" : ""} ${hide}`}
-                fill="none"
-                stroke="currentColor"
-                strokeWidth="2"
-                viewBox="0 0 24 24"
-              >
-                <path strokeLinecap="round" strokeLinejoin="round" d="M19 9l-7 7-7-7" />
-              </svg>
+              />
             </button>
           ) : (
             <button
@@ -312,16 +303,7 @@ if (vertical) {
               <span className="hidden sm:block text-gray-800 font-medium truncate max-w-[180px]">
                 {user.email}
               </span>
-              <svg
-                className="w-4 h-4 ml-0.5 text-gray-500"
-                fill="none"
-                stroke="currentColor"
-                strokeWidth="2"
-                viewBox="0 0 24 24"
-                aria-hidden="true"
-              >
-                <path strokeLinecap="round" strokeLinejoin="round" d="M19 9l-7 7-7-7" />
-              </svg>
+              <ChevronDownIcon className="w-4 h-4 ml-0.5 text-gray-500" aria-hidden="true" />
             </button>
           ) : (
             <button
