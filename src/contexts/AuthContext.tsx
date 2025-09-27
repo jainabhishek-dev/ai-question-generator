@@ -1,6 +1,6 @@
 'use client'
 import { createContext, useContext, useEffect, useState } from 'react'
-import { User } from '@supabase/supabase-js'
+import { User, Provider } from '@supabase/supabase-js'
 import { supabase } from '@/lib/supabase'
 
 interface AuthContextType {
@@ -12,9 +12,10 @@ interface AuthContextType {
   loading: boolean;
   signIn: (email: string, password: string) => Promise<{ success: boolean; error?: string }>;
   signUp: (email: string, password: string) => Promise<{ success: boolean; error?: string }>;
-  signOut: () => Promise<void>;
-  updateEmail: (newEmail: string) => Promise<{ success: boolean; error?: string }>;      // 👈 Add this
-  updatePassword: (newPassword: string) => Promise<{ success: boolean; error?: string }>; // 👈 Add this  
+  signOut: () => Promise<{ success: boolean; error?: string }>;
+  signInWithProvider: (provider: Provider) => Promise<{ success: boolean; error?: string }>;
+  updateEmail: (newEmail: string) => Promise<{ success: boolean; error?: string }>;
+  updatePassword: (newPassword: string) => Promise<{ success: boolean; error?: string }>;
 }
 
 const AuthContext = createContext<AuthContextType | undefined>(undefined)
@@ -59,19 +60,34 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
       const { error } = await supabase.auth.signInWithPassword({
         email,
         password,
-      })
-
-      if (error) throw error
-
-      return { success: true }
+      });
+      if (error) throw error;
+      return { success: true };
     } catch (error) {
       let errorMsg = 'Unknown error';
       if (error && typeof error === 'object' && 'message' in error) {
         errorMsg = String((error as { message?: string }).message);
       }
-      return { success: false, error: errorMsg }
+      return { success: false, error: errorMsg };
     }
-  }
+  };
+
+  // Social/provider sign-in (Google, etc.)
+  const handleSignInWithProvider = async (provider: Provider) => {
+    try {
+      // Supported providers: 'google', 'github', 'facebook', 'twitter', 'azure', etc.
+      const { error } = await supabase.auth.signInWithOAuth({ provider });
+      if (error) throw error;
+      // Note: For OAuth, Supabase will redirect, so this may not always resolve in SPA
+      return { success: true };
+    } catch (error) {
+      let errorMsg = 'Unknown error';
+      if (error && typeof error === 'object' && 'message' in error) {
+        errorMsg = String((error as { message?: string }).message);
+      }
+      return { success: false, error: errorMsg };
+    }
+  };
 
   const handleSignUp = async (email: string, password: string) => {
     try {
@@ -93,8 +109,18 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
   }
 
   const handleSignOut = async () => {
-    await supabase.auth.signOut()
-  }
+    try {
+      const { error } = await supabase.auth.signOut();
+      if (error) throw error;
+      return { success: true };
+    } catch (error) {
+      let errorMsg = 'Unknown error';
+      if (error && typeof error === 'object' && 'message' in error) {
+        errorMsg = String((error as { message?: string }).message);
+      }
+      return { success: false, error: errorMsg };
+    }
+  };
   const updateEmail = async (newEmail: string) => {
     try {
       const { error } = await supabase.auth.updateUser({ email: newEmail });
@@ -130,10 +156,11 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
       signIn: handleSignIn,
       signUp: handleSignUp,
       signOut: handleSignOut,
+      signInWithProvider: handleSignInWithProvider,
       updateEmail,
       updatePassword,
     }}>
       {children}
     </AuthContext.Provider>
-  )
+  );
 }

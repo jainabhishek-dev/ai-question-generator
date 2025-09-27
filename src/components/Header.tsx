@@ -4,10 +4,7 @@ import Link from "next/link"
 import { useAuth } from "@/contexts/AuthContext"
 import { useState, useRef, useEffect, ReactElement } from "react"
 import {
-  DocumentDuplicateIcon,
-  DocumentTextIcon,
   ClipboardDocumentListIcon,
-  RectangleGroupIcon,
   ArrowRightStartOnRectangleIcon,
   XMarkIcon,
   ChevronDownIcon
@@ -31,6 +28,7 @@ export default function Header({
   const [dropdownOpen, setDropdownOpen] = useState(false)
   const dropdownRef = useRef<HTMLDivElement>(null)
   const avatarBtnRef = useRef<HTMLButtonElement>(null);
+    const firstDropdownItemRef = useRef<HTMLAnchorElement>(null);
   const [dropdownVisible, setDropdownVisible] = useState(false);
   const [dropdownActive, setDropdownActive] = useState(false);
 
@@ -56,16 +54,39 @@ export default function Header({
   const handleAvatarClick = () => {
     setDropdownOpen(v => !v);
   };
+
+  // Keyboard accessibility for avatar button
+  const handleAvatarKeyDown = (e: React.KeyboardEvent<HTMLButtonElement>) => {
+    if (e.key === "Enter" || e.key === " ") {
+      e.preventDefault();
+      setDropdownOpen(v => !v);
+    } else if (e.key === "Escape") {
+      setDropdownOpen(false);
+      avatarBtnRef.current?.focus();
+    }
+  };
   
-  /* close account dropdown on outside-click */
+  /* close account dropdown on outside-click and Escape key */
   useEffect(() => {
     function handler(e: MouseEvent) {
       if (dropdownRef.current && !dropdownRef.current.contains(e.target as Node))
         setDropdownOpen(false)
     }
-    if (dropdownOpen) document.addEventListener("mousedown", handler)
-    return () => document.removeEventListener("mousedown", handler)
-  }, [dropdownOpen])
+    function handleEscape(e: KeyboardEvent) {
+      if (e.key === "Escape") {
+        setDropdownOpen(false);
+        avatarBtnRef.current?.focus();
+      }
+    }
+    if (dropdownOpen) {
+      document.addEventListener("mousedown", handler);
+      document.addEventListener("keydown", handleEscape);
+    }
+    return () => {
+      document.removeEventListener("mousedown", handler);
+      document.removeEventListener("keydown", handleEscape);
+    };
+  }, [dropdownOpen]);
 
   const getInitials = (name = "") =>
     name
@@ -85,37 +106,39 @@ if (vertical) {
   const pad  = collapsed ? "px-0 justify-center" : "px-3"
 
   return (
-    <div className="flex flex-col h-full min-w-0 select-none relative">
+  <div className="flex flex-col h-full min-w-0 select-none relative bg-gray-950 md:bg-transparent transition-colors duration-300 overflow-hidden">
       {/* ─── Cross (close) button, visible only on mobile ─── */}
       <button
-        className="absolute top-4 left-4 z-50 md:hidden"
+        className="absolute top-4 left-4 z-50 md:hidden transition-transform duration-200 focus:ring-2 focus:ring-blue-500 focus:ring-offset-2"
         onClick={() => {
           if (typeof window !== "undefined") {
             window.dispatchEvent(new Event("sidebar-close"));
           }
         }}
         aria-label="Close sidebar"
+        aria-controls="sidebar-navigation"
       >
         <XMarkIcon className="w-6 h-6 text-white" />
       </button>
 
       {/* ─── Logo and Navigation links, stacked and top-aligned below cross ─── */}
-      <div className="flex flex-col gap-4 mt-14 md:mt-0" >
+  <div className="flex flex-col gap-4 mt-14 md:mt-0 px-2 md:px-0 flex-shrink-0" role="navigation" aria-label="Sidebar navigation" id="sidebar-navigation">
         <Link
           href="/"
           onClick={handleNavClick}
-          className={`flex items-center gap-2 transition-all ${pad}`}
+          className={`flex items-center gap-2 transition-all ${pad} hover:bg-gray-900 hover:scale-[1.03] focus:bg-gray-900 focus:scale-[1.03] active:scale-[0.98] rounded-lg`}
         >
           <img src="/logo.png" alt="Logo" className="h-7 w-7 flex-shrink-0" />
           <span className={`font-bold text-lg text-blue-200 tracking-tight transition-opacity duration-200 ${hide}`}>
             Instaku
           </span>
         </Link>
-        <nav className="flex flex-col gap-2">
+  <nav className="flex flex-col gap-2" aria-label="Main sidebar links">
           <Link
             href="/my-questions"
             onClick={handleNavClick}
-            className={`flex items-center gap-3 py-2 rounded-lg hover:bg-gray-800 transition-colors ${pad}`}
+            className={`flex items-center gap-3 py-2 rounded-lg hover:bg-gray-800 hover:scale-[1.03] focus:bg-gray-800 focus:scale-[1.03] active:scale-[0.98] transition-all ${pad}`}
+            aria-label="My Questions"
           >
             <ClipboardDocumentListIcon className="w-6 h-6 flex-shrink-0" />
             <span className={`text-sm font-medium ${hide}`}>My Questions</span>
@@ -124,7 +147,7 @@ if (vertical) {
       </div>
 
       {/* ─── Account section ─── */}
-      <div className="mt-auto pt-4 border-t border-gray-700">
+  <div className="pt-4 border-t border-gray-700 px-2 md:px-0 flex-shrink-0" style={{marginTop: "auto"}}>
         <div className="relative" ref={dropdownRef}>
           {loading ? (
             <div className={`flex items-center gap-3 py-2 ${pad}`}>
@@ -135,11 +158,14 @@ if (vertical) {
             <button
               ref={avatarBtnRef}
               onClick={handleAvatarClick}
-              className={`flex items-center py-2 rounded-lg hover:bg-gray-800 transition-all
+              onKeyDown={handleAvatarKeyDown}
+              className={`flex items-center py-2 rounded-lg hover:bg-gray-800 hover:scale-[1.03] focus:bg-gray-800 focus:scale-[1.03] active:scale-[0.98] transition-all shadow-sm focus:shadow-md
                 ${collapsed ? "justify-center px-3" : "text-left px-3 w-full gap-3"}
               `}
               aria-haspopup="menu"
               aria-expanded={dropdownOpen}
+              aria-label="Account menu"
+              tabIndex={0}
             >
               <span className="w-9 h-9 rounded-full bg-blue-100 flex items-center justify-center text-blue-700 font-bold text-base flex-shrink-0">
                 {getInitials(user.email)}
@@ -157,7 +183,8 @@ if (vertical) {
                 onSignIn?.()
                 handleNavClick()
               }}
-              className={`bg-blue-600 hover:bg-blue-700 text-white font-medium rounded-lg transition-colors py-1 ${pad} flex items-center justify-center mx-6 my-2`}
+              className={`bg-blue-600 hover:bg-blue-700 focus:bg-blue-800 active:bg-blue-900 text-white font-medium rounded-lg transition-all py-1 ${pad} flex items-center justify-center mx-6 my-2 shadow-sm hover:shadow-md focus:shadow-md active:scale-[0.98]`}
+              aria-label="Sign In or Sign Up"
             >
               {collapsed ? (
                 <ArrowRightStartOnRectangleIcon className="w-7 h-5" />
@@ -183,36 +210,42 @@ if (vertical) {
                     left: 56 + 12,
                     bottom: 16,
                     minWidth: "16rem",
+                    maxWidth: "20rem",
                     zIndex: 9999,
                     maxHeight: "calc(100vh - 32px)", // Prevents overflow
                     overflowY: "auto", // Scroll if needed
-                    transition: "opacity 150ms, transform 150ms",
+                    overflowX: "hidden", // Prevent horizontal scroll
+                    transition: "opacity 200ms, transform 200ms",
                     opacity: dropdownActive ? 1 : 0,
-                    transform: dropdownActive ? "translateY(0)" : "translateY(16px)",
+                    transform: dropdownActive ? "translateY(0) scale(1)" : "translateY(16px) scale(0.98)",
                     pointerEvents: dropdownOpen ? "auto" : "none",
                   }}
-                  className="bg-white text-gray-900 border rounded-xl shadow-2xl py-2"
+                  className="bg-white text-gray-900 border rounded-xl shadow-2xl py-2 transition-all duration-200"
                 >
-                  <div className="px-4 py-2 font-semibold border-b truncate">{user.email}</div>
+                  <div className="px-4 py-2 font-semibold border-b truncate whitespace-nowrap">{user.email}</div>
                   <Link
                     href="/my-account"
                     role="menuitem"
+                    aria-label="Go to My Account"
                     onClick={() => {
                       setDropdownOpen(false)
                       handleNavClick()
                     }}
-                    className="block px-4 py-2 text-sm hover:bg-gray-100"
+                    className="block px-4 py-2 text-sm hover:bg-blue-50 focus:bg-blue-100 active:bg-blue-200 hover:scale-[1.03] focus:scale-[1.03] active:scale-[0.98] rounded-lg transition-all whitespace-nowrap"
+                    ref={firstDropdownItemRef}
+                    tabIndex={0}
                   >
                     My Account
                   </Link>
                   <button
                     role="menuitem"
+                    aria-label="Sign Out"
                     onClick={() => {
                       signOut()
                       setDropdownOpen(false)
                       handleNavClick()
                     }}
-                    className="block w-full text-left px-4 py-2 text-sm hover:bg-gray-100"
+                    className="block w-full text-left px-4 py-2 text-sm hover:bg-blue-50 focus:bg-blue-100 active:bg-blue-200 hover:scale-[1.03] focus:scale-[1.03] active:scale-[0.98] rounded-lg transition-all whitespace-nowrap"
                   >
                     Sign Out
                   </button>
@@ -224,32 +257,35 @@ if (vertical) {
                 aria-label="Account menu"
                 className={`
                   absolute left-1/2 -translate-x-1/2 bottom-14
-                  min-w-[13rem]
-                  bg-white text-gray-900 border rounded-xl shadow-xl py-2
-                  z-[9999]
+                  min-w-[13rem] max-w-[20rem] overflow-x-hidden
+                  bg-white text-gray-900 border rounded-xl shadow-xl py-2 z-[9999] transition-all duration-200
                 `}
-                style={{ minWidth: "13rem" }}
+                style={{ minWidth: "13rem", maxWidth: "20rem" }}
               >
-                <div className="px-4 py-2 font-semibold border-b truncate">{user.email}</div>
+                <div className="px-4 py-2 font-semibold border-b truncate whitespace-nowrap">{user.email}</div>
                 <Link
                   href="/my-account"
                   role="menuitem"
+                  aria-label="Go to My Account"
                   onClick={() => {
                     setDropdownOpen(false)
                     handleNavClick()
                   }}
-                  className="block px-4 py-2 text-sm hover:bg-gray-100"
+                  className="block px-4 py-2 text-sm hover:bg-blue-50 focus:bg-blue-100 active:bg-blue-200 hover:scale-[1.03] focus:scale-[1.03] active:scale-[0.98] rounded-lg transition-all whitespace-nowrap"
+                  ref={firstDropdownItemRef}
+                  tabIndex={0}
                 >
                   My Account
                 </Link>
                 <button
                   role="menuitem"
+                  aria-label="Sign Out"
                   onClick={() => {
                     signOut()
                     setDropdownOpen(false)
                     handleNavClick()
                   }}
-                  className="block w-full text-left px-4 py-2 text-sm hover:bg-gray-100"
+                  className="block w-full text-left px-4 py-2 text-sm hover:bg-blue-50 focus:bg-blue-100 active:bg-blue-200 hover:scale-[1.03] focus:scale-[1.03] active:scale-[0.98] rounded-lg transition-all whitespace-nowrap"
                 >
                   Sign Out
                 </button>
@@ -265,21 +301,21 @@ if (vertical) {
   
 
   /* ─────────────────────────────────────────── */
-  /* Horizontal header – unchanged               */
+  /* Horizontal header – unchanged except accessibility */
   return (
-    <header className="fixed top-0 left-0 w-full bg-white/95 backdrop-blur-md border-b shadow-sm z-50">
-      <div className="max-w-full sm:max-w-6xl mx-auto px-3 sm:px-4 flex items-center justify-between h-14 sm:h-16">
+  <header className="fixed top-0 left-0 w-full bg-white/95 backdrop-blur-md border-b shadow-sm z-50">
+  <div className="max-w-full sm:max-w-6xl mx-auto px-3 sm:px-4 flex items-center justify-between h-14 sm:h-16">
         {/* Logo + Nav */}
-        <div className="flex items-center gap-3 sm:gap-6">
-          <Link href="/" className="flex items-center gap-2">
+  <div className="flex items-center gap-3 sm:gap-6" role="navigation" aria-label="Header navigation">
+          <Link href="/" className="flex items-center gap-2 hover:bg-gray-100 hover:scale-[1.03] focus:bg-gray-100 focus:scale-[1.03] active:scale-[0.98] rounded-lg transition-all" aria-label="Home">
             <img src="/logo.png" alt="Logo" className="h-7 w-7 sm:h-8 sm:w-8" />
             <span className="font-bold text-base sm:text-xl text-blue-700 tracking-tight">
               Instaku
             </span>
           </Link>
           <div className="hidden sm:block h-7 border-l border-gray-300 mx-2" />
-          <nav className="flex gap-3 sm:gap-6">
-            <Link href="/my-questions" className="hover:text-blue-800">
+          <nav className="flex gap-3 sm:gap-6" aria-label="Main header links">
+            <Link href="/my-questions" className="hover:text-blue-800 hover:bg-blue-50 focus:bg-blue-100 active:bg-blue-200 hover:scale-[1.03] focus:scale-[1.03] active:scale-[0.98] rounded-lg transition-all" aria-label="My Questions">
               <span className="font-medium text-sm sm:text-base text-blue-700 tracking-tight">
                 My Questions
               </span>
@@ -287,15 +323,19 @@ if (vertical) {
           </nav>
         </div>
         {/* Right: Account */}
-        <div className="relative" ref={dropdownRef}>
+  <div className="relative" ref={dropdownRef}>
           {loading ? (
             <span className="text-gray-500 text-sm sm:text-base">Loading...</span>
           ) : user ? (
             <button
-              className="flex items-center gap-2 px-2.5 py-1.5 sm:px-3 sm:py-2 rounded-lg hover:bg-gray-100 focus:outline-none"
+              className="flex items-center gap-2 px-2.5 py-1.5 sm:px-3 sm:py-2 rounded-lg hover:bg-gray-100 hover:scale-[1.03] focus:bg-gray-100 focus:scale-[1.03] shadow-sm focus:shadow-md active:scale-[0.98] transition-all"
               onClick={() => setDropdownOpen(v => !v)}
+              onKeyDown={handleAvatarKeyDown}
               aria-haspopup="menu"
               aria-expanded={dropdownOpen}
+              aria-label="Account menu"
+              ref={avatarBtnRef}
+              tabIndex={0}
             >
               <span className="w-8 h-8 sm:w-9 sm:h-9 rounded-full bg-blue-100 flex items-center justify-center text-blue-700 font-bold text-sm sm:text-base">
                 {getInitials(user.email || "")}
@@ -307,8 +347,9 @@ if (vertical) {
             </button>
           ) : (
             <button
-              className="btn-primary px-3 py-2 sm:px-4 sm:py-2"
+              className="btn-primary px-3 py-2 sm:px-4 sm:py-2 hover:bg-blue-700 focus:bg-blue-800 active:bg-blue-900 hover:scale-[1.03] focus:scale-[1.03] shadow-sm focus:shadow-md active:scale-[0.98] transition-all"
               onClick={onSignIn}
+              aria-label="Sign In or Sign Up"
             >
               Sign In / Sign Up
             </button>
@@ -319,18 +360,24 @@ if (vertical) {
             <div
               role="menu"
               aria-label="Account menu"
-              className="absolute right-0 mt-2 w-56 bg-white border rounded-xl shadow-lg py-2 z-50"
+              className="absolute right-0 mt-2 w-56 bg-white border rounded-xl shadow-lg py-2 z-50 transition-all duration-200"
+              style={{
+                transition: "opacity 200ms, transform 200ms",
+                opacity: dropdownOpen ? 1 : 0,
+                transform: dropdownOpen ? "translateY(0) scale(1)" : "translateY(16px) scale(0.98)",
+              }}
             >
               <div className="px-4 py-2 text-gray-900 font-semibold border-b truncate">
                 {user.email}
               </div>
-              <Link href="/my-account" className="block px-4 py-2 hover:bg-gray-100 text-sm sm:text-base" role="menuitem">
+              <Link href="/my-account" className="block px-4 py-2 hover:bg-blue-50 focus:bg-blue-100 active:bg-blue-200 hover:scale-[1.03] focus:scale-[1.03] active:scale-[0.98] rounded-lg transition-all text-sm sm:text-base" role="menuitem" aria-label="Go to My Account" ref={firstDropdownItemRef} tabIndex={0}>
                 My Account
               </Link>
               <button
                 onClick={signOut}
-                className="block w-full text-left px-4 py-2 hover:bg-gray-100 text-sm sm:text-base"
+                className="block w-full text-left px-4 py-2 hover:bg-blue-50 focus:bg-blue-100 active:bg-blue-200 hover:scale-[1.03] focus:scale-[1.03] active:scale-[0.98] rounded-lg transition-all text-sm sm:text-base"
                 role="menuitem"
+                aria-label="Sign Out"
               >
                 Sign Out
               </button>
@@ -341,4 +388,3 @@ if (vertical) {
       </header>
     )
   }
-

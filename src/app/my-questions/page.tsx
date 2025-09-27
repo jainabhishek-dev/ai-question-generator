@@ -4,6 +4,7 @@ import { useEffect, useState } from 'react'
 import { useAuth } from '@/contexts/AuthContext'
 import 'katex/dist/katex.min.css'
 import Link from 'next/link'
+import { ExclamationCircleIcon, SparklesIcon, MagnifyingGlassIcon, ArrowLeftIcon } from "@heroicons/react/24/outline";
 import { QuestionRecord } from '@/types/question'
 import { getUserQuestions, softDeleteUserQuestion } from '@/lib/database'
 import FilterPanel from './FilterPanel'
@@ -326,9 +327,7 @@ export default function MyQuestionsPage() {
         {error && (
           <div className="backdrop-blur-xl bg-red-50/80 border border-red-200/50 text-red-700 px-4 sm:px-6 py-3 sm:py-4 rounded-xl sm:rounded-2xl shadow-lg dark:bg-red-900/40 dark:border-red-700 dark:text-red-300">
             <div className="flex items-center space-x-2 sm:space-x-3">
-              <svg className="w-5 h-5 text-red-500 flex-shrink-0 dark:text-red-300" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 8v4m0 4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
-              </svg>
+              <ExclamationCircleIcon className="w-5 h-5 text-red-500 flex-shrink-0 dark:text-red-300" />
               <span className="font-medium">{error}</span>
             </div>
           </div>
@@ -366,9 +365,7 @@ export default function MyQuestionsPage() {
         ) : questions.length === 0 ? (
           <div className="text-center py-12 sm:py-16">
             <div className="w-20 h-20 sm:w-24 sm:h-24 mx-auto mb-6 sm:mb-8 bg-gradient-to-r from-blue-100 to-purple-100 dark:from-blue-900 dark:to-purple-900 rounded-full flex items-center justify-center">
-              <svg className="w-10 h-10 sm:w-12 sm:h-12 text-blue-500 dark:text-blue-300" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9.663 17h4.673M12 3v1m6.364 1.636l-.707.707M21 12h-1M4 12H3m3.343-5.657l-.707-.707m2.828 9.9a5 5 0 117.072 0l-.548.547A3.374 3.374 0 0014 18.469V19a2 2 0 11-4 0v-.531c0-.895-.356-1.754-.988-2.386l-.548-.547z" />
-              </svg>
+              <SparklesIcon className="w-10 h-10 sm:w-12 sm:h-12 text-blue-500 dark:text-blue-300" />
             </div>
             <h3 className="text-xl sm:text-2xl font-bold text-gray-900 dark:text-gray-100 mb-3 sm:mb-4">No Questions Yet</h3>
             <p className="text-gray-600 dark:text-gray-300 mb-6 sm:mb-8 max-w-md mx-auto leading-relaxed text-sm sm:text-base">
@@ -386,9 +383,7 @@ export default function MyQuestionsPage() {
             {filteredQuestions.length === 0 ? (
               <div className="text-center py-10 sm:py-12">
                 <div className="w-14 h-14 sm:w-16 sm:h-16 mx-auto mb-5 sm:mb-6 bg-gradient-to-r from-gray-100 to-gray-200 dark:from-gray-800 dark:to-gray-700 rounded-full flex items-center justify-center">
-                  <svg className="w-7 h-7 sm:w-8 sm:h-8 text-gray-400 dark:text-gray-300" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" />
-                  </svg>
+                  <MagnifyingGlassIcon className="w-7 h-7 sm:w-8 sm:h-8 text-gray-400 dark:text-gray-300" />
                 </div>
                 <h3 className="text-lg sm:text-xl font-bold text-gray-900 dark:text-gray-100 mb-2">No Questions Match</h3>
                 <p className="text-gray-600 dark:text-gray-300 mb-5 text-sm sm:text-base">Try adjusting your filters to see more results.</p>
@@ -437,9 +432,7 @@ export default function MyQuestionsPage() {
             href="/"
             className="inline-flex items-center px-4 py-2 sm:px-6 sm:py-3 text-blue-600 hover:text-blue-800 font-medium transition-colors space-x-2 bg-white/50 rounded-lg sm:rounded-xl hover:bg-white/80 backdrop-blur-sm border border-white/30 dark:bg-gray-900/50 dark:text-blue-300 dark:hover:text-blue-200 dark:hover:bg-gray-900/80 dark:border-gray-700/50"
           >
-            <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M10 19l-7-7m0 0l7-7m-7 7h18" />
-            </svg>
+            <ArrowLeftIcon className="w-4 h-4" />
             <span>Back to Home</span>
           </Link>
         </div>

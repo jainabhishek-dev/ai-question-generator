@@ -1,5 +1,5 @@
 import React from 'react'
-import { PencilSquareIcon, TrashIcon } from '@heroicons/react/24/outline'
+import { PencilSquareIcon, TrashIcon, CheckIcon, EllipsisHorizontalIcon, CheckCircleIcon, InformationCircleIcon } from '@heroicons/react/24/outline'
 import ReactMarkdown from 'react-markdown'
 import remarkMath from 'remark-math'
 import rehypeKatex from 'rehype-katex'
@@ -66,13 +66,7 @@ const QuestionCard: React.FC<QuestionCardProps> = ({
                 }`}
               >
                 {q.id && selected && (
-                  <svg className="w-3 h-3 text-white absolute top-0.5 left-0.5" fill="currentColor" viewBox="0 0 20 20">
-                    <path
-                      fillRule="evenodd"
-                      d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z"
-                      clipRule="evenodd"
-                    />
-                  </svg>
+                  <CheckIcon className="w-3 h-3 text-white absolute top-0.5 left-0.5" />
                 )}
               </div>
             </div>
@@ -107,11 +101,7 @@ const QuestionCard: React.FC<QuestionCardProps> = ({
                 title="More options"
                 aria-label="More options"
               >
-                <svg className="w-4 h-4" fill="currentColor" viewBox="0 0 24 24">
-                  <circle cx="5" cy="12" r="2" />
-                  <circle cx="12" cy="12" r="2" />
-                  <circle cx="19" cy="12" r="2" />
-                </svg>
+                <EllipsisHorizontalIcon className="w-4 h-4" />
               </button>
 
               {/* Dropdown menu */}
@@ -219,9 +209,7 @@ const QuestionCard: React.FC<QuestionCardProps> = ({
         {/* Answer */}
         <div className="bg-gradient-to-r from-green-50 to-emerald-50 p-3 sm:p-4 rounded-xl border border-green-200/50 dark:from-green-900 dark:to-emerald-900 dark:border-green-700">
           <h4 className="text-xs sm:text-sm font-bold text-green-800 uppercase tracking-wide mb-2 flex items-center space-x-2 dark:text-green-200">
-            <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z" />
-            </svg>
+            <CheckCircleIcon className="w-4 h-4" />
             <span>Correct Answer</span>
           </h4>
           <div className="prose max-w-none">
@@ -243,9 +231,7 @@ const QuestionCard: React.FC<QuestionCardProps> = ({
         {q.explanation && (
           <div className="bg-gradient-to-r from-blue-50 to-indigo-50 p-3 sm:p-4 rounded-xl border border-blue-200/50 dark:from-blue-900 dark:to-indigo-900 dark:border-blue-700">
             <h4 className="text-xs sm:text-sm font-bold text-blue-800 uppercase tracking-wide mb-2 flex items-center space-x-2 dark:text-blue-200">
-              <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
-              </svg>
+              <InformationCircleIcon className="w-4 h-4" />
               <span>Explanation</span>
             </h4>
             <div className="prose max-w-none">

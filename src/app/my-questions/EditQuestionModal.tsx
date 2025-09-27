@@ -1,4 +1,3 @@
-
 import React, { useState, useEffect } from "react"
 import {
   QuestionMarkCircleIcon,
@@ -36,7 +35,18 @@ const EditQuestionModal: React.FC<EditQuestionModalProps> = ({
       ? ["True", "False"]
       : []
   )
-  const [correctAnswer, setCorrectAnswer] = useState(question.correct_answer)
+  // For MCQ, store only the letter (A, B, C, D, ...)
+  const [correctAnswer, setCorrectAnswer] = useState(() => {
+    if (question.question_type === "multiple-choice" && question.options) {
+      const idx = question.options.findIndex(
+        (opt, i) =>
+          question.correct_answer === opt ||
+          question.correct_answer === String.fromCharCode(65 + i)
+      )
+      return idx >= 0 ? String.fromCharCode(65 + idx) : ""
+    }
+    return question.correct_answer
+  })
   const [explanation, setExplanation] = useState(question.explanation || "")
   const [saving, setSaving] = useState(false)
   const [error, setError] = useState<string | null>(null)
@@ -74,7 +84,7 @@ const EditQuestionModal: React.FC<EditQuestionModalProps> = ({
   // Handle correct answer selection for MCQ
   const handleCorrectAnswerSelect = (optionIndex: number) => {
     if (questionType === "multiple-choice") {
-      setCorrectAnswer(options[optionIndex])
+      setCorrectAnswer(String.fromCharCode(65 + optionIndex))
     }
   }
 
@@ -109,7 +119,8 @@ const EditQuestionModal: React.FC<EditQuestionModalProps> = ({
           setSaving(false)
           return
         }
-        if (!options.includes(correctAnswer)) {
+        const validLetters = options.map((_, i) => String.fromCharCode(65 + i))
+        if (!validLetters.includes(correctAnswer)) {
           setError("Please select a correct answer from the options.")
           setSaving(false)
           return
@@ -217,8 +228,8 @@ const EditQuestionModal: React.FC<EditQuestionModalProps> = ({
                     <div 
                       key={idx}
                       className={`flex flex-wrap items-center space-x-3 p-4 rounded-lg border transition-all ${
-                        correctAnswer === opt 
-                          ? 'border-green-500/50 bg-slate-700/50 ring-1 ring-green-500/30' 
+                        correctAnswer === String.fromCharCode(65 + idx)
+                          ? 'border-green-500/50 bg-slate-700/50 ring-1 ring-green-500/30'
                           : 'border-slate-600 bg-slate-700/30 hover:border-slate-500'
                       }`}
                     >
@@ -246,11 +257,11 @@ const EditQuestionModal: React.FC<EditQuestionModalProps> = ({
                           type="button"
                           onClick={() => handleCorrectAnswerSelect(idx)}
                           className={`p-2 rounded-full transition-all flex-shrink-0 ${
-                            correctAnswer === opt
+                            correctAnswer === String.fromCharCode(65 + idx)
                               ? 'bg-green-600 text-white'
                               : 'bg-slate-600 text-slate-300 hover:bg-slate-500'
                           }`}
-                          title={correctAnswer === opt ? "Current correct answer" : "Mark as correct"}
+                          title={correctAnswer === String.fromCharCode(65 + idx) ? "Current correct answer" : "Mark as correct"}
                         >
                           <CheckIcon className="w-4 h-4" />
                         </button>

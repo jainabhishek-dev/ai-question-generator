@@ -1,6 +1,7 @@
 "use client"
 
 import { Geist, Geist_Mono as GeistMono } from "next/font/google"
+import { ChevronRightIcon, ChevronLeftIcon, Bars3Icon, XMarkIcon } from "@heroicons/react/24/outline";
 import "./globals.css"
 import ClientProviders from "./ClientProviders"
 import Header from "@/components/Header"
@@ -48,16 +49,11 @@ export default function RootLayout({
                 aria-label="Toggle collapse"
                 className="hidden md:flex items-center justify-center h-12 text-gray-400 hover:text-white"
               >
-                <svg
-                  className="w-5 h-5 transition-transform"
-                  fill="none"
-                  stroke="currentColor"
-                  strokeWidth="2"
-                  viewBox="0 0 24 24"
-                >
-                  <path strokeLinecap="round" strokeLinejoin="round" d={collapsed ? "M9 5l7 7-7 7" : "M15 19l-7-7 7-7"} // ▶ when collapsed, ◀ when expanded
-                  />
-                </svg>
+                {collapsed ? (
+                  <ChevronRightIcon className="w-5 h-5 transition-transform" />
+                ) : (
+                  <ChevronLeftIcon className="w-5 h-5 transition-transform" />
+                )}
               </button>
 
               {/* Navigation / account */}
@@ -94,13 +90,11 @@ export default function RootLayout({
               aria-label="Toggle sidebar"
               className="fixed top-4 left-4 z-50 p-2 rounded bg-gray-900 text-white shadow-md md:hidden"
             >
-              <svg width="20" height="20" fill="none" stroke="currentColor" strokeWidth="2">
-                {sidebarOpen ? (
-                  <path d="M18 6L6 18M6 6l12 12" />
-                ) : (
-                  <path d="M4 6h16M4 12h16M4 18h16" />
-                )}
-              </svg>
+              {sidebarOpen ? (
+                <XMarkIcon className="w-5 h-5" />
+              ) : (
+                <Bars3Icon className="w-5 h-5" />
+              )}
             </button>
 
             {/* ─────────── Main content ─────────── */}
