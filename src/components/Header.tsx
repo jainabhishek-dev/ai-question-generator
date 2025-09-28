@@ -1,6 +1,7 @@
 "use client"
 
 import Link from "next/link"
+import Image from "next/image"
 import { useAuth } from "@/contexts/AuthContext"
 import { useState, useRef, useEffect, ReactElement } from "react"
 import {
@@ -128,7 +129,7 @@ if (vertical) {
           onClick={handleNavClick}
           className={`flex items-center gap-2 transition-all ${pad} hover:bg-gray-900 hover:scale-[1.03] focus:bg-gray-900 focus:scale-[1.03] active:scale-[0.98] rounded-lg`}
         >
-          <img src="/logo.png" alt="Logo" className="h-7 w-7 flex-shrink-0" />
+          <Image src="/logo.png" alt="Logo" width={28} height={28} className="h-7 w-7 flex-shrink-0" priority />
           <span className={`font-bold text-lg text-blue-200 tracking-tight transition-opacity duration-200 ${hide}`}>
             Instaku
           </span>
@@ -240,10 +241,13 @@ if (vertical) {
                   <button
                     role="menuitem"
                     aria-label="Sign Out"
-                    onClick={() => {
-                      signOut()
-                      setDropdownOpen(false)
-                      handleNavClick()
+                    onClick={async () => {
+                      const result = await signOut();
+                      setDropdownOpen(false);
+                      handleNavClick();
+                      if (!result.success) {
+                        alert(result.error || 'Sign out failed.');
+                      }
                     }}
                     className="block w-full text-left px-4 py-2 text-sm hover:bg-blue-50 focus:bg-blue-100 active:bg-blue-200 hover:scale-[1.03] focus:scale-[1.03] active:scale-[0.98] rounded-lg transition-all whitespace-nowrap"
                   >
@@ -280,10 +284,13 @@ if (vertical) {
                 <button
                   role="menuitem"
                   aria-label="Sign Out"
-                  onClick={() => {
-                    signOut()
-                    setDropdownOpen(false)
-                    handleNavClick()
+                  onClick={async () => {
+                    const result = await signOut();
+                    setDropdownOpen(false);
+                    handleNavClick();
+                    if (!result.success) {
+                      alert(result.error || 'Sign out failed.');
+                    }
                   }}
                   className="block w-full text-left px-4 py-2 text-sm hover:bg-blue-50 focus:bg-blue-100 active:bg-blue-200 hover:scale-[1.03] focus:scale-[1.03] active:scale-[0.98] rounded-lg transition-all whitespace-nowrap"
                 >
@@ -308,7 +315,7 @@ if (vertical) {
         {/* Logo + Nav */}
   <div className="flex items-center gap-3 sm:gap-6" role="navigation" aria-label="Header navigation">
           <Link href="/" className="flex items-center gap-2 hover:bg-gray-100 hover:scale-[1.03] focus:bg-gray-100 focus:scale-[1.03] active:scale-[0.98] rounded-lg transition-all" aria-label="Home">
-            <img src="/logo.png" alt="Logo" className="h-7 w-7 sm:h-8 sm:w-8" />
+            <Image src="/logo.png" alt="Logo" width={32} height={32} className="h-7 w-7 sm:h-8 sm:w-8" priority />
             <span className="font-bold text-base sm:text-xl text-blue-700 tracking-tight">
               Instaku
             </span>
@@ -374,7 +381,13 @@ if (vertical) {
                 My Account
               </Link>
               <button
-                onClick={signOut}
+                onClick={async () => {
+                  const result = await signOut();
+                  setDropdownOpen(false);
+                  if (!result.success) {
+                    alert(result.error || 'Sign out failed.');
+                  }
+                }}
                 className="block w-full text-left px-4 py-2 hover:bg-blue-50 focus:bg-blue-100 active:bg-blue-200 hover:scale-[1.03] focus:scale-[1.03] active:scale-[0.98] rounded-lg transition-all text-sm sm:text-base"
                 role="menuitem"
                 aria-label="Sign Out"

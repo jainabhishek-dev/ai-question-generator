@@ -75,8 +75,9 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
   // Social/provider sign-in (Google, etc.)
   const handleSignInWithProvider = async (provider: Provider) => {
     try {
-      // Supported providers: 'google', 'github', 'facebook', 'twitter', 'azure', etc.
-      const { error } = await supabase.auth.signInWithOAuth({ provider });
+      // Dynamically set redirect URL based on current location (works for both dev and prod)
+      const redirectTo = `${window.location.origin}/auth/callback`;
+      const { error } = await supabase.auth.signInWithOAuth({ provider, options: { redirectTo } });
       if (error) throw error;
       // Note: For OAuth, Supabase will redirect, so this may not always resolve in SPA
       return { success: true };

@@ -49,7 +49,7 @@ export default function AuthModal({ isOpen, onClose }: AuthModalProps) {
       } else {
         setError(result.error || 'Authentication failed');
       }
-    } catch (err) {
+    } catch {
       if (isMounted.current) setError('An unexpected error occurred');
     } finally {
       if (timeout) clearTimeout(timeout);
@@ -67,7 +67,7 @@ export default function AuthModal({ isOpen, onClose }: AuthModalProps) {
       if (!result.success && isMounted.current) {
         setError(result.error || 'Provider sign-in failed.');
       }
-    } catch (err) {
+    } catch {
       if (isMounted.current) setError('Provider sign-in failed.');
     } finally {
       if (isMounted.current) setProviderLoading(null);
@@ -96,12 +96,27 @@ export default function AuthModal({ isOpen, onClose }: AuthModalProps) {
         <div className="mb-4 flex flex-col gap-2">
           <button
             type="button"
-            className="w-full flex items-center justify-center gap-2 border border-gray-300 rounded-md py-2 px-4 bg-white hover:bg-gray-50 dark:bg-gray-800 dark:border-gray-700 dark:hover:bg-gray-700 disabled:opacity-50"
+            className="w-full flex items-center justify-center gap-3 border border-gray-300 rounded-md py-2 px-4 bg-white hover:bg-gray-50 dark:bg-gray-800 dark:border-gray-700 dark:hover:bg-gray-700 disabled:opacity-50 shadow-sm transition-all"
             onClick={() => handleProviderSignIn('google' as Provider)}
             disabled={!!providerLoading}
             aria-label="Sign in with Google"
           >
-            {providerLoading === 'google' ? 'Signing in with Google...' : 'Continue with Google'}
+            <svg width="20" height="20" viewBox="0 0 20 20" fill="none" xmlns="http://www.w3.org/2000/svg">
+              <g clipPath="url(#clip0_993_771)">
+                <path d="M19.805 10.2305C19.805 9.55078 19.7484 8.86719 19.6266 8.19922H10.2V12.0508H15.6406C15.4156 13.2812 14.6734 14.332 13.6266 15.025V17.275H16.805C18.605 15.6172 19.805 13.1953 19.805 10.2305Z" fill="#4285F4"/>
+                <path d="M10.2 20C12.7 20 14.7891 19.1797 16.405 17.675L13.6266 15.025C12.7266 15.625 11.5734 15.9844 10.2 15.9844C7.78906 15.9844 5.72656 14.3125 4.97344 12.1172H1.62659V14.4453C3.27344 17.6172 6.57344 20 10.2 20Z" fill="#34A853"/>
+                <path d="M4.97344 12.1172C4.77344 11.5172 4.65937 10.8828 4.65937 10.2344C4.65937 9.58594 4.77344 8.95156 4.97344 8.35156V6.02344H1.62659C0.959375 7.35156 0.6 8.82812 0.6 10.2344C0.6 11.6406 0.959375 13.1172 1.62659 14.4453L4.97344 12.1172Z" fill="#FBBC05"/>
+                <path d="M10.2 4.48438C11.4641 4.48438 12.5953 4.92188 13.4891 5.76562L16.4687 2.76562C14.7891 1.19531 12.7 0.234375 10.2 0.234375C6.57344 0.234375 3.27344 2.61719 1.62659 5.78906L4.97344 8.11719C5.72656 5.92188 7.78906 4.48438 10.2 4.48438Z" fill="#EA4335"/>
+              </g>
+              <defs>
+                <clipPath id="clip0_993_771">
+                  <rect width="20" height="20" fill="white"/>
+                </clipPath>
+              </defs>
+            </svg>
+            <span className="font-medium text-gray-700 dark:text-gray-100 text-base">
+              {providerLoading === 'google' ? 'Signing in with Google...' : 'Continue with Google'}
+            </span>
           </button>
           {/* Add more providers here as needed */}
         </div>

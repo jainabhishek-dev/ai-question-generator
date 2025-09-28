@@ -89,7 +89,7 @@ export const createAdvancedPrompt = (inputs: Inputs) => {
   Total questions must equal ${totalQuestions}.`
 
   const gradeContext = gradeContexts[grade] ?? ""
-  const bloomsContext = bloomsDescriptions[bloomsLevel] ?? ""
+  // Removed unused bloomsContext
 
   const pdfContext = pdfContent?.trim()
     ? `Reference the following content when crafting questions. Do NOT quote it verbatim. You may use it to ensure factual accuracy:\n"""${pdfContent.trim().slice(0, 50_000)}"""`

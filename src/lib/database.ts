@@ -433,9 +433,12 @@ export const updateUserQuestion = async (
 ): Promise<{ success: boolean; error?: string }> => {
   try {
     // Remove fields that should not be updated directly
-    const {
-      id, user_id, created_at, updated_at, deleted_at, ...rest
-    } = updated
+    const rest = { ...updated }
+    delete rest.id
+    delete rest.user_id
+    delete rest.created_at
+    delete rest.updated_at
+    delete rest.deleted_at
 
     // Use Record<string, unknown> for safe assignment
     const fieldsToUpdate: Record<string, unknown> = { ...rest }

@@ -24,7 +24,7 @@ function parseOptions(options: string | string[] | null | undefined): string[] {
     try {
       const parsed = JSON.parse(options);
       return Array.isArray(parsed) ? parsed : [];
-    } catch (error) {
+    } catch {
       const cleanOptions = options
         .replace(/^\["|"\]$/g, '')
         .split('", "')
@@ -36,7 +36,7 @@ function parseOptions(options: string | string[] | null | undefined): string[] {
   return [];
 }
 
-function processOption(option: string, index: number): { cleanedOption: string; showLabel: boolean } {
+function processOption(option: string): { cleanedOption: string; showLabel: boolean } {
   if (!option || typeof option !== 'string') {
     return { cleanedOption: '', showLabel: true };
   }
@@ -57,7 +57,7 @@ function formatAnswer(answer: string, options: string[]): string {
     const letterIndex = letterMatch[1].charCodeAt(0) - 65;
     if (letterIndex >= 0 && letterIndex < options.length) {
       const option = options[letterIndex];
-      const { cleanedOption } = processOption(option, letterIndex);
+  const { cleanedOption } = processOption(option);
       return `${letterMatch[1]}) ${cleanedOption}`;
     }
   }
@@ -143,7 +143,7 @@ export const ExportPdfDocument: React.FC<Props> = ({
               {questionType === 'multiple-choice' && parsedOptions.length > 0 && (
                 <div style={{ marginLeft: '42px', marginTop: '12px' }}>
                   {parsedOptions.map((option, optIndex) => {
-                    const { cleanedOption, showLabel } = processOption(option, optIndex);
+                    const { cleanedOption, showLabel } = processOption(option);
                     const label = String.fromCharCode(65 + optIndex) + '.';
                     
                     return (

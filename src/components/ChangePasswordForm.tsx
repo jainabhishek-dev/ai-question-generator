@@ -47,7 +47,7 @@ export default function ChangePasswordForm() {
       } else {
         setError(updateResult.error || 'Failed to update password')
       }
-    } catch (error) {
+    } catch {
       setError('An unexpected error occurred')
     }
 

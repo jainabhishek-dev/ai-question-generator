@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from "react"
+import React, { useState, useEffect, useCallback } from "react"
 import { useSwipeable } from "react-swipeable"
 import QuestionCard from "./QuestionCard"
 
@@ -32,14 +32,14 @@ const SwipeableQuestions: React.FC<SwipeableQuestionsProps> = ({
   const [current, setCurrent] = useState(0)
   const [direction, setDirection] = useState<"left" | "right" | null>(null) // for animation
 
-  const goPrev = () => {
+  const goPrev = useCallback(() => {
     setDirection("left")
     setCurrent((i) => Math.max(i - 1, 0))
-  }
-  const goNext = () => {
+  }, [])
+  const goNext = useCallback(() => {
     setDirection("right")
     setCurrent((i) => Math.min(i + 1, questions.length - 1))
-  }
+  }, [questions.length])
 
   // Keyboard navigation
   useEffect(() => {
@@ -49,7 +49,7 @@ const SwipeableQuestions: React.FC<SwipeableQuestionsProps> = ({
     }
     window.addEventListener("keydown", handleKeyDown)
     return () => window.removeEventListener("keydown", handleKeyDown)
-  }, [current, questions.length])
+  }, [current, questions.length, goPrev, goNext])
 
   const handlers = useSwipeable({
     onSwipedLeft: goNext,

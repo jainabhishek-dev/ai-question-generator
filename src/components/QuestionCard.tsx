@@ -64,27 +64,15 @@ const QuestionCard: React.FC<QuestionCardProps> = ({
   const [showAnswer, setShowAnswer] = useState(false)
 
   // Helper: For MCQ, get correct label
-  const correctLabel = q.correctAnswerLetter
-
+  const correctLabel = q.correctAnswerLetter;
   // Helper: For True/False, get correct value
-  const correctTF = q.correctAnswer?.toLowerCase()
-
+  const correctTF = q.correctAnswer?.toLowerCase();
   // MCQ/TF: Handle option click
-  const handleOptionClick = (option: string, label?: string) => {
-    setSelectedOption(option)
-    setAttempted(true)
-    setShowAnswer(true)
-  }
-
-  // MCQ: Check if selected is correct
-  const isMCQCorrect = isMultipleChoice && attempted && selectedOption && correctLabel
-    ? correctLabel === String.fromCharCode(65 + (q.options?.indexOf(selectedOption) ?? -1))
-    : false
-
-  // TF: Check if selected is correct
-  const isTFCorrect = isTrueFalse && attempted && selectedOption
-    ? correctTF === selectedOption.toLowerCase()
-    : false
+  const handleOptionClick = (option: string) => {
+    setSelectedOption(option);
+    setAttempted(true);
+    setShowAnswer(true);
+  };
 
   return (
     <div className="group card overflow-hidden">
@@ -123,12 +111,12 @@ const QuestionCard: React.FC<QuestionCardProps> = ({
             <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
               {q.options.map((option, i) => {
                 if (typeof option !== "string") return null
-                const label = String.fromCharCode(65 + i)
-                const cleanedOption = option.replace(/^[A-Za-z][\.\)]\s*/i, '')
+                const cleanedOption = option.replace(/^[A-Za-z][\.")]\s*/i, '')
 
                 // Button style
                 const isSelected = selectedOption === option
-                const isCorrect = attempted && correctLabel === label
+                const labelChar = String.fromCharCode(65 + i)
+                const isCorrect = attempted && correctLabel === labelChar
                 const showFeedback = attempted && isSelected
 
                 return (
@@ -138,14 +126,14 @@ const QuestionCard: React.FC<QuestionCardProps> = ({
                       ${isSelected ? (isCorrect ? 'bg-green-800 ring-2 ring-green-700' : 'bg-red-800 ring-2 ring-red-700') : 'bg-gray-800 hover:bg-gray-700'}
                     `}
                     disabled={attempted}
-                    onClick={() => handleOptionClick(option, label)}
+                    onClick={() => handleOptionClick(option)}
                   >
                     <div
                       className={`w-6 h-6 rounded-full flex items-center justify-center text-xs sm:text-sm font-bold flex-shrink-0
                         ${isCorrect ? 'bg-gradient-to-r from-green-600 to-emerald-700 text-white' : 'bg-gradient-to-r from-blue-800 to-purple-800 text-white'}
                       `}
                     >
-                      {label}
+                      {labelChar}
                     </div>
                     <div className="flex-1 prose max-w-none">
                       <ReactMarkdown

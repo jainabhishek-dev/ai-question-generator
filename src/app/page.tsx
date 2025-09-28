@@ -171,85 +171,83 @@ export default function Home() {
     return typeMap[type] || type
   }
 
+
+  // Restored handleGenerate function
   const handleGenerate = async (prompt: string, inputs: Inputs) => {
-    setIsLoading(true)
-    setOutput("Generating questions...")
-    setQuestions([])
-    setSaveStatus('idle')
-    setSaveError(null)
+    setIsLoading(true);
+    setOutput("Generating questions...");
+    setQuestions([]);
+    setSaveStatus('idle');
+    setSaveError(null);
 
     setTimeout(() => {
-      resultsRef.current?.scrollIntoView({ behavior: "smooth" })
-    }, 100)
+      resultsRef.current?.scrollIntoView({ behavior: "smooth" });
+    }, 100);
 
     try {
-      const text = await generateQuestions(inputs)
-      setOutput(text)
+      const text = await generateQuestions(inputs);
+      setOutput(text);
 
-      let parsedQuestions = parseQuestions(text)
-      console.log("Parsed questions:", parsedQuestions)     
+      let parsedQuestions = parseQuestions(text);
+      console.log("Parsed questions:", parsedQuestions);
 
       parsedQuestions = parsedQuestions
         .filter(q => q && (q.question || q.prompt || q.correctAnswer || q.answer))
         .map(q => {
-        let options: string[] = [];
-        // Only normalize options for multiple-choice
-        if (q.type === "multiple-choice") {
-          let rawOptions = q.options || q.choices || [];
-          if (rawOptions && typeof rawOptions === "object" && !Array.isArray(rawOptions)) {
-            rawOptions = Object.keys(rawOptions)
-              .sort()
-              .map(key => ((rawOptions as unknown) as Record<string, string>)[key]);
+          let options: string[] = [];
+          // Only normalize options for multiple-choice
+          if (q.type === "multiple-choice") {
+            let rawOptions = q.options || q.choices || [];
+            if (rawOptions && typeof rawOptions === "object" && !Array.isArray(rawOptions)) {
+              rawOptions = Object.keys(rawOptions)
+                .sort()
+                .map(key => ((rawOptions as unknown) as Record<string, string>)[key]);
+            }
+            if (Array.isArray(rawOptions)) {
+              options = rawOptions.map(opt => {
+                if (typeof opt === "string" || typeof opt === "number") return String(opt);
+                // If option is an object with a 'text' property, use that
+                if (opt && typeof opt === "object" && Object.prototype.hasOwnProperty.call(opt, "text")) return String((opt as { text: string }).text);
+                // Otherwise, try JSON.stringify as last resort
+                return typeof opt !== "undefined" ? JSON.stringify(opt) : "";
+              });
+            }
           }
-          if (Array.isArray(rawOptions)) {
-            options = rawOptions.map(opt => {
-              if (typeof opt === "string" || typeof opt === "number") return String(opt);
-              // If option is an object with a 'text' property, use that
-              if (opt && typeof opt === "object" && Object.prototype.hasOwnProperty.call(opt, "text")) return String((opt as { text: string }).text);
-              // Otherwise, try JSON.stringify as last resort
-              return typeof opt !== "undefined" ? JSON.stringify(opt) : "";
-            });
+
+          let correctAnswer = "";
+          let correctAnswerLetter = "";
+
+          if (Array.isArray(q.correctAnswer)) {
+            correctAnswer = q.correctAnswer.join("\n");
+          } else if (typeof q.correctAnswer === "string") {
+            correctAnswer = q.correctAnswer;
+            const match = q.correctAnswer.match(/^[A-Z]/i);
+            correctAnswerLetter = match ? match[0].toUpperCase() : "";
+          } else if (typeof q.answer === "string") {
+            correctAnswer = q.answer;
           }
-        }
 
-        let correctAnswer = "";
-        let correctAnswerLetter = "";
+          return {
+            type: q.type,
+            question: escapeCurrencyDollarsSmart(q.question || q.prompt || ""),
+            options: options.map(escapeCurrencyDollarsSmart),
+            correctAnswer: escapeCurrencyDollarsSmart(correctAnswer),
+            correctAnswerLetter,
+            explanation: escapeCurrencyDollarsSmart(q.explanation || "")
+          };
+        });
 
-        if (Array.isArray(q.correctAnswer)) {
-          correctAnswer = q.correctAnswer.join("\n");
-        } else if (typeof q.correctAnswer === "string") {
-          correctAnswer = q.correctAnswer;
-          const match = q.correctAnswer.match(/^[A-Z]/i);
-          correctAnswerLetter = match ? match[0].toUpperCase() : "";
-        } else if (typeof q.answer === "string") {
-          correctAnswer = q.answer;
-        }
-
-        const escapeCurrencyDollars = (str: string) =>
-          str.replace(/\$(?=\d[\d,\.]*)/g, '\\$');
-
-        return {
-          type: q.type,
-          question: escapeCurrencyDollarsSmart(q.question || q.prompt || ""),
-          options: options.map(escapeCurrencyDollarsSmart),
-          correctAnswer: escapeCurrencyDollarsSmart(correctAnswer),
-          correctAnswerLetter,
-          explanation: escapeCurrencyDollarsSmart(q.explanation || "")
-        }
-      });
-      
-      console.log("Questions to display (before DB save):", parsedQuestions)
-      setQuestions(parsedQuestions);  
+      console.log("Questions to display (before DB save):", parsedQuestions);
+      setQuestions(parsedQuestions);
 
       if (parsedQuestions.length > 0) {
-        setSaveStatus('saving')
+        setSaveStatus('saving');
         try {
-          const saveResult = await saveQuestions(inputs, parsedQuestions, user?.id || null)
-          console.log("DB save result:", saveResult)
+          const saveResult = await saveQuestions(inputs, parsedQuestions, user?.id || null);
+          console.log("DB save result:", saveResult);
           if (saveResult.success && Array.isArray(saveResult.data)) {
             // Map DB fields to your Question type for UI
             const questionsWithId = saveResult.data.map(q => ({
-            
               id: q.id,
               type: q.question_type,
               question: q.question,
@@ -257,28 +255,28 @@ export default function Home() {
               correctAnswer: q.correct_answer,
               correctAnswerLetter: q.correct_answer?.match(/^[A-Z]/i)?.[0]?.toUpperCase() || "",
               explanation: q.explanation || ""
-            }))
-            setQuestions(questionsWithId)
-            setSaveStatus('saved')
+            }));
+            setQuestions(questionsWithId);
+            setSaveStatus('saved');
           } else {
-            setQuestions(parsedQuestions)
-            setSaveStatus('saved')
-            setSaveError(null)
+            setQuestions(parsedQuestions);
+            setSaveStatus('saved');
+            setSaveError(null);
           }
         } catch (saveErr) {
-          setQuestions(parsedQuestions)
-          setSaveStatus('saved')
-          setSaveError(null)
-          console.error('Save error:', saveErr)
+          setQuestions(parsedQuestions);
+          setSaveStatus('saved');
+          setSaveError(null);
+          console.error('Save error:', saveErr);
         }
       }
     } catch (err) {
-      setOutput("Error generating questions. Check console.")
-      console.error(err)
+      setOutput("Error generating questions. Check console.");
+      console.error(err);
     } finally {
-      setIsLoading(false)
+      setIsLoading(false);
     }
-  }
+  };
 
   const handleGenerateNCERT = async (inputs: Inputs) => {
   setIsLoading(true)
