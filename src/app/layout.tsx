@@ -5,7 +5,7 @@ import { ChevronRightIcon, ChevronLeftIcon, Bars3Icon, XMarkIcon } from "@heroic
 import "./globals.css"
 import ClientProviders from "./ClientProviders"
 import Header from "@/components/Header"
-import { useState } from "react"
+import { useState, useRef, useEffect } from "react"
 import AuthModal from "@/components/AuthModal"
 import Footer from "@/components/footer"
 import { Analytics } from "@vercel/analytics/react"
@@ -22,6 +22,45 @@ export default function RootLayout({
   const [showAuthModal, setShowAuthModal] = useState(false)
   const [sidebarOpen, setSidebarOpen]   = useState(false)  // mobile drawer
   const [collapsed,   setCollapsed]     = useState(true)   // 56-px rail on ≥ md
+  const sidebarRef = useRef<HTMLDivElement>(null);
+
+  // Focus trap for sidebar (mobile only)
+  useEffect(() => {
+    if (!sidebarOpen) return;
+    // Only trap focus on mobile (md:hidden)
+    const mq = window.matchMedia('(max-width: 767px)');
+    if (!mq.matches) return;
+    const sidebar = sidebarRef.current;
+    if (!sidebar) return;
+    // Get all focusable elements
+    const focusableSelectors = [
+      'a[href]', 'button:not([disabled])', 'textarea:not([disabled])',
+      'input[type="text"]:not([disabled])', 'input[type="radio"]:not([disabled])',
+      'input[type="checkbox"]:not([disabled])', 'select:not([disabled])', '[tabindex]:not([tabindex="-1"])'
+    ];
+    const focusableEls = sidebar.querySelectorAll(focusableSelectors.join(','));
+    const firstEl = focusableEls[0] as HTMLElement;
+    const lastEl = focusableEls[focusableEls.length - 1] as HTMLElement;
+    // Focus the first element
+    if (firstEl) firstEl.focus();
+    function handleTrap(e: KeyboardEvent) {
+      if (e.key !== 'Tab') return;
+      if (focusableEls.length === 0) return;
+      if (e.shiftKey) {
+        if (document.activeElement === firstEl) {
+          e.preventDefault();
+          lastEl.focus();
+        }
+      } else {
+        if (document.activeElement === lastEl) {
+          e.preventDefault();
+          firstEl.focus();
+        }
+      }
+    }
+    document.addEventListener('keydown', handleTrap);
+    return () => document.removeEventListener('keydown', handleTrap);
+  }, [sidebarOpen]);
 
   return (
     <html lang="en" className={`${geistSans.variable} ${geistMono.variable} antialiased dark`}>
@@ -35,6 +74,7 @@ export default function RootLayout({
 
             {/* ─────────── Sidebar ─────────── */}
             <aside
+              ref={sidebarRef}
               className={`
                 fixed inset-y-0 left-0 z-40 flex flex-col bg-gray-900 text-white
                 transition-all duration-300 ease-in-out
@@ -42,6 +82,9 @@ export default function RootLayout({
                 ${sidebarOpen ? "translate-x-0" : "-translate-x-full md:translate-x-0"}
                 ${collapsed ? "w-20" : "w-60"}
               `}
+              tabIndex={sidebarOpen ? 0 : -1}
+              aria-modal={sidebarOpen ? "true" : undefined}
+              role={sidebarOpen ? "dialog" : undefined}
             >
               {/* collapse / expand button (desktop only) */}
               <button

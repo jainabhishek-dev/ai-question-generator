@@ -138,6 +138,7 @@ export default function Home() {
     cleanText = cleanText.replace(/^["'`]+|["'`]+$/g, '');
     cleanText = cleanText.replace(/\\\r?\n/g, '');
     cleanText = cleanText.replace(/\\$/gm, '');
+    cleanText = cleanText.replace(/\\(?!["\\\/bfnrtu])/g, '\\\\');
 
     try {
       const parsed = JSON.parse(cleanText);

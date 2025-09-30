@@ -4,6 +4,7 @@ import Link from "next/link"
 import Image from "next/image"
 import { useAuth } from "@/contexts/AuthContext"
 import { useState, useRef, useEffect, ReactElement } from "react"
+import { usePathname } from "next/navigation"
 import {
   ClipboardDocumentListIcon,
   ArrowRightStartOnRectangleIcon,
@@ -26,6 +27,7 @@ export default function Header({
   onNavigate,
 }: HeaderProps): ReactElement {
   const { user, loading, signOut } = useAuth()
+  const pathname = usePathname() || "";
   const [dropdownOpen, setDropdownOpen] = useState(false)
   const dropdownRef = useRef<HTMLDivElement>(null)
   const avatarBtnRef = useRef<HTMLButtonElement>(null);
@@ -127,7 +129,7 @@ if (vertical) {
         <Link
           href="/"
           onClick={handleNavClick}
-          className={`flex items-center gap-2 transition-all ${pad} hover:bg-gray-900 hover:scale-[1.03] focus:bg-gray-900 focus:scale-[1.03] active:scale-[0.98] rounded-lg`}
+          className={`flex items-center gap-2 transition-all ${pad} hover:bg-gray-900 hover:scale-[1.03] focus:bg-gray-900 focus:scale-[1.03] active:scale-[0.98] rounded-lg ${pathname === '/' ? 'bg-gray-800 scale-[1.03]' : ''}`}
         >
           <Image src="/logo.png" alt="Logo" width={28} height={28} className="h-7 w-7 flex-shrink-0" priority />
           <span className={`font-bold text-lg text-blue-200 tracking-tight transition-opacity duration-200 ${hide}`}>
@@ -138,7 +140,7 @@ if (vertical) {
           <Link
             href="/my-questions"
             onClick={handleNavClick}
-            className={`flex items-center gap-3 py-2 rounded-lg hover:bg-gray-800 hover:scale-[1.03] focus:bg-gray-800 focus:scale-[1.03] active:scale-[0.98] transition-all ${pad}`}
+            className={`flex items-center gap-3 py-2 rounded-lg hover:bg-gray-800 hover:scale-[1.03] focus:bg-gray-800 focus:scale-[1.03] active:scale-[0.98] transition-all ${pad} ${pathname.startsWith('/my-questions') ? 'bg-gray-800 scale-[1.03]' : ''}`}
             aria-label="My Questions"
           >
             <ClipboardDocumentListIcon className="w-6 h-6 flex-shrink-0" />
@@ -314,7 +316,7 @@ if (vertical) {
   <div className="max-w-full sm:max-w-6xl mx-auto px-3 sm:px-4 flex items-center justify-between h-14 sm:h-16">
         {/* Logo + Nav */}
   <div className="flex items-center gap-3 sm:gap-6" role="navigation" aria-label="Header navigation">
-          <Link href="/" className="flex items-center gap-2 hover:bg-gray-100 hover:scale-[1.03] focus:bg-gray-100 focus:scale-[1.03] active:scale-[0.98] rounded-lg transition-all" aria-label="Home">
+          <Link href="/" className={`flex items-center gap-2 hover:bg-gray-100 hover:scale-[1.03] focus:bg-gray-100 focus:scale-[1.03] active:scale-[0.98] rounded-lg transition-all ${pathname === '/' ? 'bg-blue-50 scale-[1.03]' : ''}`} aria-label="Home">
             <Image src="/logo.png" alt="Logo" width={32} height={32} className="h-7 w-7 sm:h-8 sm:w-8" priority />
             <span className="font-bold text-base sm:text-xl text-blue-700 tracking-tight">
               Instaku
@@ -322,7 +324,7 @@ if (vertical) {
           </Link>
           <div className="hidden sm:block h-7 border-l border-gray-300 mx-2" />
           <nav className="flex gap-3 sm:gap-6" aria-label="Main header links">
-            <Link href="/my-questions" className="hover:text-blue-800 hover:bg-blue-50 focus:bg-blue-100 active:bg-blue-200 hover:scale-[1.03] focus:scale-[1.03] active:scale-[0.98] rounded-lg transition-all" aria-label="My Questions">
+            <Link href="/my-questions" className={`hover:text-blue-800 hover:bg-blue-50 focus:bg-blue-100 active:bg-blue-200 hover:scale-[1.03] focus:scale-[1.03] active:scale-[0.98] rounded-lg transition-all ${pathname.startsWith('/my-questions') ? 'bg-blue-100 scale-[1.03] font-semibold text-blue-900' : ''}`} aria-label="My Questions">
               <span className="font-medium text-sm sm:text-base text-blue-700 tracking-tight">
                 My Questions
               </span>

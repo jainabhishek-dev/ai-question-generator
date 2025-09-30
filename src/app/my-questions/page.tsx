@@ -1,6 +1,8 @@
-'use client'
+
+"use client"
 
 import { useEffect, useState } from 'react'
+import useSWR from 'swr'
 import { useAuth } from '@/contexts/AuthContext'
 import 'katex/dist/katex.min.css'
 import Link from 'next/link'
@@ -13,14 +15,26 @@ import QuestionCard from './QuestionCard'
 import Pagination from './Pagination'
 import DeleteModal from './DeleteModal'
 import LoadingSkeleton from './LoadingSkeleton'
-import EditQuestionModal from './EditQuestionModal' // (You'll create this file in Step 3)
-import { updateUserQuestion } from '@/lib/database' // Make sure this exists
+import EditQuestionModal from './EditQuestionModal'
+import { updateUserQuestion } from '@/lib/database'
 
-export default function MyQuestionsPage() {
+function MyQuestionsPage() {
   const { user } = useAuth()
-  const [questions, setQuestions] = useState<QuestionRecord[]>([])
-  const [isLoading, setIsLoading] = useState(true)
   const [error, setError] = useState<string | null>(null)
+
+  // SWR fetcher for user questions
+  const fetcher = async (userId: string) => {
+    const res = await getUserQuestions(userId, { limit: 50 })
+    if (!res.success || !res.data) throw new Error(res.error || 'Failed to fetch questions')
+    return res.data
+  }
+
+  const {
+    data: questions = [],
+    error: swrError,
+    isLoading,
+    mutate: mutateQuestions
+  } = useSWR(user ? ['questions', user.id] : null, () => user ? fetcher(user.id) : Promise.resolve([]))
 
   // Filters (applied)
   const [typeFilter, setTypeFilter] = useState('')
@@ -45,7 +59,7 @@ export default function MyQuestionsPage() {
   const [currentPage, setCurrentPage] = useState(1)
   const pageSize = 10
 
-  const filteredQuestions = questions.filter(q => {
+  const filteredQuestions = (questions || []).filter(q => {
     return (
       (!typeFilter || q.question_type === typeFilter) &&
       (!gradeFilter || q.grade === gradeFilter) &&
@@ -62,6 +76,11 @@ export default function MyQuestionsPage() {
   useEffect(() => {
     setCurrentPage(1)
   }, [typeFilter, gradeFilter, difficultyFilter, bloomsFilter])
+
+  // Show SWR error if present
+  useEffect(() => {
+    if (swrError) setError(swrError.message)
+  }, [swrError])
 
   const isAllSelected =
     paginatedQuestions.length > 0 &&
@@ -80,25 +99,7 @@ export default function MyQuestionsPage() {
     setSelectedIds(prev => (prev.includes(id) ? prev.filter(i => i !== id) : [...prev, id]))
   }
 
-  useEffect(() => {
-    if (!user) {
-      setIsLoading(false)
-      return
-    }
-    setIsLoading(true)
-    getUserQuestions(user.id, { limit: 50 })
-      .then(res => {
-        if (res.success && res.data) {
-          setQuestions(res.data)
-        } else {
-          setError(res.error || 'Failed to fetch questions.')
-        }
-      })
-      .catch(err => {
-        setError(err?.message || 'Unknown error')
-      })
-      .finally(() => setIsLoading(false))
-  }, [user])
+  // (Removed manual fetching useEffect, now handled by SWR)
 
   // Options
   const typeOptions = ['multiple-choice', 'fill-in-the-blank', 'true-false', 'short-answer', 'long-answer']
@@ -118,7 +119,7 @@ export default function MyQuestionsPage() {
       if (!res.success) {
         setError(res.error || 'Failed to delete question.')
       } else {
-        setQuestions(prev => prev.filter(q => q.id !== questionId))
+        await mutateQuestions()
         setSelectedIds(prev => prev.filter(id => id !== questionId))
         setShowDeleteModal(false)
         setPendingDeleteId(null)
@@ -142,9 +143,7 @@ export default function MyQuestionsPage() {
     try {
       const res = await updateUserQuestion(updated.id, user.id, updated)
       if (res.success) {
-        setQuestions(prev =>
-          prev.map(q => q.id === updated.id ? { ...q, ...updated } : q)
-        )
+        await mutateQuestions()
         setEditingQuestion(null)
       } else {
         setError(res.error || "Failed to update question.")
@@ -405,7 +404,7 @@ export default function MyQuestionsPage() {
                     setShowDeleteModal={setShowDeleteModal}
                     setPendingDeleteId={setPendingDeleteId}
                     deletingId={deletingId}
-                    onEdit={() => setEditingQuestion(q)} // <-- Add this
+                    onEdit={() => setEditingQuestion(q)}
                 />
               ))
             )}
@@ -462,3 +461,5 @@ export default function MyQuestionsPage() {
     </main>
   )
 }
+
+export default MyQuestionsPage
