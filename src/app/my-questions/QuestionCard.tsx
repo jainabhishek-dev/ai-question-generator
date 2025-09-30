@@ -156,15 +156,16 @@ const QuestionCard: React.FC<QuestionCardProps> = ({
           <div className="space-y-3">
             <h4 className="text-xs sm:text-sm font-bold text-gray-700 uppercase tracking-wide dark:text-gray-300">Options</h4>
             <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
-              {q.options.map((opt) => {
-                const cleanedOpt = typeof opt === 'string' ? opt.replace(/^[A-Za-z][\.\)]\s*/i, '') : opt
+              {(q.options ?? []).map((opt, idx) => {
+                const cleanedOpt = typeof opt === 'string' ? opt.replace(/^[A-Za-z][\.)]\s*/i, '') : opt;
+                const optionLabel = String.fromCharCode(65 + idx); // A, B, C, D ...
                 return (
                   <div
                     key={opt}
                     className="flex items-start space-x-3 p-3 sm:p-4 bg-gray-50/80 rounded-xl border border-gray-200/50 dark:bg-gray-800/80 dark:border-gray-700/50"
                   >
                     <div className="w-6 h-6 bg-gradient-to-r from-blue-500 to-purple-600 text-white rounded-full flex items-center justify-center text-xs sm:text-sm font-bold flex-shrink-0 dark:from-blue-800 dark:to-purple-800">
-                      {/* Option label */}
+                      {optionLabel}
                     </div>
                     <div className="flex-1 prose max-w-none">
                       <ReactMarkdown
@@ -180,7 +181,7 @@ const QuestionCard: React.FC<QuestionCardProps> = ({
                       </ReactMarkdown>
                     </div>
                   </div>
-                )
+                );
               })}
             </div>
           </div>
