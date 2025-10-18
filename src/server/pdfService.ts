@@ -2,12 +2,13 @@ import React from "react";
 import { renderToStaticMarkup } from "react-dom/server";
 import { ExportPdfDocument } from "./components/ExportPdfDocument";
 import { QuestionRecord, PdfCustomization } from "../types/question";
+import { PDF_DEFAULTS } from "../constants/pdfDefaults";
 
+// Legacy support interface - can be removed when all clients migrate
 interface PdfPreferences {
   formatting?: {
     fontSize?: number;
     questionSpacing?: number;
-    pageMargins?: string;
   };
 }
 
@@ -160,8 +161,8 @@ export async function generatePdf({
         customization,
         preferences: preferences || {
           formatting: {
-            fontSize: 14,
-            questionSpacing: 24,
+            fontSize: PDF_DEFAULTS.FONT_SIZE + 2, // Legacy uses slightly larger font
+            questionSpacing: PDF_DEFAULTS.QUESTION_SPACING + 4,
           }
         },
       })
@@ -214,7 +215,7 @@ export async function generatePdf({
     await new Promise(resolve => setTimeout(resolve, 2000));
 
     // Generate PDF with proper options - no built-in headers/footers
-    const margins = customization?.formatting?.margins || { top: 0.7, right: 0.75, bottom: 0.7, left: 0.75 };
+    const margins = customization?.formatting?.margins || PDF_DEFAULTS.MARGINS;
     
     const pdfBuffer = await page.pdf({
       format: 'A4',
@@ -237,9 +238,8 @@ export async function generatePdf({
 
     // Generate filename
     const timestamp = new Date().toISOString().slice(0, 19).replace(/:/g, '-');
-    const template = customization?.template || 'default';
     const typeLabel = exportType === 'unified' ? 'questions' : exportType;
-    const filename = `${typeLabel}-${template}-${timestamp}.pdf`;
+    const filename = `${typeLabel}-${timestamp}.pdf`;
 
     return {
       buffer: Buffer.from(pdfBuffer),

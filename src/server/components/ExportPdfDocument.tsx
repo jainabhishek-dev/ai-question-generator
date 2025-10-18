@@ -4,6 +4,9 @@ import { QuestionRecord, PdfCustomization } from '../../types/question';
 import ReactMarkdown from 'react-markdown';
 import remarkGfm from 'remark-gfm';
 import remarkMath from 'remark-math';
+import rehypeKatex from 'rehype-katex';
+import { generatePdfStyles } from '../../constants/pdfStyles';
+import { PDF_DEFAULTS } from '../../constants/pdfDefaults';
 
 
 type Props = {
@@ -79,9 +82,9 @@ export const ExportPdfDocument: React.FC<Props> = ({
   const customFormatting = customization?.formatting;
   const legacyFormatting = preferences?.formatting;
   
-  const fontSize = customFormatting?.fontSize || legacyFormatting?.fontSize || 12;
-  const questionSpacing = customFormatting?.questionSpacing || legacyFormatting?.questionSpacing || 20;
-  const margins = customFormatting?.margins || { top: 1.5, right: 0.75, bottom: 1.5, left: 0.75 };
+  const fontSize = customFormatting?.fontSize || legacyFormatting?.fontSize || PDF_DEFAULTS.FONT_SIZE;
+  const questionSpacing = customFormatting?.questionSpacing || legacyFormatting?.questionSpacing || PDF_DEFAULTS.QUESTION_SPACING;
+  const margins = customFormatting?.margins || PDF_DEFAULTS.MARGINS;
   
   // Content options
   const includeQuestionText = customization?.includeQuestionText ?? true;
@@ -112,210 +115,12 @@ export const ExportPdfDocument: React.FC<Props> = ({
 
   return (
     <>
-      {/* Print and screen styles for header/footer */}
-      <style>
-      {`
-        @media print {
-          @page {
-            margin: 0.3in;
-          }
-          
-          body {
-            margin: 0;
-            padding: 0;
-          }
-          
-          /* Test border - positioned to be fully visible */
-          .page-border {
-            position: fixed;
-            top: 10px;
-            left: 10px;
-            right: 10px;
-            bottom: 10px;
-            border: 3px solid #000;
-            pointer-events: none;
-            z-index: 1000;
-          }
-          
-          .pdf-content {
-            background: #fff;
-            margin: 13px 13px 13px 13px;
-            padding: 15px 15px;
-            min-height: calc(100vh - 56px);
-            position: relative;
-            box-sizing: border-box;
-          }
-          
-
-          
-          .page-watermark {
-            position: fixed;
-            top: 0;
-            left: 0;
-            width: 100%;
-            height: 100%;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            font-size: 80px;
-            font-weight: bold;
-            color: #e0e0e0;
-            opacity: 0.3;
-            transform: rotate(-45deg);
-            z-index: 999;
-            pointer-events: none;
-            white-space: nowrap;
-            user-select: none;
-          }
-          
-          .content-layer {
-            position: relative;
-            z-index: 10;
-            background: rgba(255, 255, 255, 0.9);
-          }
-          
-
-          
-          .first-page-spacing {
-            margin-top: -12px;
-          }
-          
-          .compact-header {
-            margin-bottom: 8px;
-            padding-bottom: 8px;
-          }
-          
-          .compact-section {
-            margin-bottom: 12px;
-          }
-          
-          .question-text {
-            page-break-after: avoid;
-            break-after: avoid;
-          }
-          
-          .question-options {
-            page-break-before: avoid;
-            page-break-after: avoid;
-            break-before: avoid;
-            break-after: avoid;
-          }
-          
-          .answer-section {
-            page-break-before: avoid;
-            break-before: avoid;
-          }
-          
-          /* Table styles for ReactMarkdown */
-          table {
-            width: auto;
-            border-collapse: collapse;
-            margin: 1.5em 0;
-            font-size: 1em;
-          }
-          th,
-          td {
-            border: 1px solid #d1d5db;
-            padding: 0.5em 1em;
-            text-align: left;
-          }
-          th {
-            background: #f3f4f6;
-            font-weight: 600;
-          }
-          tr:nth-child(even) td {
-            background: #f9fafb;
-          }
-        }
-        
-        /* Test border - positioned to be fully visible */
-        .page-border {
-          position: fixed;
-          top: 10px;
-          left: 10px;
-          right: 10px;
-          bottom: 10px;
-          border: 3px solid #000;
-          pointer-events: none;
-          z-index: 1000;
-        }
-        
-        .pdf-content {
-          background: #fff;
-          margin: 13px 13px 13px 13px;
-          padding: 15px 15px;
-          min-height: calc(100vh - 56px);
-          position: relative;
-          box-sizing: border-box;
-        }
-        
-        table {
-          width: auto;
-          max-width: calc(100% - 20px); /* Ensure tables don't exceed container */
-          word-break: break-word;
-        }
-
-        
-        .page-watermark {
-          position: fixed;
-          top: 0;
-          left: 0;
-          width: 100%;
-          height: 100%;
-          display: flex;
-          align-items: center;
-          justify-content: center;
-          font-size: 80px;
-          font-weight: bold;
-          color: #e0e0e0;
-          opacity: 0.3;
-          transform: rotate(-45deg);
-          z-index: 999;
-          pointer-events: none;
-          white-space: nowrap;
-          user-select: none;
-        }
-        
-        .content-layer {
-          position: relative;
-          z-index: 10;
-          background: rgba(255, 255, 255, 0.85);
-        }
-        
-        /* Table styles for ReactMarkdown - Screen version */
-        table {
-          width: auto;
-          border-collapse: collapse;
-          margin: 1.5em 0;
-          font-size: 1em;
-        }
-        th,
-        td {
-          border: 1px solid #d1d5db;
-          padding: 0.5em 1em;
-          text-align: left;
-        }
-        th {
-          background: #f3f4f6;
-          font-weight: 600;
-        }
-        tr:nth-child(even) td {
-          background: #f9fafb;
-        }
-
-      `}
-      </style>
-      {/* STEP 1: Border First - Simple fixed border */}
-      <div className="page-border"></div>
+      {/* Use centralized styles */}
+      <style>{generatePdfStyles()}</style>
       
-      {/* STEP 2: Content inside border */}
+      {/* PDF content - borders handled by @page CSS */}
       <div className="pdf-content">
-        {/* Visible Watermark - Appears on all pages */}
-        <div className="page-watermark">
-          © 2025 instaku.com
-        </div>
-        
-        {/* Visible Watermark - Appears on all pages */}
+        {/* Watermark - single instance */}
         <div className="page-watermark">
           © 2025 instaku.com
         </div>
@@ -324,7 +129,7 @@ export const ExportPdfDocument: React.FC<Props> = ({
           {showHeader && (
           <div className="compact-header" style={{
             textAlign: 'center',
-            fontSize: `${fontSize + 4}px`,
+            fontSize: `${fontSize + PDF_DEFAULTS.HEADER_FONT_SIZE_OFFSET}px`,
             fontWeight: 'bold',
             marginBottom: '8px',
             paddingBottom: '8px',
@@ -442,7 +247,12 @@ export const ExportPdfDocument: React.FC<Props> = ({
                         color: '#000',
                         fontWeight: '500'
                       }}>
-                        <ReactMarkdown remarkPlugins={[remarkMath, [remarkGfm, { breaks: true }]]}>{question.question || ''}</ReactMarkdown>
+                        <ReactMarkdown 
+                          remarkPlugins={[remarkMath, [remarkGfm, { breaks: true }]]}
+                          rehypePlugins={[rehypeKatex]}
+                        >
+                          {question.question || ''}
+                        </ReactMarkdown>
                       </div>
                     )}
                     
@@ -519,7 +329,12 @@ export const ExportPdfDocument: React.FC<Props> = ({
                             </div>
                           )}
                           <div style={{ flex: 1, paddingRight: '10px' }}>
-                            <ReactMarkdown remarkPlugins={[remarkMath, [remarkGfm, { breaks: true }]]}>{cleanedOption || option}</ReactMarkdown>
+                            <ReactMarkdown 
+                              remarkPlugins={[remarkMath, [remarkGfm, { breaks: true }]]}
+                              rehypePlugins={[rehypeKatex]}
+                            >
+                              {cleanedOption || option}
+                            </ReactMarkdown>
                           </div>
                         </div>
                       );
@@ -545,7 +360,12 @@ export const ExportPdfDocument: React.FC<Props> = ({
                       marginBottom: includeExplanation && question.explanation ? '10px' : '0',
                       fontSize: `${fontSize}px`,
                     }}>
-                      <span style={{ fontWeight: 'bold' }}>Answer:</span> <ReactMarkdown remarkPlugins={[remarkMath, [remarkGfm, { breaks: true }]]}>{formatAnswer(question.correct_answer || '', parsedOptions)}</ReactMarkdown>
+                      <span style={{ fontWeight: 'bold' }}>Answer:</span> <ReactMarkdown 
+                        remarkPlugins={[remarkMath, [remarkGfm, { breaks: true }]]}
+                        rehypePlugins={[rehypeKatex]}
+                      >
+                        {formatAnswer(question.correct_answer || '', parsedOptions)}
+                      </ReactMarkdown>
                     </div>
                     
                     {includeExplanation && question.explanation && (
@@ -564,7 +384,12 @@ export const ExportPdfDocument: React.FC<Props> = ({
                           fontSize: `${fontSize}px`,
                           lineHeight: 1.6,
                         }}>
-                          <ReactMarkdown remarkPlugins={[remarkMath, [remarkGfm, { breaks: true }]]}>{question.explanation}</ReactMarkdown>
+                          <ReactMarkdown 
+                            remarkPlugins={[remarkMath, [remarkGfm, { breaks: true }]]}
+                            rehypePlugins={[rehypeKatex]}
+                          >
+                            {question.explanation}
+                          </ReactMarkdown>
                         </div>
                       </div>
                     )}

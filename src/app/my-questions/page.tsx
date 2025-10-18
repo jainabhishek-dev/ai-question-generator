@@ -182,7 +182,7 @@ function MyQuestionsPage() {
           userId: user?.id,
           exportType: 'unified', // New unified export type
           customization: customization || { 
-            template: 'current', 
+            template: 'default', // Simplified template
             formatting: { fontSize: 14, showHeaders: true, showFooters: true },
             includeQuestionText: true,
             includeOptions: true,

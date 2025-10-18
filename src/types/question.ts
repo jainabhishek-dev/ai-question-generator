@@ -61,7 +61,7 @@ export interface PdfFormatting {
 
 // Complete PDF Customization Options
 export interface PdfCustomization {
-  template: 'current' | 'academic' | 'minimal' | 'formal';
+  template: 'default'; // Simplified to single template
   studentFields: StudentFields;
   formatting: PdfFormatting;
   
