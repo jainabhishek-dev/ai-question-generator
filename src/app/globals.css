@@ -170,6 +170,29 @@
   /* Spinners */
   .spinner       { @apply w-4 h-4 border-2 border-gray-300 border-t-blue-600 rounded-full animate-spin; }
   .spinner-white { @apply w-4 h-4 border-2 border-white/30 border-t-white rounded-full animate-spin; }
+
+  /* Watermark for PDF export - also available in screen mode for consistency */
+  .page-watermark {
+    position: fixed;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 80px;
+    font-weight: bold;
+    color: #e0e0e0;
+    opacity: 0.3;
+    transform: rotate(-45deg);
+    pointer-events: none;
+    z-index: 1000;
+    user-select: none;
+    -webkit-user-select: none;
+    -moz-user-select: none;
+    -ms-user-select: none;
+  }
 }
 
 /* Prose (ReactMarkdown) */
@@ -247,6 +270,29 @@
     border: 1px solid #ccc !important;
     box-shadow: none !important;
     background: white !important;
+  }
+  
+  /* Watermark for PDF export */
+  .page-watermark {
+    position: fixed !important;
+    top: 0 !important;
+    left: 0 !important;
+    width: 100% !important;
+    height: 100% !important;
+    display: flex !important;
+    align-items: center !important;
+    justify-content: center !important;
+    font-size: 80px !important;
+    font-weight: bold !important;
+    color: #e0e0e0 !important;
+    opacity: 0.3 !important;
+    transform: rotate(-45deg) !important;
+    pointer-events: none !important;
+    z-index: 1000 !important;
+    user-select: none !important;
+    -webkit-user-select: none !important;
+    -moz-user-select: none !important;
+    -ms-user-select: none !important;
   }
 }
 /* Add this to your globals.css */

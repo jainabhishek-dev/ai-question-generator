@@ -7,7 +7,7 @@ import { useAuth } from '@/contexts/AuthContext'
 import 'katex/dist/katex.min.css'
 import Link from 'next/link'
 import { ExclamationCircleIcon, SparklesIcon, MagnifyingGlassIcon, ArrowLeftIcon } from "@heroicons/react/24/outline";
-import { QuestionRecord } from '@/types/question'
+import { QuestionRecord, PdfCustomization } from '@/types/question'
 import { getUserQuestions, softDeleteUserQuestion } from '@/lib/database'
 import FilterPanel from './FilterPanel'
 import ExportPanel from './ExportPanel'
@@ -159,9 +159,10 @@ function MyQuestionsPage() {
     }
   }
 
-  // Export worksheet
-  async function handleExportWorksheet(event: React.MouseEvent<HTMLButtonElement, MouseEvent>): Promise<void> {
-    event.preventDefault()
+
+
+  // Unified export handler
+  async function handleExport(customization?: PdfCustomization): Promise<void> {
     setError(null)
     if (selectedIds.length === 0) {
       setError('No questions selected to export.')
@@ -179,8 +180,20 @@ function MyQuestionsPage() {
         body: JSON.stringify({
           selectedIds,
           userId: user?.id,
-          exportType: 'worksheet',
-          preferences: { formatting: { fontSize: 14, showHeaders: true, showFooters: true } },
+          exportType: 'unified', // New unified export type
+          customization: customization || { 
+            template: 'current', 
+            formatting: { fontSize: 14, showHeaders: true, showFooters: true },
+            includeQuestionText: true,
+            includeOptions: true,
+            includeCorrectAnswer: false,
+            includeExplanation: false,
+            showQuestionNumbers: true,
+            showQuestionTypes: true,
+            showSubjectBadges: false,
+            includeCommonInstructions: true,
+            commonInstructionsText: 'Read all questions carefully before answering.'
+          },
           accessToken
         })
       })
@@ -207,7 +220,7 @@ function MyQuestionsPage() {
         const url = window.URL.createObjectURL(new Blob([blob], { type: 'application/pdf' }))
         const a = document.createElement('a')
         a.href = url
-        a.download = 'worksheet.pdf'
+        a.download = 'questions.pdf'
         document.body.appendChild(a)
         a.click()
         a.remove()
@@ -221,74 +234,14 @@ function MyQuestionsPage() {
         typeof err === 'object' && err !== null && 'message' in err
           ? (err as { message?: string }).message
           : undefined
-      setError(`Failed to export Worksheet: ${errorMessage || 'Unknown error'}`)
+      setError(`Failed to export PDF: ${errorMessage || 'Unknown error'}`)
     }
   }
 
-  // Export answer key
-  async function handleExportAnswerKey(event: React.MouseEvent<HTMLButtonElement, MouseEvent>): Promise<void> {
-    event.preventDefault()
-    setError(null)
-    if (selectedIds.length === 0) {
-      setError('No questions selected to export.')
-      return
-    }
-    try {
-      const accessToken = user?.accessToken
-      if (!accessToken) {
-        setError('Could not get user access token. Please log in again.')
-        return
-      }
-      const res = await fetch('/api/export-pdf', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          selectedIds,
-          userId: user?.id,
-          exportType: 'answer-key',
-          preferences: { formatting: { fontSize: 14, showHeaders: true, showFooters: true } },
-          accessToken
-        })
-      })
-      if (!res.ok) {
-        let errMsg = 'Failed to export PDF'
-        try {
-          const err = await res.json()
-          errMsg = err.error || errMsg
-        } catch {}
-        setError(errMsg)
-        return
-      }
-      const contentType = res.headers.get('content-type')
-      if (!contentType?.includes('application/pdf')) {
-        setError('Invalid response format - expected PDF')
-        return
-      }
-      const blob = await res.blob()
-      if (blob.size === 0) {
-        setError('Received empty PDF file')
-        return
-      }
-      try {
-        const url = window.URL.createObjectURL(new Blob([blob], { type: 'application/pdf' }))
-        const a = document.createElement('a')
-        a.href = url
-        a.download = 'answer-key.pdf'
-        document.body.appendChild(a)
-        a.click()
-        a.remove()
-        window.URL.revokeObjectURL(url)
-      } catch (error) {
-        console.error('Error occurred:', error)
-        setError(error instanceof Error ? error.message : 'Failed to download PDF file')
-      }
-    } catch (err: unknown) {
-      const errorMessage =
-        typeof err === 'object' && err !== null && 'message' in err
-          ? (err as { message?: string }).message
-          : undefined
-      setError(`Failed to export Answer Key: ${errorMessage || 'Unknown error'}`)
-    }
+  // Preview handler
+  const handlePreview = (customization: PdfCustomization) => {
+    // For now, we'll just perform the export as preview
+    handleExport(customization)
   }
 
   const applyFilters = () => {
@@ -354,8 +307,8 @@ function MyQuestionsPage() {
 
         <ExportPanel
           selectedCount={selectedIds.length}
-          handleExportWorksheet={handleExportWorksheet}
-          handleExportAnswerKey={handleExportAnswerKey}
+          handleExport={handleExport}
+          onPreview={handlePreview}
         />
 
         {/* Content */}

@@ -397,7 +397,7 @@ export default function Home() {
           {questionMode === "general" ? (
             <AdvancedQuestionForm onGenerate={handleGenerate} isLoading={isLoading} currentQuestionCount={userQuestions} />
           ) : (
-            <NCERTQuestionForm onGenerate={handleGenerateNCERT} isLoading={isLoading} />
+            <NCERTQuestionForm onGenerate={handleGenerateNCERT} isLoading={isLoading} currentQuestionCount={userQuestions} />
           )}
         </div>
 

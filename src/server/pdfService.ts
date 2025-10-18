@@ -1,7 +1,7 @@
 import React from "react";
 import { renderToStaticMarkup } from "react-dom/server";
 import { ExportPdfDocument } from "./components/ExportPdfDocument";
-import { QuestionRecord } from "../types/question";
+import { QuestionRecord, PdfCustomization } from "../types/question";
 
 interface PdfPreferences {
   formatting?: {
@@ -14,8 +14,9 @@ interface PdfPreferences {
 type GeneratePdfParams = {
   selectedIds: string[];
   userId: string;
-  exportType: "worksheet" | "answer-key";
-  preferences?: PdfPreferences;
+  exportType: "worksheet" | "answer-key" | "unified";
+  customization?: PdfCustomization;
+  preferences?: PdfPreferences; // Legacy support
   accessToken: string;
 };
 
@@ -23,6 +24,7 @@ export async function generatePdf({
   selectedIds,
   userId,
   exportType,
+  customization,
   preferences,
   accessToken,
 }: GeneratePdfParams): Promise<{ buffer: Buffer; filename: string }> {
@@ -36,8 +38,8 @@ export async function generatePdf({
     if (!userId) {
       throw new Error("userId is required.");
     }
-    if (!exportType || !["worksheet", "answer-key"].includes(exportType)) {
-      throw new Error("exportType must be 'worksheet' or 'answer-key'.");
+    if (!exportType || !["worksheet", "answer-key", "unified"].includes(exportType)) {
+      throw new Error("exportType must be 'worksheet', 'answer-key', or 'unified'.");
     }
     if (!accessToken) {
       throw new Error("accessToken is required.");
@@ -155,6 +157,7 @@ export async function generatePdf({
       React.createElement(ExportPdfDocument, {
         questions: transformedQuestions,
         exportType,
+        customization,
         preferences: preferences || {
           formatting: {
             fontSize: 14,
@@ -210,46 +213,20 @@ export async function generatePdf({
     // Wait for KaTeX to render mathematics
     await new Promise(resolve => setTimeout(resolve, 2000));
 
-    // Generate PDF with proper options
-    let headerTemplate = '';
-    let footerTemplate = '';
-
-    if (exportType === 'worksheet') {
-    headerTemplate = `
-        <div style="font-size:20px; color:#1a237e; text-align:center; width:100%;">
-        <span>Worksheet</span>
-        </div>
-    `;
-    footerTemplate = `
-        <div style="font-size:11px; color:#757575; text-align:center; width:100%;">
-        &copy; ${new Date().getFullYear()} Instaku. All rights reserved.
-        </div>
-    `;
-    } else if (exportType === 'answer-key') {
-    headerTemplate = `
-        <div style="font-size:20px; color:#1a237e; text-align:center; width:100%;">
-        <span>Answer Key</span>
-        </div>
-    `;
-    footerTemplate = `
-        <div style="font-size:11px; color:#757575; text-align:center; width:100%;">
-        &copy; ${new Date().getFullYear()} Instaku. All rights reserved.
-        </div>
-    `;
-    }
+    // Generate PDF with proper options - no built-in headers/footers
+    const margins = customization?.formatting?.margins || { top: 0.7, right: 0.75, bottom: 0.7, left: 0.75 };
+    
     const pdfBuffer = await page.pdf({
       format: 'A4',
       printBackground: true,
       margin: {
-        top: '0.7in',
-        right: '0.1in',
-        bottom: '0.6in',
-        left: '0.1in'
+        top: `${margins.top}in`,
+        right: `${margins.right}in`,
+        bottom: `${margins.bottom}in`,
+        left: `${margins.left}in`
       },
       preferCSSPageSize: true,
-      displayHeaderFooter: true,
-      headerTemplate,
-      footerTemplate,
+      displayHeaderFooter: false, // Disable built-in headers to prevent duplication
       timeout: 30000
     });
 
@@ -260,7 +237,9 @@ export async function generatePdf({
 
     // Generate filename
     const timestamp = new Date().toISOString().slice(0, 19).replace(/:/g, '-');
-    const filename = `${exportType}-${timestamp}.pdf`;
+    const template = customization?.template || 'default';
+    const typeLabel = exportType === 'unified' ? 'questions' : exportType;
+    const filename = `${typeLabel}-${template}-${timestamp}.pdf`;
 
     return {
       buffer: Buffer.from(pdfBuffer),

@@ -18,6 +18,7 @@ interface NCERTMetadata {
 interface Props {
   onGenerate: (inputs: Inputs) => void
   isLoading: boolean
+  currentQuestionCount: number
 }
 
 const bloomsOptions = [
@@ -26,7 +27,7 @@ const bloomsOptions = [
 
 const difficultyOptions = ["Easy","Medium","Hard"]
 
-export default function NCERTQuestionForm({ onGenerate, isLoading }: Props) {
+export default function NCERTQuestionForm({ onGenerate, isLoading, currentQuestionCount }: Props) {
   const [ncertData, setNCERTData] = useState<NCERTMetadata[]>([])
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState<string | null>(null)
@@ -48,7 +49,6 @@ export default function NCERTQuestionForm({ onGenerate, isLoading }: Props) {
   const [learningOutcomeOptions, setLearningOutcomeOptions] = useState<string[]>([])
   const [learningOutcome, setLearningOutcome] = useState("")
 
-
   useEffect(() => {
     fetchNCERTMetadata()
       .then((data: NCERTMetadata[]) => {
@@ -60,13 +60,6 @@ export default function NCERTQuestionForm({ onGenerate, isLoading }: Props) {
         setLoading(false)
       })
   }, [])
-
-  // Dropdown options
-  const subjectOptions = Array.from(new Set(ncertData.map(d => d.subject)))
-  const gradeOptions = Array.from(new Set(ncertData.filter(d => d.subject === subject).map(d => d.grade)))
-  const chapterNameOptions = ncertData
-  .filter(d => d.subject === subject && d.grade === grade)
-  .map(d => ({ name: d.chapter_name, number: d.chapter_number }));
 
   // Update learning outcome when chapter name changes
   useEffect(() => {
@@ -98,8 +91,37 @@ export default function NCERTQuestionForm({ onGenerate, isLoading }: Props) {
     }
   }, [totalQuestions, numMCQ, numFillBlank, numTrueFalse, numShortAnswer, numLongAnswer])
 
+  // Early return after all hooks to maintain consistent hook order
+  if (currentQuestionCount >= 40) {
+    return (
+      <div className="bg-yellow-50 border border-yellow-200 text-yellow-800 px-6 py-8 rounded-xl text-center mt-8">
+        <h2 className="text-xl font-bold mb-2">Question Limit Reached</h2>
+        <p>You have reached your free limit of 40 questions. To create more, please subscribe.</p>
+      </div>
+    )
+  }
+
+  // Dropdown options
+  const subjectOptions = Array.from(new Set(ncertData.map(d => d.subject)))
+  const gradeOptions = Array.from(new Set(ncertData.filter(d => d.subject === subject).map(d => d.grade)))
+  const chapterNameOptions = ncertData
+  .filter(d => d.subject === subject && d.grade === grade)
+  .map(d => ({ name: d.chapter_name, number: d.chapter_number }));
+
   const handleGenerateClick = () => {
     if (distributionError) return
+    
+    // Check question limit
+    if (currentQuestionCount >= 40) {
+      setDistributionError("You have reached your free limit of 40 questions. To create more, please subscribe.")
+      return
+    }
+    
+    if (currentQuestionCount + totalQuestions > 40) {
+      setDistributionError(`You can only create ${40 - currentQuestionCount} more questions. Reduce the total or delete some questions.`)
+      return
+    }
+    
     const selectedChapter = ncertData.find(d =>
       d.subject === subject &&
       d.grade === grade &&
@@ -354,7 +376,7 @@ export default function NCERTQuestionForm({ onGenerate, isLoading }: Props) {
             w-full font-medium py-4 px-6 rounded-xl transition-all duration-200
             focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2
             ${isLoading || loading || distributionError ||
-              !subject || !grade || !chapterName
+              !subject || !grade || !chapterName || currentQuestionCount >= 40
               ? 'bg-blue-500 cursor-not-allowed'
               : 'bg-blue-600 hover:bg-blue-700 hover:shadow-lg'
             }
@@ -362,7 +384,7 @@ export default function NCERTQuestionForm({ onGenerate, isLoading }: Props) {
           `}
           disabled={
             isLoading || loading || !!distributionError ||
-            !subject || !grade || !chapterName
+            !subject || !grade || !chapterName || currentQuestionCount >= 40
           }
           onClick={handleGenerateClick}
         >

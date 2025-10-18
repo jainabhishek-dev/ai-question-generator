@@ -64,6 +64,9 @@ export default function AdvancedQuestionForm({ onGenerate, isLoading = false, cu
     additionalNotes: ""
   })
   const [error, setError] = useState("")
+  const subSubjectOptions = subjectMap[inputs.subject] || []
+
+  // Early return after all hooks
   if (currentQuestionCount >= 40) {
     return (
       <div className="bg-yellow-50 border border-yellow-200 text-yellow-800 px-6 py-8 rounded-xl text-center mt-8">
@@ -72,7 +75,6 @@ export default function AdvancedQuestionForm({ onGenerate, isLoading = false, cu
       </div>
     )
   }
-  const subSubjectOptions = subjectMap[inputs.subject] || []
 
   const handleChange = (key: keyof Inputs, value: string | number) =>
     setInputs(prev => ({ ...prev, [key]: value }))
@@ -95,7 +97,7 @@ export default function AdvancedQuestionForm({ onGenerate, isLoading = false, cu
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault()
       if (currentQuestionCount >= 40) {
-      setError("You have reached your free limit of 100 questions. To create more, please subscribe.")
+      setError("You have reached your free limit of 40 questions. To create more, please subscribe.")
     return
   }
     if (currentQuestionCount + inputs.totalQuestions > 40) {
@@ -335,13 +337,13 @@ export default function AdvancedQuestionForm({ onGenerate, isLoading = false, cu
           className={`
             w-full font-medium py-4 px-6 rounded-xl transition-all duration-200
             focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2
-            ${isLoading || currentQuestionCount >= 100
+            ${isLoading || currentQuestionCount >= 40
               ? 'bg-blue-500 cursor-not-allowed' 
               : 'bg-blue-600 hover:bg-blue-700 hover:shadow-lg'
             }
             text-white shadow-md
           `}
-          disabled={isLoading || currentQuestionCount >= 100}
+          disabled={isLoading || currentQuestionCount >= 40}
         >
           {isLoading ? (
             <div className="flex items-center justify-center space-x-3">
