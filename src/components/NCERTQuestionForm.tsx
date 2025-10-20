@@ -38,7 +38,6 @@ export default function NCERTQuestionForm({ onGenerate, isLoading, currentQuesti
   const [chapterName, setChapterName] = useState("")
   const [difficulty, setDifficulty] = useState("Medium")
   const [bloomsLevel, setBloomsLevel] = useState("Understand")
-  const [totalQuestions, setTotalQuestions] = useState(5)
   const [numMCQ, setNumMCQ] = useState(1)
   const [numTrueFalse, setNumTrueFalse] = useState(1)
   const [numFillBlank, setNumFillBlank] = useState(1)
@@ -48,6 +47,9 @@ export default function NCERTQuestionForm({ onGenerate, isLoading, currentQuesti
   const [distributionError, setDistributionError] = useState("")
   const [learningOutcomeOptions, setLearningOutcomeOptions] = useState<string[]>([])
   const [learningOutcome, setLearningOutcome] = useState("")
+
+  // Calculate total questions from individual counts
+  const totalQuestions = numMCQ + numTrueFalse + numFillBlank + numShortAnswer + numLongAnswer
 
   useEffect(() => {
     fetchNCERTMetadata()
@@ -81,11 +83,10 @@ export default function NCERTQuestionForm({ onGenerate, isLoading, currentQuesti
 
   // Validate question distribution
   useEffect(() => {
-    const sum = numMCQ + numFillBlank + numTrueFalse + numShortAnswer + numLongAnswer
     if (totalQuestions > 10) {
       setDistributionError("You can generate a maximum of 10 questions at a time.")
-    } else if (totalQuestions !== sum) {
-      setDistributionError(`Total Questions (${totalQuestions}) must equal sum of distribution (${sum})`)
+    } else if (totalQuestions === 0) {
+      setDistributionError("Please specify at least one question to generate.")
     } else {
       setDistributionError("")
     }
@@ -278,19 +279,7 @@ export default function NCERTQuestionForm({ onGenerate, isLoading, currentQuesti
           </div>
           <h3 className="text-lg font-semibold text-gray-700 border-b pb-2 flex-1">Question Distribution</h3>
         </div>
-        <div className="grid grid-cols-2 md:grid-cols-5 gap-4">
-          <div>
-            <label className="block text-sm font-medium text-gray-700 mb-1">Total Questions *</label>
-            <input
-              type="number"
-              min={1}
-              max={10}
-              value={totalQuestions}
-              onChange={e => setTotalQuestions(Number(e.target.value))}
-              className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500 text-gray-900"
-              required
-            />
-          </div>
+        <div className="grid grid-cols-1 md:grid-cols-5 gap-4">
           <div>
             <label className="block text-sm font-medium text-gray-700 mb-1">MCQ</label>
             <input
@@ -343,7 +332,7 @@ export default function NCERTQuestionForm({ onGenerate, isLoading, currentQuesti
           </div>
         </div>
         <p className="text-sm text-gray-600 mt-2">
-          Distribution total: {numMCQ + numFillBlank + numTrueFalse + numShortAnswer + numLongAnswer}
+          Total questions: {totalQuestions}
         </p>
         {distributionError && (
           <div className="bg-red-50 border border-red-200 text-red-700 px-4 py-3 rounded-md mt-4">

@@ -19,19 +19,7 @@ import SwipeableQuestions from "@/components/SwipeableQuestions"
 import QuestionModeToggle from "@/components/QuestionModeToggle"
 import NCERTQuestionForm from "@/components/NCERTQuestionForm"
 import { generateNCERTQuestions } from "@/lib/gemini"
-
-interface Question {
-  id?: number
-  type: string
-  question: string
-  prompt?: string
-  options?: string[]
-  choices?: string[]
-  correctAnswer: string
-  correctAnswerLetter?: string
-  answer?: string
-  explanation?: string
-}
+import { parseQuestions, processQuestions, Question } from "@/lib/questionParser"
 
 export default function Home() {
   const resultsRef = useRef<HTMLDivElement>(null)
@@ -47,7 +35,6 @@ export default function Home() {
   const [avgRatings, setAvgRatings] = useState<{ [index: number]: number | null }>({})
   const [ratingLoading, setRatingLoading] = useState<{ [index: number]: boolean }>({})
   const [questionMode, setQuestionMode] = useState<"general" | "ncert">("general")
-  
   
 
   const fetchRating = async (questionId: number, index: number) => {
@@ -68,25 +55,7 @@ export default function Home() {
   }
 }
 
-  function escapeCurrencyDollarsSmart(str: string): string {
-    // Find all $...$ math blocks and mark their ranges
-    const mathBlockRanges: [number, number][] = [];
-    const regex = /\$[^$]*?\$/g;
-    let match;
-    while ((match = regex.exec(str)) !== null) {
-      mathBlockRanges.push([match.index, match.index + match[0].length]);
-    }
 
-    function isInMathBlock(pos: number) {
-      return mathBlockRanges.some(([start, end]) => pos >= start && pos < end);
-    }
-
-    // Replace $ followed by a number (currency), but only if not inside math block and not already escaped
-    return str.replace(/(^|[^\\])\$(\d[\d,\.]*)/g, (m, pre, num, offset) => {
-      if (isInMathBlock(offset + pre.length)) return m;
-      return pre + '\\$' + num;
-    });
-  }
 
   const handleRate = async (questionId: number, index: number, rating: number) => {
       if (!user) {
@@ -124,43 +93,6 @@ export default function Home() {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [questions, user?.id])
 
-  const parseQuestions = (text: string): Question[] => {
-    console.log("=== RAW AI OUTPUT ===", text);
-    let cleanText = text.trim();
-
-    // Remove markdown code block wrappers (``````json)
-    cleanText = cleanText
-      .replace(/^\s*```(?:json)?/im, "")
-      .replace(/```\s*$/m, "")
-      .trim();
-
-    // Remove leading/trailing quotes/backticks
-    cleanText = cleanText.replace(/^["'`]+|["'`]+$/g, '');
-    cleanText = cleanText.replace(/\\\r?\n/g, '');
-    cleanText = cleanText.replace(/\\$/gm, '');
-    cleanText = cleanText.replace(/\\(?!["\\\/bfnrtu])/g, '\\\\');
-
-    try {
-      const parsed = JSON.parse(cleanText);
-      console.log("After JSON.parse, parsed:", parsed);
-
-      // If the parsed result is an object with a 'questions' array, return that array
-      if (!Array.isArray(parsed) && parsed.questions && Array.isArray(parsed.questions)) {
-        return parsed.questions;
-      }
-      // If it's a single question object, wrap in array
-      if (!Array.isArray(parsed) && parsed.type && parsed.question) {
-        return [parsed];
-      }
-      return Array.isArray(parsed) ? parsed : [];
-    } catch (error) {
-      console.error("Failed to parse questions:", error);
-      console.error("Raw text was:", text);
-      console.error("Cleaned text was:", cleanText);
-      return [];
-    }
-  }
-
   const getQuestionTypeDisplay = (type: string) => {
     const typeMap: Record<string, string> = {
       'multiple-choice': 'Multiple Choice',
@@ -189,63 +121,15 @@ export default function Home() {
       const text = await generateQuestions(inputs);
       setOutput(text);
 
-      let parsedQuestions = parseQuestions(text);
-      console.log("Parsed questions:", parsedQuestions);
+      const parsedQuestions = parseQuestions(text);
+      const processedQuestions = processQuestions(parsedQuestions);
 
-      parsedQuestions = parsedQuestions
-        .filter(q => q && (q.question || q.prompt || q.correctAnswer || q.answer))
-        .map(q => {
-          let options: string[] = [];
-          // Only normalize options for multiple-choice
-          if (q.type === "multiple-choice") {
-            let rawOptions = q.options || q.choices || [];
-            if (rawOptions && typeof rawOptions === "object" && !Array.isArray(rawOptions)) {
-              rawOptions = Object.keys(rawOptions)
-                .sort()
-                .map(key => ((rawOptions as unknown) as Record<string, string>)[key]);
-            }
-            if (Array.isArray(rawOptions)) {
-              options = rawOptions.map(opt => {
-                if (typeof opt === "string" || typeof opt === "number") return String(opt);
-                // If option is an object with a 'text' property, use that
-                if (opt && typeof opt === "object" && Object.prototype.hasOwnProperty.call(opt, "text")) return String((opt as { text: string }).text);
-                // Otherwise, try JSON.stringify as last resort
-                return typeof opt !== "undefined" ? JSON.stringify(opt) : "";
-              });
-            }
-          }
+      setQuestions(processedQuestions);
 
-          let correctAnswer = "";
-          let correctAnswerLetter = "";
-
-          if (Array.isArray(q.correctAnswer)) {
-            correctAnswer = q.correctAnswer.join("\n");
-          } else if (typeof q.correctAnswer === "string") {
-            correctAnswer = q.correctAnswer;
-            const match = q.correctAnswer.match(/^[A-Z]/i);
-            correctAnswerLetter = match ? match[0].toUpperCase() : "";
-          } else if (typeof q.answer === "string") {
-            correctAnswer = q.answer;
-          }
-
-          return {
-            type: q.type,
-            question: escapeCurrencyDollarsSmart(q.question || q.prompt || ""),
-            options: options.map(escapeCurrencyDollarsSmart),
-            correctAnswer: escapeCurrencyDollarsSmart(correctAnswer),
-            correctAnswerLetter,
-            explanation: escapeCurrencyDollarsSmart(q.explanation || "")
-          };
-        });
-
-      console.log("Questions to display (before DB save):", parsedQuestions);
-      setQuestions(parsedQuestions);
-
-      if (parsedQuestions.length > 0) {
+      if (processedQuestions.length > 0) {
         setSaveStatus('saving');
         try {
-          const saveResult = await saveQuestions(inputs, parsedQuestions, user?.id || null);
-          console.log("DB save result:", saveResult);
+          const saveResult = await saveQuestions(inputs, processedQuestions, user?.id || null);
           if (saveResult.success && Array.isArray(saveResult.data)) {
             // Map DB fields to your Question type for UI
             const questionsWithId = saveResult.data.map(q => ({
@@ -260,20 +144,18 @@ export default function Home() {
             setQuestions(questionsWithId);
             setSaveStatus('saved');
           } else {
-            setQuestions(parsedQuestions);
+            setQuestions(processedQuestions);
             setSaveStatus('saved');
             setSaveError(null);
           }
         } catch (saveErr) {
-          setQuestions(parsedQuestions);
+          setQuestions(processedQuestions);
           setSaveStatus('saved');
           setSaveError(null);
-          console.error('Save error:', saveErr);
         }
       }
     } catch (err) {
-      setOutput("Error generating questions. Check console.");
-      console.error(err);
+      setOutput("Error generating questions. Please try again.");
     } finally {
       setIsLoading(false);
     }
@@ -296,62 +178,16 @@ export default function Home() {
     setOutput(text)
 
     // 2. Parse the AI output into question objects
-    let parsedQuestions = parseQuestions(text)
-    console.log("Parsed NCERT questions:", parsedQuestions)
+    const parsedQuestions = parseQuestions(text)
+    const processedQuestions = processQuestions(parsedQuestions);
 
-    // 3. Normalize and clean up each question (same as general)
-    parsedQuestions = parsedQuestions
-      .filter(q => q && (q.question || q.prompt || q.correctAnswer || q.answer))
-      .map(q => {
-        let options: string[] = [];
-        if (q.type === "multiple-choice") {
-          let rawOptions = q.options || q.choices || [];
-          if (rawOptions && typeof rawOptions === "object" && !Array.isArray(rawOptions)) {
-            rawOptions = Object.keys(rawOptions)
-              .sort()
-              .map(key => ((rawOptions as unknown) as Record<string, string>)[key]);
-          }
-          if (Array.isArray(rawOptions)) {
-            options = rawOptions.map(opt => {
-              if (typeof opt === "string" || typeof opt === "number") return String(opt);
-              if (opt && typeof opt === "object" && Object.prototype.hasOwnProperty.call(opt, "text")) return String((opt as { text: string }).text);
-              return typeof opt !== "undefined" ? JSON.stringify(opt) : "";
-            });
-          }
-        }
-
-        let correctAnswer = "";
-        let correctAnswerLetter = "";
-
-        if (Array.isArray(q.correctAnswer)) {
-          correctAnswer = q.correctAnswer.join("\n");
-        } else if (typeof q.correctAnswer === "string") {
-          correctAnswer = q.correctAnswer;
-          const match = q.correctAnswer.match(/^[A-Z]/i);
-          correctAnswerLetter = match ? match[0].toUpperCase() : "";
-        } else if (typeof q.answer === "string") {
-          correctAnswer = q.answer;
-        }
-
-        return {
-          type: q.type,
-          question: escapeCurrencyDollarsSmart(q.question || q.prompt || ""),
-          options: options.map(escapeCurrencyDollarsSmart),
-          correctAnswer: escapeCurrencyDollarsSmart(correctAnswer),
-          correctAnswerLetter,
-          explanation: escapeCurrencyDollarsSmart(q.explanation || "")
-        }
-      });
-
-    setQuestions(parsedQuestions);
+    setQuestions(processedQuestions);
 
     // 4. Save questions to database (same as general)
-    if (parsedQuestions.length > 0) {
+    if (processedQuestions.length > 0) {
       setSaveStatus('saving')
       try {
-        // You may want to add a field to inputs to mark these as NCERT questions
-        const saveResult = await saveQuestions(inputs, parsedQuestions, user?.id || null)
-        console.log("DB save result:", saveResult)
+        const saveResult = await saveQuestions(inputs, processedQuestions, user?.id || null)
         if (saveResult.success && Array.isArray(saveResult.data)) {
           const questionsWithId = saveResult.data.map(q => ({
             id: q.id,
@@ -365,24 +201,24 @@ export default function Home() {
           setQuestions(questionsWithId)
           setSaveStatus('saved')
         } else {
-          setQuestions(parsedQuestions)
+          setQuestions(processedQuestions)
           setSaveStatus('saved')
           setSaveError(null)
         }
       } catch (saveErr) {
-        setQuestions(parsedQuestions)
+        setQuestions(processedQuestions)
         setSaveStatus('saved')
         setSaveError(null)
-        console.error('Save error:', saveErr)
       }
     }
   } catch (err) {
-    setOutput("Error generating questions. Check console.")
-    console.error(err)
+    setOutput("Error generating questions. Please try again.")
   } finally {
     setIsLoading(false)
   }
 }
+
+
 
   return (
     <main className="min-h-screen overflow-x-hidden bg-gradient-to-br from-slate-50 via-blue-50 to-indigo-100 py-6 sm:py-8 dark:from-gray-950 dark:via-gray-900 dark:to-gray-800">

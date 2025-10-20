@@ -16,7 +16,7 @@ export interface Inputs {
   topic: string
   subTopic: string
   grade: string
-  totalQuestions: number
+  totalQuestions: number // Calculated from sum of individual question types
   numMCQ: number
   numTrueFalse: number
   numFillBlank: number
@@ -27,7 +27,7 @@ export interface Inputs {
   pdfContent: string
   additionalNotes: string
   learningOutcome?: string
-  question_source?: string // <-- add this
+  question_source?: string
   [key: string]: unknown
 }
 
@@ -52,7 +52,7 @@ export default function AdvancedQuestionForm({ onGenerate, isLoading = false, cu
     topic: "",
     subTopic: "",
     grade: "Grade 6",
-    totalQuestions: 5,
+    totalQuestions: 5, // This will be calculated but kept for interface compatibility
     numMCQ: 1,
     numTrueFalse: 1,
     numFillBlank: 1,
@@ -65,6 +65,9 @@ export default function AdvancedQuestionForm({ onGenerate, isLoading = false, cu
   })
   const [error, setError] = useState("")
   const subSubjectOptions = subjectMap[inputs.subject] || []
+
+  // Calculate total questions from individual counts
+  const totalQuestions = inputs.numMCQ + inputs.numTrueFalse + inputs.numFillBlank + inputs.numShortAnswer + inputs.numLongAnswer
 
   // Early return after all hooks
   if (currentQuestionCount >= 40) {
@@ -80,14 +83,12 @@ export default function AdvancedQuestionForm({ onGenerate, isLoading = false, cu
     setInputs(prev => ({ ...prev, [key]: value }))
 
   const validateDistribution = () => {
-    const { totalQuestions, numMCQ, numFillBlank, numShortAnswer, numLongAnswer, numTrueFalse } = inputs
-    const sum = numMCQ + numFillBlank + numShortAnswer + numLongAnswer + numTrueFalse
     if (totalQuestions > 10) {
-    setError("You can generate a maximum of 10 questions at a time.")
-    return false
-  }
-    if (totalQuestions !== sum) {
-      setError(`Total Questions (${totalQuestions}) must equal sum of distribution (${sum})`)
+      setError("You can generate a maximum of 10 questions at a time.")
+      return false
+    }
+    if (totalQuestions === 0) {
+      setError("Please specify at least one question to generate.")
       return false
     }
     setError("")
@@ -96,17 +97,20 @@ export default function AdvancedQuestionForm({ onGenerate, isLoading = false, cu
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault()
-      if (currentQuestionCount >= 40) {
+    if (currentQuestionCount >= 40) {
       setError("You have reached your free limit of 40 questions. To create more, please subscribe.")
-    return
-  }
-    if (currentQuestionCount + inputs.totalQuestions > 40) {
+      return
+    }
+    if (currentQuestionCount + totalQuestions > 40) {
       setError(`You can only create ${40 - currentQuestionCount} more questions. Reduce the total or delete some questions.`)
       return
-  }
+    }
     if (!validateDistribution()) return
-    const prompt = createAdvancedPrompt(inputs)
-    onGenerate(prompt, inputs)
+    
+    // Update inputs with calculated total before generating
+    const updatedInputs = { ...inputs, totalQuestions }
+    const prompt = createAdvancedPrompt(updatedInputs)
+    onGenerate(prompt, updatedInputs)
   }
 
   return (
@@ -228,19 +232,7 @@ export default function AdvancedQuestionForm({ onGenerate, isLoading = false, cu
           </div>
           <h3 className="text-lg font-semibold text-gray-700 border-b pb-2 flex-1">Question Distribution</h3>
         </div>
-        <div className="grid grid-cols-2 md:grid-cols-5 gap-4">
-          <div>
-            <label className="block text-sm font-medium text-gray-700 mb-1">Total Questions *</label>
-            <input
-              type="number"
-              min={1}
-              max={10}
-              value={inputs.totalQuestions}
-              onChange={e => handleChange("totalQuestions", Number(e.target.value))}
-              className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500 text-gray-900"
-              required
-            />
-          </div>
+        <div className="grid grid-cols-1 md:grid-cols-5 gap-4">
           <div>
             <label className="block text-sm font-medium text-gray-700 mb-1">MCQ</label>
             <input
@@ -293,7 +285,7 @@ export default function AdvancedQuestionForm({ onGenerate, isLoading = false, cu
           </div>
         </div>
         <p className="text-sm text-gray-600 mt-2">
-          Distribution total: {inputs.numMCQ + inputs.numFillBlank + inputs.numTrueFalse + inputs.numShortAnswer + inputs.numLongAnswer}
+          Total questions: {totalQuestions}
         </p>
         {error && (
           <div className="bg-red-50 border border-red-200 text-red-700 px-4 py-3 rounded-md mt-4">

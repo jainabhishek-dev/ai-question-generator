@@ -6,21 +6,21 @@ const genAI = new GoogleGenerativeAI(process.env.NEXT_PUBLIC_GEMINI_API_KEY!)
 
 /* ---------- STATIC MAPS ---------- */
 const gradeContexts: Record<string,string> = {
-  "Kindergarten": "Use very simple language...",
-  "Grade 1": "Use simple vocabulary...",
-  "Grade 2": "Use 1-2 sentence explanations...",
-  "Grade 3": "Use age-appropriate language...",
-  "Grade 4": "Introduce multi-step reasoning...",
-  "Grade 5": "Use moderate vocabulary...",
-  "Grade 6": "Ensure concepts are concrete and relatable...",
-  "Grade 7": "Bridge concrete to abstract ideas...",
-  "Grade 8": "Encourage analytical thinking...",
-  "Grade 9": "Introduce foundational high-school rigor...",
-  "Grade 10": "Use real-world scenarios and critical thinking...",
-  "Grade 11": "Prepare for standardized exams; deeper analysis...",
-  "Grade 12": "College-prep complexity; include evaluation tasks...",
-  "Undergraduate": "Assume foundational knowledge; emphasize application...",
-  "Graduate": "Expect advanced insight, synthesis, and research-level prompts..."
+  "Kindergarten": "Use very simple language, single-step instructions, and focus on basic recognition and identification skills.",
+  "Grade 1": "Use simple vocabulary, short sentences, and focus on fundamental concepts with concrete examples.",
+  "Grade 2": "Use 1-2 sentence explanations, introduce basic comparisons, and build on prior knowledge gradually.",
+  "Grade 3": "Use age-appropriate language, introduce multi-concept questions, and encourage simple reasoning.",
+  "Grade 4": "Introduce multi-step reasoning, connect concepts across topics, and use moderate complexity.",
+  "Grade 5": "Use moderate vocabulary, expect detailed explanations, and introduce abstract thinking.",
+  "Grade 6": "Ensure concepts are concrete and relatable, bridge elementary to middle school concepts.",
+  "Grade 7": "Bridge concrete to abstract ideas, introduce more complex relationships between concepts.",
+  "Grade 8": "Encourage analytical thinking, expect deeper understanding, and introduce advanced applications.",
+  "Grade 9": "Introduce foundational high-school rigor, expect sophisticated reasoning and connections.",
+  "Grade 10": "Use real-world scenarios and critical thinking, prepare for standardized exam complexity.",
+  "Grade 11": "Prepare for standardized exams, expect deeper analysis and synthesis of concepts.",
+  "Grade 12": "College-prep complexity, include evaluation tasks and advanced critical thinking.",
+  "Undergraduate": "Assume foundational knowledge, emphasize application and analysis of complex scenarios.",
+  "Graduate": "Expect advanced insight, synthesis, and research-level critical thinking with original analysis."
 }
 
 const bloomsDescriptions: Record<string,string> = {
@@ -88,8 +88,15 @@ export const createAdvancedPrompt = (inputs: Inputs) => {
 - ${numTrueFalse} true-false questions
   Total questions must equal ${totalQuestions}.`
 
-  const gradeContext = gradeContexts[grade] ?? ""
-  // Removed unused bloomsContext
+  // Only include the specific grade context for the selected grade
+  const gradeContext = gradeContexts[grade] 
+    ? `Grade-Specific Guidelines for ${grade}:\n${gradeContexts[grade]}`
+    : ""
+
+  // Only include the specific Bloom's description for the selected level
+  const bloomsContext = bloomsDescriptions[bloomsLevel]
+    ? `Bloom's Taxonomy Level - ${bloomsLevel}:\n${bloomsDescriptions[bloomsLevel]}`
+    : ""
 
   const pdfContext = pdfContent?.trim()
     ? `Reference the following content when crafting questions. Do NOT quote it verbatim. You may use it to ensure factual accuracy:\n"""${pdfContent.trim().slice(0, 50_000)}"""`
@@ -103,36 +110,69 @@ export const createAdvancedPrompt = (inputs: Inputs) => {
   if (numShortAnswer > 0) qTypeSections.push(...questionTypeInstructions.shortAnswer)
   if (numLongAnswer > 0) qTypeSections.push(...questionTypeInstructions.longAnswer)
 
+  // Only add question type section if there are specific instructions
+  const questionTypeSection = qTypeSections.length > 0 
+    ? ["Question Type Specific Instructions:", ...qTypeSections].join("\n")
+    : ""
+
   const formattingRequirements = [
   // Output Structure & Format
   "Return ONLY valid JSON. No additional text before or after the JSON array.",
   "Return the result as a JSON array of question objects, even if there is only one question.",
   "Each question object must contain exactly these keys: type, question, options, correctAnswer, explanation.",
-  "For multiple-choice questions:",
-  "- options must be an array like: ['A) Option text', 'B) Option text', 'C) Option text', 'D) Option text']",
-  "- correctAnswer field must be the option label only ('A', 'B', 'C', or 'D'), not the answer text",
+  
+  // MCQ-specific formatting (only if MCQ requested)
+  ...(numMCQ > 0 ? [
+    "For multiple-choice questions:",
+    "- options must be an array like: ['A) Option text', 'B) Option text', 'C) Option text', 'D) Option text']",
+    "- correctAnswer field must be the option label only ('A', 'B', 'C', or 'D'), not the answer text"
+  ] : []),
 
   // Content Quality Standards
   "Question Quality Requirements:",
   "- Each question must be clear, unambiguous, and age-appropriate for the specified grade level",
   "- Avoid trick questions, double negatives, or confusing wording", 
   "- Ensure questions test understanding, not memorization (unless specifically requested)",
-  "- Include diverse question stems: 'Which of the following...', 'What is the primary...', 'How does...', etc.",
+  "- AVOID vague question starters like 'Imagine...', 'Picture this...', 'Think about...', 'Consider...'",
+  
+  // Question stems (conditional based on question types requested)
+  ...(numMCQ > 0 ? [
+    "- For MCQ: Use stems like 'Which of the following...', 'What is the primary...', 'How does...', 'Why is...', 'When does...'"
+  ] : []),
+  ...(numTrueFalse > 0 ? [
+    "- For True/False: Use clear, factual statements that are definitively true or false"
+  ] : []),
+  ...(numFillBlank > 0 ? [
+    "- For Fill-in-blank: Use direct statements with clear blanks: 'The _______ is...'"
+  ] : []),
+  ...(numShortAnswer > 0 || numLongAnswer > 0 ? [
+    "- For Answer questions: Use direct, specific question stems: 'Explain how...', 'Describe why...', 'What are the main...'"
+  ] : []),
+  
+  "- Questions should be concrete and factual rather than hypothetical scenarios",
 
-  // Mathematical & Currency Formatting
-  "Mathematical Expressions:",
-  "- Use standard LaTeX syntax wrapped in single dollar signs: $x^2 + y^2 = z^2$",
-  "- Use escaped dollar for dollar sign (\\$), not a plain dollar sign ($)",
+  // Mathematical & Currency Formatting - CRITICAL RULES
+  "Mathematical Expressions & Currency Symbols:",
+  "- For mathematical expressions: Use single dollar signs: $x^2 + y^2 = z^2$, $18 + x = 45$, $\\frac{a}{b} = c$",
+  "- For currency amounts: ALWAYS use escaped dollars: \\$45, \\$12.00, \\$0.75 (never use plain $ for money)",
+  "- For variable references in text: Use math delimiters: the variable $x$ represents...",
+  "",
+  "CURRENCY FORMATTING EXAMPLES:",
+  "✅ CORRECT: 'costs \\$45', 'saved \\$18', 'total of \\$15.00'", 
+  "❌ WRONG: 'costs $45', 'saved $18' (creates math interpretation conflicts)",
+  "",
+  "MIXED CURRENCY & MATH EXAMPLES:",
+  "✅ CORRECT: 'Jamie saved \\$18. The equation $18 + x = 45$ represents his situation.'",
+  "❌ WRONG: 'Jamie saved $18. The equation $18 + x = 45$ represents his situation.'",
+  "",
   "- Use Unicode symbols when appropriate: ₹, €, £, %, °C, π, ∞",
   "- Format large numbers with commas: 1,000,000 not 1000000",
-
-  ...qTypeSections,
 
   // Explanation Requirements  
   "Explanation Standards:",
   "- Keep explanations concise but complete (2-4 sentences ideal)",
   "- Explain WHY the correct answer is right, not just WHAT it is",
-  "- For incorrect options in MCQ, briefly explain why they're wrong when helpful",
+  ...(numMCQ > 0 ? ["- For MCQ: briefly explain why incorrect options are wrong when helpful"] : []),
   "- Use grade-appropriate vocabulary in explanations",
 
   // Content Accuracy & Consistency
@@ -152,23 +192,18 @@ export const createAdvancedPrompt = (inputs: Inputs) => {
   
   const validationInstructions = `
   VALIDATION CHECKLIST - Verify before responding:
-  □ Total questions equal exactly ${totalQuestions}
-  □ Distribution matches: ${numMCQ} MCQ, ${numTrueFalse} T/F, ${numFillBlank} Fill, ${numShortAnswer} Short, ${numLongAnswer} Long
-  □ All MCQ have exactly 4 options (A, B, C, D) and correctAnswer is a single letter
-  □ All T/F have exactly 2 options ['True', 'False'] and correctAnswer matches
-  □ All questions include required fields
-  □ JSON syntax is valid (no trailing commas, proper escaping)
-  □ No placeholder text like "[Insert explanation]" remains
-  `
+  ${numMCQ > 0 ? '□ All MCQ have exactly 4 options (A, B, C, D) and correctAnswer is a single letter' : ''}
+  ${numTrueFalse > 0 ? '□ All T/F have exactly 2 options [\'True\', \'False\'] and correctAnswer matches' : ''}
+  `.split('\n').filter(line => line.trim() !== '').join('\n')
 
   return [
-    "You are an expert educational assessment designer with deep knowledge of pedagogy and learning sciences.",
+    "You are an expert assessment designer with deep knowledge of pedagogy and learning sciences.",
     
     `CONTEXT:\n${contextInfo}`,
     
     gradeContext,
     
-    `BLOOM'S TAXONOMY TARGET:\n${bloomsDescriptions[bloomsLevel]}`,
+    bloomsContext,
     
     pdfContext,
     
@@ -176,9 +211,9 @@ export const createAdvancedPrompt = (inputs: Inputs) => {
     
     formattingRequirements,
     
-    validationInstructions,
+    questionTypeSection, // Only included if there are specific question type instructions
     
-    "FINAL INSTRUCTION: Generate questions that are educationally meaningful, technically accurate, and perfectly formatted according to the specifications above. Double-check all requirements before responding."
+    validationInstructions
   ].filter(Boolean).join("\n\n")
 }
 
