@@ -12,7 +12,7 @@ import {
   SparklesIcon,
   InformationCircleIcon
 } from '@heroicons/react/24/outline'
-import { PdfCustomization, StudentFields, PdfFormatting } from '@/types/question'
+import { PdfCustomization, StudentFields } from '@/types/question'
 import { DEFAULT_STUDENT_FIELDS, DEFAULT_CONTENT_OPTIONS, createPdfCustomization, DEFAULT_PDF_FORMATTING } from '@/constants/pdfDefaults'
 
 interface Props {

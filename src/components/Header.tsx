@@ -9,7 +9,9 @@ import {
   ClipboardDocumentListIcon,
   ArrowRightStartOnRectangleIcon,
   XMarkIcon,
-  ChevronDownIcon
+  ChevronDownIcon,
+  DocumentPlusIcon,
+  FolderIcon
 } from "@heroicons/react/24/outline"
 import Portal from "./Portal";    
 
@@ -146,6 +148,28 @@ if (vertical) {
             <ClipboardDocumentListIcon className="w-6 h-6 flex-shrink-0" />
             <span className={`text-sm font-medium ${hide}`}>My Questions</span>
           </Link>
+          
+          <Link
+            href="/lesson-plans"
+            onClick={handleNavClick}
+            className={`flex items-center gap-3 py-2 rounded-lg hover:bg-gray-800 hover:scale-[1.03] focus:bg-gray-800 focus:scale-[1.03] active:scale-[0.98] transition-all ${pad} ${pathname.startsWith('/lesson-plans') ? 'bg-gray-800 scale-[1.03]' : ''}`}
+            aria-label="Lesson Plans"
+          >
+            <DocumentPlusIcon className="w-6 h-6 flex-shrink-0" />
+            <span className={`text-sm font-medium ${hide}`}>Lesson Plans</span>
+          </Link>
+          
+          {user && (
+            <Link
+              href="/my-lesson-plans"
+              onClick={handleNavClick}
+              className={`flex items-center gap-3 py-2 rounded-lg hover:bg-gray-800 hover:scale-[1.03] focus:bg-gray-800 focus:scale-[1.03] active:scale-[0.98] transition-all ${pad} ${pathname.startsWith('/my-lesson-plans') ? 'bg-gray-800 scale-[1.03]' : ''}`}
+              aria-label="My Lesson Plans"
+            >
+              <FolderIcon className="w-6 h-6 flex-shrink-0" />
+              <span className={`text-sm font-medium ${hide}`}>My Lesson Plans</span>
+            </Link>
+          )}
         </nav>
       </div>
 
@@ -329,6 +353,20 @@ if (vertical) {
                 My Questions
               </span>
             </Link>
+            
+            <Link href="/lesson-plans" className={`hover:text-blue-800 hover:bg-blue-50 focus:bg-blue-100 active:bg-blue-200 hover:scale-[1.03] focus:scale-[1.03] active:scale-[0.98] rounded-lg transition-all ${pathname.startsWith('/lesson-plans') ? 'bg-blue-100 scale-[1.03] font-semibold text-blue-900' : ''}`} aria-label="Lesson Plans">
+              <span className="font-medium text-sm sm:text-base text-blue-700 tracking-tight">
+                Lesson Plans
+              </span>
+            </Link>
+            
+            {user && (
+              <Link href="/my-lesson-plans" className={`hover:text-blue-800 hover:bg-blue-50 focus:bg-blue-100 active:bg-blue-200 hover:scale-[1.03] focus:scale-[1.03] active:scale-[0.98] rounded-lg transition-all ${pathname.startsWith('/my-lesson-plans') ? 'bg-blue-100 scale-[1.03] font-semibold text-blue-900' : ''}`} aria-label="My Lesson Plans">
+                <span className="font-medium text-sm sm:text-base text-blue-700 tracking-tight">
+                  My Lesson Plans
+                </span>
+              </Link>
+            )}
           </nav>
         </div>
         {/* Right: Account */}

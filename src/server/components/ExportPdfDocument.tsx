@@ -84,7 +84,6 @@ export const ExportPdfDocument: React.FC<Props> = ({
   
   const fontSize = customFormatting?.fontSize || legacyFormatting?.fontSize || PDF_DEFAULTS.FONT_SIZE;
   const questionSpacing = customFormatting?.questionSpacing || legacyFormatting?.questionSpacing || PDF_DEFAULTS.QUESTION_SPACING;
-  const margins = customFormatting?.margins || PDF_DEFAULTS.MARGINS;
   
   // Content options
   const includeQuestionText = customization?.includeQuestionText ?? true;
@@ -98,7 +97,6 @@ export const ExportPdfDocument: React.FC<Props> = ({
   const commonInstructionsText = customization?.commonInstructionsText || '';
   
   // Legacy support
-  const showInstructions = customization?.showInstructions ?? false;
   const highlightAnswers = customization?.highlightAnswers ?? includeCorrectAnswer;
   
   // Student fields

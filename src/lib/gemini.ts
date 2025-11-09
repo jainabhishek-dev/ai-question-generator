@@ -1,6 +1,7 @@
 import { GoogleGenerativeAI } from "@google/generative-ai"
 import { Inputs } from "@/components/AdvancedQuestionForm"
 import { createNCERTPrompt } from "@/lib/ncertPrompt"
+import { createObjectiveExtractionPrompt, createLessonPlanPrompt } from "@/lib/lessonPlanPrompt"
 
 const genAI = new GoogleGenerativeAI(process.env.NEXT_PUBLIC_GEMINI_API_KEY!)
 
@@ -232,4 +233,89 @@ export const generateNCERTQuestions = async (inputs: Inputs) => {
   console.log("NCERT Prompt:", prompt) // <-- Add this line
   const res = await model.generateContent(prompt)
   return res.response?.text() ?? ""
+}
+
+/* ---------- LESSON PLAN AI FUNCTIONS ---------- */
+
+/**
+ * Extract learning objectives from PDF content
+ */
+export const extractLearningObjectives = async (
+  pdfFile: File,
+  subject: string,
+  grade: string
+): Promise<string> => {
+  const model = genAI.getGenerativeModel({ model: "gemini-2.5-flash" })
+  
+  // Convert PDF file to base64 for Gemini
+  const arrayBuffer = await pdfFile.arrayBuffer()
+  const base64Data = Buffer.from(arrayBuffer).toString('base64')
+  
+  const prompt = createObjectiveExtractionPrompt(subject, grade)
+  
+  console.log("🔍 Processing PDF directly with Gemini for objective extraction")
+  console.log("📄 PDF file size:", pdfFile.size, "bytes")
+  
+  const res = await model.generateContent([
+    prompt,
+    {
+      inlineData: {
+        data: base64Data,
+        mimeType: pdfFile.type
+      }
+    }
+  ])
+  
+  const result = res.response?.text() ?? ""
+  console.log("🤖 AI Objectives Response:", result)
+  console.log("📊 Objectives Response length:", result.length)
+  return result
+}
+
+/**
+ * Generate lesson plan based on selected objective and parameters
+ */
+export const generateLessonPlan = async (
+  formData: {
+    subject: string;
+    grade: string;
+    sections: string[];
+    pdfFile?: File;
+    additionalNotes?: string;
+  },
+  selectedObjective: string,
+  learnerLevel: 'beginner' | 'intermediate' | 'advanced',
+  duration: 30 | 45 | 60
+): Promise<string> => {
+  const model = genAI.getGenerativeModel({ model: "gemini-2.5-flash" })
+  const prompt = createLessonPlanPrompt(formData, selectedObjective, learnerLevel, duration)
+  console.log("🏗️ Generating lesson plan with direct PDF processing")
+  
+  let res;
+  
+  // Add PDF file directly to request if available
+  if (formData.pdfFile) {
+    const arrayBuffer = await formData.pdfFile.arrayBuffer()
+    const base64Data = Buffer.from(arrayBuffer).toString('base64')
+    
+    console.log("📄 Including PDF file in lesson plan generation:", formData.pdfFile.name)
+    
+    res = await model.generateContent([
+      prompt,
+      {
+        inlineData: {
+          data: base64Data,
+          mimeType: formData.pdfFile.type
+        }
+      }
+    ])
+  } else {
+    // Fallback to text-only prompt if no PDF
+    res = await model.generateContent(prompt)
+  }
+  
+  const result = res.response?.text() ?? ""
+  console.log("🤖 AI Raw Response:", result)
+  console.log("📊 Response length:", result.length)
+  return result
 }

@@ -148,13 +148,13 @@ export default function Home() {
             setSaveStatus('saved');
             setSaveError(null);
           }
-        } catch (saveErr) {
+        } catch {
           setQuestions(processedQuestions);
           setSaveStatus('saved');
           setSaveError(null);
         }
       }
-    } catch (err) {
+    } catch {
       setOutput("Error generating questions. Please try again.");
     } finally {
       setIsLoading(false);
@@ -205,13 +205,13 @@ export default function Home() {
           setSaveStatus('saved')
           setSaveError(null)
         }
-      } catch (saveErr) {
+      } catch {
         setQuestions(processedQuestions)
         setSaveStatus('saved')
         setSaveError(null)
       }
     }
-  } catch (err) {
+  } catch {
     setOutput("Error generating questions. Please try again.")
   } finally {
     setIsLoading(false)
