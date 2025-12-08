@@ -29,7 +29,7 @@
     "jspdf": "^3.0.1",
     "katex": "^0.16.22",
     "lucide-react": "^0.526.0",
-    "next": "^15.5.2",
+    "next": "^15.5.7",
     "puppeteer-core": "^24.16.0",
     "react": "^19.1.1",
     "react-dom": "^19.1.1",
