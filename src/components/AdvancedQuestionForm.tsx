@@ -28,6 +28,7 @@ export interface Inputs {
   additionalNotes: string
   learningOutcome?: string
   question_source?: string
+  enableImages?: boolean // Enable AI image generation
   [key: string]: unknown
 }
 
@@ -61,7 +62,8 @@ export default function AdvancedQuestionForm({ onGenerate, isLoading = false, cu
     difficulty: "Medium",
     bloomsLevel: "Understand",
     pdfContent: "",
-    additionalNotes: ""
+    additionalNotes: "",
+    enableImages: false
   })
   const [error, setError] = useState("")
   const subSubjectOptions = subjectMap[inputs.subject] || []
@@ -79,7 +81,7 @@ export default function AdvancedQuestionForm({ onGenerate, isLoading = false, cu
     )
   }
 
-  const handleChange = (key: keyof Inputs, value: string | number) =>
+  const handleChange = (key: keyof Inputs, value: string | number | boolean) =>
     setInputs(prev => ({ ...prev, [key]: value }))
 
   const validateDistribution = () => {
@@ -319,6 +321,24 @@ export default function AdvancedQuestionForm({ onGenerate, isLoading = false, cu
             placeholder="Any special instructions or focus areas for the AI..."
             className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500 text-gray-900 h-24 resize-vertical"
           />
+        </div>
+
+        {/* Image Generation Toggle */}
+        <div className="mt-4">
+          <label className="flex items-center space-x-3 cursor-pointer">
+            <input
+              type="checkbox"
+              checked={inputs.enableImages || false}
+              onChange={e => handleChange("enableImages", e.target.checked)}
+              className="w-4 h-4 text-blue-600 bg-gray-100 border-gray-300 rounded focus:ring-blue-500 focus:ring-2"
+            />
+            <span className="text-sm font-medium text-gray-700">
+              Enable Image Generation
+            </span>
+          </label>
+          <p className="text-xs text-gray-500 mt-1 ml-7">
+            AI will add educational images where they improve understanding
+          </p>
         </div>
       </div>
 

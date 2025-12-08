@@ -1,11 +1,14 @@
 import React from 'react'
-import { PencilSquareIcon, TrashIcon, CheckIcon, EllipsisHorizontalIcon, CheckCircleIcon, InformationCircleIcon } from '@heroicons/react/24/outline'
+import { PencilSquareIcon, TrashIcon, CheckIcon, EllipsisHorizontalIcon, CheckCircleIcon, InformationCircleIcon, PhotoIcon } from '@heroicons/react/24/outline'
 import ReactMarkdown from 'react-markdown'
 import remarkMath from 'remark-math'
 import rehypeKatex from 'rehype-katex'
 import remarkGfm from 'remark-gfm'
-import { QuestionRecord } from '@/types/question'
+import { QuestionRecord, GeneratedImage } from '@/types/question'
 import { useState, useRef, useEffect } from 'react'
+import { extractImagePlaceholders } from '@/lib/questionParser'
+import ImageRenderer from '@/components/ImageRenderer'
+import { useIntersectionObserver } from '@/hooks/useIntersectionObserver'
 
 
 interface QuestionCardProps {
@@ -16,6 +19,11 @@ interface QuestionCardProps {
   setPendingDeleteId: (id: number) => void
   deletingId: number | null
   onEdit?: () => void
+  // Image-related props
+  questionImages?: GeneratedImage[]
+  onManageImages?: (question: QuestionRecord) => void
+  // Lazy loading
+  onLoadImages?: (questionId: number) => void
 }
 
 const QuestionCard: React.FC<QuestionCardProps> = ({
@@ -25,13 +33,34 @@ const QuestionCard: React.FC<QuestionCardProps> = ({
   setShowDeleteModal,
   setPendingDeleteId,
   deletingId,
-  onEdit
+  onEdit,
+  questionImages = [],
+  onManageImages,
+  onLoadImages
 }) => {
 
-    // Dropdown state and ref for three dots menu
+  // Dropdown state and ref for three dots menu
   const [showDropdown, setShowDropdown] = useState(false)
   const dropdownRef = useRef<HTMLDivElement>(null)
+
+  // Intersection observer for lazy loading
+  const { ref: cardRef, hasTriggered } = useIntersectionObserver({
+    threshold: 0.1,
+    rootMargin: '50px',
+    triggerOnce: true
+  })
+
+  // Image-related state
+  const imagePlaceholders = extractImagePlaceholders(q.question)
+  const hasImagePlaceholders = imagePlaceholders.length > 0
  
+  // Trigger image loading when card becomes visible
+  useEffect(() => {
+    if (hasTriggered && hasImagePlaceholders && onLoadImages && questionImages.length === 0 && q.id) {
+      onLoadImages(q.id)
+    }
+  }, [hasTriggered, hasImagePlaceholders, onLoadImages, q.id, questionImages.length])
+
   useEffect(() => {
     const handleClickOutside = (event: MouseEvent) => {
       if (dropdownRef.current && !dropdownRef.current.contains(event.target as Node)) {
@@ -45,7 +74,7 @@ const QuestionCard: React.FC<QuestionCardProps> = ({
   const isTrueFalse = q.question_type === 'true-false'
   
   return (
-    <div className="group card overflow-hidden bg-white dark:bg-gray-900 border border-gray-200 dark:border-gray-700">
+    <div ref={cardRef} className="group card overflow-hidden bg-white dark:bg-gray-900 border border-gray-200 dark:border-gray-700">
       {/* Card Header */}
       <div className=" bg-gray-800 text-white px-6 py-4 relative">
         <div className="flex items-start space-x-3 sm:space-x-4">
@@ -81,13 +110,15 @@ const QuestionCard: React.FC<QuestionCardProps> = ({
             </div>
 
             {/* Question Text */}
-            <div className="prose max-w-none sm:prose-lg text-justify">
-              <ReactMarkdown
-                remarkPlugins={[remarkMath, [remarkGfm, { breaks: true }]]}
-                rehypePlugins={[rehypeKatex]}
-              >
-                {q.question}
-              </ReactMarkdown>
+            <div className="text-justify">
+              <ImageRenderer
+                content={q.question}
+                generatedImages={questionImages}
+                showPlaceholders={false}
+                className="text-white prose-invert"
+                questionId={q.id}
+                placementType="question"
+              />
             </div>
           </div>
         </div>
@@ -106,7 +137,7 @@ const QuestionCard: React.FC<QuestionCardProps> = ({
 
               {/* Dropdown menu */}
               {showDropdown && (
-                <div className="absolute right-0 top-full mt-2 w-40 bg-white dark:bg-gray-800 rounded-lg shadow-lg border border-gray-200 dark:border-gray-700 py-1 z-50">
+                <div className="absolute right-0 top-full mt-2 w-48 bg-white dark:bg-gray-800 rounded-lg shadow-lg border border-gray-200 dark:border-gray-700 py-1 z-50">
                   {/* Edit option */}
                   {onEdit && (
                     <button
@@ -118,6 +149,20 @@ const QuestionCard: React.FC<QuestionCardProps> = ({
                     >
                       <PencilSquareIcon className="w-5 h-5 text-blue-600 dark:text-blue-400" />
                       <span>Edit</span>
+                    </button>
+                  )}
+
+                  {/* Manage Images option - only show if question has image placeholders */}
+                  {hasImagePlaceholders && (
+                    <button
+                      onClick={() => {
+                        onManageImages?.(q)
+                        setShowDropdown(false)
+                      }}
+                      className="w-full px-4 py-2.5 text-left text-sm text-gray-700 dark:text-gray-300 hover:bg-purple-50 dark:hover:bg-purple-900/20 flex items-center space-x-3 transition-colors"
+                    >
+                      <PhotoIcon className="w-5 h-5 text-purple-600 dark:text-purple-400" />
+                      <span>Manage Images</span>
                     </button>
                   )}
 
@@ -168,17 +213,14 @@ const QuestionCard: React.FC<QuestionCardProps> = ({
                       {optionLabel}
                     </div>
                     <div className="flex-1 prose max-w-none">
-                      <ReactMarkdown
-                        remarkPlugins={[remarkMath, [remarkGfm, { breaks: true }]]}
-                        rehypePlugins={[rehypeKatex]}
-                        components={{
-                          p: ({ children }) => (
-                            <p className="text-gray-800 leading-relaxed text-sm sm:text-base dark:text-gray-200">{children}</p>
-                          )
-                        }}
-                      >
-                        {cleanedOpt as string}
-                      </ReactMarkdown>
+                      <ImageRenderer
+                        content={cleanedOpt as string}
+                        generatedImages={questionImages}
+                        showPlaceholders={false}
+                        className="text-gray-800 leading-relaxed text-sm sm:text-base dark:text-gray-200"
+                        questionId={q.id}
+                        placementType={`option_${optionLabel.toLowerCase()}`}
+                      />
                     </div>
                   </div>
                 );
@@ -228,6 +270,8 @@ const QuestionCard: React.FC<QuestionCardProps> = ({
           </div>
         </div>
 
+
+
         {/* Explanation */}
         {q.explanation && (
           <div className="bg-gradient-to-r from-blue-50 to-indigo-50 p-3 sm:p-4 rounded-xl border border-blue-200/50 dark:from-blue-900 dark:to-indigo-900 dark:border-blue-700">
@@ -235,18 +279,15 @@ const QuestionCard: React.FC<QuestionCardProps> = ({
               <InformationCircleIcon className="w-4 h-4" />
               <span>Explanation</span>
             </h4>
-            <div className="prose max-w-none">
-              <ReactMarkdown
-                remarkPlugins={[remarkMath, [remarkGfm, { breaks: true }]]}
-                rehypePlugins={[rehypeKatex]}
-                components={{
-                  p: ({ children }) => (
-                    <p className="text-blue-800 leading-relaxed text-sm sm:text-base dark:text-blue-200">{children}</p>
-                  )
-                }}
-              >
-                {q.explanation}
-              </ReactMarkdown>
+            <div>
+              <ImageRenderer
+                content={q.explanation}
+                generatedImages={questionImages}
+                showPlaceholders={false}
+                className="text-blue-800 dark:text-blue-200"
+                questionId={q.id}
+                placementType="explanation"
+              />
             </div>
           </div>
         )}

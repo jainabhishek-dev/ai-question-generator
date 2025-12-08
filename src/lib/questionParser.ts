@@ -12,6 +12,15 @@ export interface Question {
   correctAnswerLetter?: string;
   answer?: string;
   explanation?: string;
+  // Image-related properties
+  imagePrompts?: Array<{
+    placeholder: string;
+    prompt: string;
+    purpose: string;
+    accuracy?: string;
+    style?: string;
+  }>;
+  hasImages?: boolean;
 }
 
 // Interface for raw parsed question data from AI
@@ -24,6 +33,10 @@ interface RawQuestionData {
   correctAnswer?: unknown;
   answer?: string;
   explanation?: string;
+  // Image-related properties from AI response
+  imagePrompts?: unknown;
+  images?: unknown;
+  hasImages?: boolean;
 }
 
 // Interface for option objects that might have a text property
@@ -72,6 +85,186 @@ export function parseQuestions(text: string): Question[] {
     
     return [];
   }
+}
+
+/**
+ * Extracts image placeholders from question text
+ * Supports [IMG: description], [IMAGE: description] and legacy formats
+ */
+export function extractImagePlaceholders(text: string): Array<{
+  placeholder: string;
+  description: string;
+  fullMatch: string;
+}> {
+  const placeholders: Array<{
+    placeholder: string;
+    description: string;
+    fullMatch: string;
+  }> = [];
+
+  // Pattern 1: [IMG: description] (new preferred format)
+  const imgPattern = /\[IMG:\s*([^\]]+)\]/gi;
+  let match;
+  while ((match = imgPattern.exec(text)) !== null) {
+    placeholders.push({
+      placeholder: `IMG_${placeholders.length + 1}`,
+      description: match[1].trim(),
+      fullMatch: match[0]
+    });
+  }
+
+  // Pattern 2: [IMAGE: description] (backward compatibility)
+  const imagePattern = /\[IMAGE:\s*([^\]]+)\]/gi;
+  while ((match = imagePattern.exec(text)) !== null) {
+    placeholders.push({
+      placeholder: `IMAGE_${placeholders.length + 1}`,
+      description: match[1].trim(),
+      fullMatch: match[0]
+    });
+  }
+
+  // Pattern 3: [IMAGE_PLACEHOLDER_N] (legacy format)
+  const placeholderPattern = /\[IMAGE_PLACEHOLDER_(\d+)\]/gi;
+  while ((match = placeholderPattern.exec(text)) !== null) {
+    placeholders.push({
+      placeholder: `IMAGE_PLACEHOLDER_${match[1]}`,
+      description: `Image placeholder ${match[1]}`,
+      fullMatch: match[0]
+    });
+  }
+
+  return placeholders;
+}
+
+/**
+ * Replaces image placeholders in text with temporary display elements
+ */
+export function replaceImagePlaceholders(
+  text: string, 
+  replacement: string = "[Image Placeholder]"
+): string {
+  return text
+    .replace(/\[IMG:\s*[^\]]+\]/gi, replacement)           // New [IMG: format
+    .replace(/\[IMAGE:\s*[^\]]+\]/gi, replacement)         // Backward compatibility
+    .replace(/\[IMAGE_PLACEHOLDER_\d+\]/gi, replacement);  // Legacy format
+}
+
+/**
+ * Extracts image prompts from entire question object with automatic placement detection
+ */
+export function extractImagePromptsFromQuestion(question: RawQuestionData): Array<{
+  placeholder: string;
+  prompt: string;
+  purpose: string;
+  placement: string;
+  accuracy?: string;
+  style?: string;
+}> {
+  const imagePrompts: Array<{
+    placeholder: string;
+    prompt: string;
+    purpose: string;
+    placement: string;
+    accuracy?: string;
+    style?: string;
+  }> = [];
+
+  // Define fields to search with their corresponding placement values
+  const fieldsToSearch = [
+    { content: question.question || '', placement: 'question' },
+    { content: question.explanation || '', placement: 'explanation' }
+  ];
+
+  // Add options if they exist
+  if (Array.isArray(question.options)) {
+    question.options.forEach((option, index) => {
+      const optionText = typeof option === 'string' ? option : 
+                        typeof option === 'object' && option && 'text' in option ? (option as OptionWithText).text : 
+                        String(option);
+      fieldsToSearch.push({
+        content: optionText,
+        placement: `option_${String.fromCharCode(97 + index)}` // a, b, c, d
+      });
+    });
+  }
+
+  // Extract placeholders from each field
+  fieldsToSearch.forEach(field => {
+    const placeholders = extractImagePlaceholders(field.content);
+    placeholders.forEach((placeholder, index) => {
+      imagePrompts.push({
+        placeholder: `${field.placement}_img_${index + 1}`,
+        prompt: placeholder.description,
+        purpose: `Educational image for ${field.placement}`,
+        placement: field.placement,
+        style: 'educational_diagram'
+      });
+    });
+  });
+
+  return imagePrompts;
+}
+
+/**
+ * Validates that image prompts match placeholders in question text
+ */
+export function validateImagePrompts(question: Question): {
+  isValid: boolean;
+  issues: string[];
+  suggestions: string[];
+} {
+  const issues: string[] = [];
+  const suggestions: string[] = [];
+
+  if (!question.hasImages && (!question.imagePrompts || question.imagePrompts.length === 0)) {
+    return { isValid: true, issues: [], suggestions: [] };
+  }
+
+  const textPlaceholders = extractImagePlaceholders(question.question);
+  const imagePrompts = question.imagePrompts || [];
+
+  // Check if number of placeholders matches number of prompts
+  if (textPlaceholders.length !== imagePrompts.length) {
+    issues.push(`Mismatch: ${textPlaceholders.length} placeholders in text, ${imagePrompts.length} image prompts provided`);
+    
+    if (textPlaceholders.length > imagePrompts.length) {
+      suggestions.push('Generate more image prompts to match placeholders in question text');
+    } else {
+      suggestions.push('Reduce number of image prompts or add more placeholders to question text');
+    }
+  }
+
+  // Check if all placeholders have corresponding prompts
+  textPlaceholders.forEach((placeholder, index) => {
+    const matchingPrompt = imagePrompts.find(p => 
+      p.placeholder === placeholder.placeholder ||
+      p.placeholder === `IMAGE_${index + 1}`
+    );
+
+    if (!matchingPrompt) {
+      issues.push(`No image prompt found for placeholder: ${placeholder.fullMatch}`);
+      suggestions.push(`Add image prompt for: ${placeholder.description}`);
+    }
+  });
+
+  // Check prompt quality
+  imagePrompts.forEach(prompt => {
+    if (prompt.prompt.length < 20) {
+      issues.push(`Image prompt too short: "${prompt.prompt}"`);
+      suggestions.push('Expand image prompts with more descriptive details');
+    }
+
+    if (!prompt.purpose) {
+      issues.push(`Missing purpose for image prompt: ${prompt.placeholder}`);
+      suggestions.push('Add purpose description for all image prompts');
+    }
+  });
+
+  return {
+    isValid: issues.length === 0,
+    issues,
+    suggestions
+  };
 }
 
 /**
@@ -125,13 +318,54 @@ export function processQuestions(parsedQuestions: RawQuestionData[]): Question[]
         correctAnswer = JSON.stringify(q.correctAnswer);
       }
 
+      // Process image prompts - auto-extract from question content with placement detection
+      let imagePrompts: Array<{
+        placeholder: string;
+        prompt: string;
+        purpose: string;
+        accuracy?: string;
+        style?: string;
+      }> = [];
+
+      // First try auto-extraction from question content (new method)
+      const autoExtractedPrompts = extractImagePromptsFromQuestion(q);
+      if (autoExtractedPrompts.length > 0) {
+        imagePrompts = autoExtractedPrompts.map(img => ({
+          placeholder: img.placeholder,
+          prompt: escapeCurrencyDollarsSmart(img.prompt),
+          purpose: img.purpose,
+          accuracy: img.accuracy,
+          style: img.style || 'educational_diagram'
+        }));
+      }
+      // Fallback to explicit imagePrompts if provided by AI (backward compatibility)
+      else if (q.imagePrompts && Array.isArray(q.imagePrompts)) {
+        imagePrompts = q.imagePrompts
+          .filter(img => img && typeof img === 'object')
+          .map(img => ({
+            placeholder: String(img.placeholder || ''),
+            prompt: escapeCurrencyDollarsSmart(String(img.prompt || '')),
+            purpose: String(img.purpose || ''),
+            accuracy: img.accuracy ? String(img.accuracy) : undefined,
+            style: img.style ? String(img.style) : undefined
+          }))
+          .filter(img => img.placeholder && img.prompt);
+      }
+
+      // Check if question text contains image placeholders (any format)
+      const questionText = [q.question, q.explanation, ...(options || [])].join(' ');
+      const hasImagePlaceholders = /\[(IMG|IMAGE):\s*[^\]]+\]/i.test(questionText);
+      const hasImages = imagePrompts.length > 0 || hasImagePlaceholders || q.hasImages === true;
+
       const processedQuestion: Question = {
         type: q.type || "unknown",
         question: escapeCurrencyDollarsSmart(q.question || q.prompt || ""),
         options: options.map(escapeCurrencyDollarsSmart),
         correctAnswer: escapeCurrencyDollarsSmart(correctAnswer),
         correctAnswerLetter,
-        explanation: escapeCurrencyDollarsSmart(q.explanation || "")
+        explanation: escapeCurrencyDollarsSmart(q.explanation || ""),
+        imagePrompts: imagePrompts.length > 0 ? imagePrompts : undefined,
+        hasImages
       };
       
       return processedQuestion;

@@ -47,6 +47,7 @@ export default function NCERTQuestionForm({ onGenerate, isLoading, currentQuesti
   const [distributionError, setDistributionError] = useState("")
   const [learningOutcomeOptions, setLearningOutcomeOptions] = useState<string[]>([])
   const [learningOutcome, setLearningOutcome] = useState("")
+  const [enableImages, setEnableImages] = useState(false)
 
   // Calculate total questions from individual counts
   const totalQuestions = numMCQ + numTrueFalse + numFillBlank + numShortAnswer + numLongAnswer
@@ -147,7 +148,8 @@ export default function NCERTQuestionForm({ onGenerate, isLoading, currentQuesti
       subSubject: "",
       topic: "",
       subTopic: "",
-      pdfContent: ""
+      pdfContent: "",
+      enableImages
     })
   }
 
@@ -355,6 +357,24 @@ export default function NCERTQuestionForm({ onGenerate, isLoading, currentQuesti
           placeholder="Any special instructions or focus areas for the AI..."
           className="w-full px-3 py-2 border border-gray-300 rounded-md h-24 resize-vertical"
         />
+
+        {/* Image Generation Toggle */}
+        <div className="mt-4">
+          <label className="flex items-center space-x-3 cursor-pointer">
+            <input
+              type="checkbox"
+              checked={enableImages}
+              onChange={e => setEnableImages(e.target.checked)}
+              className="w-4 h-4 text-blue-600 bg-gray-100 border-gray-300 rounded focus:ring-blue-500 focus:ring-2"
+            />
+            <span className="text-sm font-medium text-gray-700">
+              Enable Image Generation
+            </span>
+          </label>
+          <p className="text-xs text-gray-500 mt-1 ml-7">
+            AI will add educational images where they improve understanding
+          </p>
+        </div>
       </div>
 
       {/* Submit Button Card */}

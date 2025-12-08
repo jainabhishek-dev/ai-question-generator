@@ -1,13 +1,13 @@
 
 "use client"
 
-import { useEffect, useState } from 'react'
+import { useEffect, useState, useCallback } from 'react'
 import useSWR from 'swr'
 import { useAuth } from '@/contexts/AuthContext'
 import 'katex/dist/katex.min.css'
 import Link from 'next/link'
 import { ExclamationCircleIcon, SparklesIcon, MagnifyingGlassIcon, ArrowLeftIcon } from "@heroicons/react/24/outline";
-import { QuestionRecord, PdfCustomization } from '@/types/question'
+import { QuestionRecord, PdfCustomization, GeneratedImage } from '@/types/question'
 import { getUserQuestions, softDeleteUserQuestion } from '@/lib/database'
 import FilterPanel from './FilterPanel'
 import ExportPanel from './ExportPanel'
@@ -17,6 +17,8 @@ import DeleteModal from './DeleteModal'
 import LoadingSkeleton from './LoadingSkeleton'
 import EditQuestionModal from './EditQuestionModal'
 import { updateUserQuestion } from '@/lib/database'
+import { extractImagePromptsFromQuestion } from '@/lib/questionParser'
+import ComprehensiveImageModal from '@/components/ComprehensiveImageModal'
 
 function MyQuestionsPage() {
   const { user } = useAuth()
@@ -53,6 +55,13 @@ function MyQuestionsPage() {
   const [pendingDeleteId, setPendingDeleteId] = useState<number | null>(null)
   
   const [editingQuestion, setEditingQuestion] = useState<QuestionRecord | null>(null)
+
+  // Image generation state
+  const [showImageModal, setShowImageModal] = useState(false)
+  const [selectedQuestionForImages, setSelectedQuestionForImages] = useState<(QuestionRecord & { type: string; correctAnswer: string; imagePrompts?: Array<{ placeholder: string; prompt: string; purpose: string; accuracy?: string; style?: string; id?: string; placement?: string }>; options?: string[] }) | null>(null)
+  const [questionImages, setQuestionImages] = useState<{ [questionId: number]: GeneratedImage[] }>({})
+  const [loadingImages, setLoadingImages] = useState<Set<number>>(new Set())
+  const [attemptedQuestions, setAttemptedQuestions] = useState<Set<number>>(new Set())
 
   // Selection + pagination
   const [selectedIds, setSelectedIds] = useState<number[]>([])
@@ -262,6 +271,192 @@ function MyQuestionsPage() {
     setBloomsFilter('')
   }
 
+  // Image generation functions
+  // Optimized lazy loading function for individual questions
+  const loadImagesForQuestion = useCallback(async (questionId: number, forceRefresh: boolean = false) => {
+    // Prevent duplicate loading - check if already attempted or currently loading (unless forced)
+    if (!forceRefresh && (loadingImages.has(questionId) || attemptedQuestions.has(questionId))) {
+      return
+    }
+
+    // Validate user and token
+    if (!user?.accessToken || typeof user.accessToken !== 'string' || user.accessToken.length < 10) {
+      return
+    }
+
+    setLoadingImages(prev => new Set(prev.add(questionId)))
+    
+    // If force refresh, clear from attempted cache to allow reload
+    if (forceRefresh) {
+      setAttemptedQuestions(prev => {
+        const newSet = new Set(prev)
+        newSet.delete(questionId)
+        return newSet
+      })
+    }
+    
+    setAttemptedQuestions(prev => new Set(prev.add(questionId)))
+
+    try {
+      const response = await fetch(`/api/questions/${questionId}/images`, {
+        headers: {
+          'Authorization': `Bearer ${user.accessToken}`,
+          'Content-Type': 'application/json'
+        }
+      })
+
+      if (response.ok) {
+        const result = await response.json()
+        if (result.success && result.data) {
+          setQuestionImages(prev => ({
+            ...prev,
+            [questionId]: result.data
+          }))
+        }
+      } else {
+        console.warn(`⚠️ Failed to load images for question ${questionId}:`, response.status)
+      }
+    } catch (error) {
+      console.error(`❌ Error loading images for question ${questionId}:`, error)
+    } finally {
+      setLoadingImages(prev => {
+        const newSet = new Set(prev)
+        newSet.delete(questionId)
+        return newSet
+      })
+    }
+  }, [user, loadingImages, attemptedQuestions])
+
+  const handleGenerateImages = async (question: QuestionRecord) => {
+    if (!user?.accessToken) {
+      console.error('User not authenticated')
+      return
+    }
+
+    // Ensure the question has imagePrompts populated
+    let questionWithPrompts: QuestionRecord & { type: string; correctAnswer: string; imagePrompts?: Array<{ placeholder: string; prompt: string; purpose: string; accuracy?: string; style?: string; id?: string; placement?: string }>; options?: string[] } = {
+      ...question,
+      type: question.question_type,
+      correctAnswer: question.correct_answer,
+      options: question.options || undefined // Convert null to undefined for ParsedQuestion compatibility
+    };
+    
+    if (!question.image_prompts || question.image_prompts.length === 0) {
+      // Dynamically extract image prompts from question text
+      const extractedPrompts = extractImagePromptsFromQuestion(question);
+      if (extractedPrompts.length > 0) {
+        console.log('🔄 No database prompts found, saving extracted prompts...')
+        
+        try {
+          // Save extracted prompts to database first
+          const promptsWithIds = []
+          
+          for (const prompt of extractedPrompts) {
+            const response = await fetch('/api/images/prompts', {
+              method: 'POST',
+              headers: {
+                'Authorization': `Bearer ${user.accessToken}`,
+                'Content-Type': 'application/json'
+              },
+              body: JSON.stringify({
+                question_id: question.id,
+                prompt_text: prompt.prompt,
+                placement: prompt.placement,
+                style_preference: prompt.style || 'educational_diagram',
+                original_ai_prompt: prompt.prompt
+              })
+            })
+            
+            if (response.ok) {
+              const result = await response.json()
+              if (result.success && result.data) {
+                promptsWithIds.push({
+                  id: result.data.id, // Database ID
+                  placeholder: prompt.placeholder,
+                  prompt: prompt.prompt,
+                  purpose: prompt.purpose,
+                  style: prompt.style,
+                  placement: prompt.placement
+                })
+              }
+            }
+          }
+          
+          questionWithPrompts = {
+            ...question,
+            type: question.question_type,
+            correctAnswer: question.correct_answer,
+            options: question.options || undefined, // Convert null to undefined
+            imagePrompts: promptsWithIds // Use prompts with database IDs
+          };
+          
+        } catch (error) {
+          console.error('Error saving extracted prompts:', error)
+          // Fallback to extracted prompts without IDs
+          questionWithPrompts = {
+            ...question,
+            type: question.question_type,
+            correctAnswer: question.correct_answer,
+            options: question.options || undefined, // Convert null to undefined
+            imagePrompts: extractedPrompts
+          };
+        }
+      } else {
+        console.log('⚠️ No image prompts found in question');
+        return;
+      }
+    } else {
+      // Convert database format to modal format - PRESERVE DATABASE IDs
+      questionWithPrompts = {
+        ...question,
+        type: question.question_type,
+        correctAnswer: question.correct_answer,
+        options: question.options || undefined, // Convert null to undefined
+        imagePrompts: question.image_prompts.map(prompt => ({
+          id: prompt.id, // PRESERVE THE DATABASE ID
+          placeholder: `[IMG: ${prompt.prompt_text}]`,
+          prompt: prompt.prompt_text,
+          purpose: 'Educational illustration',
+          style: prompt.style_preference,
+          placement: prompt.placement
+        }))
+      };
+    }
+    
+    setSelectedQuestionForImages(questionWithPrompts)
+    setShowImageModal(true)
+  }
+
+  const handleManageImages = (question: QuestionRecord) => {
+    // For now, same as generate - could open a different modal for management
+    handleGenerateImages(question)
+  }
+
+  const handleImagesGenerated = (images: GeneratedImage[]) => {
+    if (selectedQuestionForImages?.id) {
+      setQuestionImages(prev => ({
+        ...prev,
+        [selectedQuestionForImages.id!]: images
+      }))
+      // Refresh the questions list to show updated data
+      mutateQuestions()
+    }
+  }
+
+  const handleImageModalClose = () => {
+    setShowImageModal(false)
+    setSelectedQuestionForImages(null)
+  }
+
+  // Reset attempted questions cache when user changes or questions refresh
+  useEffect(() => {
+    setAttemptedQuestions(new Set())
+    setQuestionImages({})
+  }, [user?.id])
+  
+  // Removed auto-loading effect - now using lazy loading via intersection observer
+  // Images will load only when question cards become visible in the viewport
+
   return (
     <main className="min-h-screen overflow-x-hidden bg-gradient-to-br from-slate-50 via-blue-50 to-indigo-100 py-4 sm:py-8 dark:from-gray-950 dark:via-gray-900 dark:to-gray-800">
       <div className="max-w-full sm:max-w-6xl mx-auto px-2 sm:px-4 space-y-5 sm:space-y-8">
@@ -358,6 +553,9 @@ function MyQuestionsPage() {
                     setPendingDeleteId={setPendingDeleteId}
                     deletingId={deletingId}
                     onEdit={() => setEditingQuestion(q)}
+                    questionImages={q.id ? questionImages[q.id] || [] : []}
+                    onManageImages={handleManageImages}
+                    onLoadImages={loadImagesForQuestion}
                 />
               ))
             )}
@@ -408,6 +606,31 @@ function MyQuestionsPage() {
           question={editingQuestion}
           onSave={handleSaveEdit}
           onClose={() => setEditingQuestion(null)}
+        />
+      )}
+
+      {/* Image Generation Modal */}
+      {showImageModal && selectedQuestionForImages && (
+        <ComprehensiveImageModal
+          isOpen={showImageModal}
+          onClose={handleImageModalClose}
+          question={selectedQuestionForImages}
+          images={selectedQuestionForImages?.id ? questionImages[selectedQuestionForImages.id] || [] : []}
+          questionId={selectedQuestionForImages?.id}
+          useNewSchema={true}
+          onImageSelect={async () => {
+            // Force refresh images after selection to show immediate updates
+            if (selectedQuestionForImages?.id) {
+                await loadImagesForQuestion(selectedQuestionForImages.id, true) // forceRefresh = true
+            }
+          }}
+          onRefreshImages={() => {
+            // Only refresh if not already handled by onImageSelect
+            if (selectedQuestionForImages?.id) {
+              loadImagesForQuestion(selectedQuestionForImages.id, true)
+            }
+          }}
+          onImagesGenerated={handleImagesGenerated}
         />
       )}
 

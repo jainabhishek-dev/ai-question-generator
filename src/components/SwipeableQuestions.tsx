@@ -1,6 +1,7 @@
 import React, { useState, useEffect, useCallback } from "react"
 import { useSwipeable } from "react-swipeable"
 import QuestionCard from "./QuestionCard"
+import type { GeneratedImage } from "@/types/question"
 
 interface Question {
   id?: number
@@ -19,6 +20,9 @@ interface SwipeableQuestionsProps {
   ratingLoading: { [index: number]: boolean }
   onRate: (questionId: number, index: number, rating: number) => void
   getQuestionTypeDisplay: (type: string) => string
+  // Image-related props
+  questionImages?: { [questionIndex: number]: GeneratedImage[] }
+  onManageImages?: (question: Question) => void
 }
 
 const SwipeableQuestions: React.FC<SwipeableQuestionsProps> = ({
@@ -27,7 +31,9 @@ const SwipeableQuestions: React.FC<SwipeableQuestionsProps> = ({
   avgRatings,
   ratingLoading,
   onRate,
-  getQuestionTypeDisplay
+  getQuestionTypeDisplay,
+  questionImages,
+  onManageImages
 }) => {
   const [current, setCurrent] = useState(0)
   const [direction, setDirection] = useState<"left" | "right" | null>(null) // for animation
@@ -80,6 +86,9 @@ const SwipeableQuestions: React.FC<SwipeableQuestionsProps> = ({
           ratingLoading={ratingLoading}
           onRate={onRate}
           getQuestionTypeDisplay={getQuestionTypeDisplay}
+          generatedImages={questionImages?.[current] || []}
+          onManageImages={onManageImages}
+          showImagePlaceholders={false}
         />
       </div>
       <div className="flex justify-between items-center mt-4">

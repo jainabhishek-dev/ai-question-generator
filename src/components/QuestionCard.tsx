@@ -1,19 +1,21 @@
 import React, { useState } from "react"
-import { CheckIcon, XMarkIcon, CheckCircleIcon, InformationCircleIcon } from "@heroicons/react/24/outline";
+import { CheckIcon, XMarkIcon, CheckCircleIcon, InformationCircleIcon, PhotoIcon } from "@heroicons/react/24/outline";
 import ReactMarkdown from "react-markdown"
 import remarkMath from "remark-math"
 import rehypeKatex from "rehype-katex"
 import remarkGfm from "remark-gfm"
 import "katex/dist/katex.min.css"
+import type { Question as ParsedQuestion } from '@/lib/questionParser'
+import type { GeneratedImage } from '@/types/question'
+import { extractImagePlaceholders } from '@/lib/questionParser'
+import ImageRenderer from './ImageRenderer'
 
-interface Question {
+interface Question extends ParsedQuestion {
   id?: number
-  type: string
-  question: string
-  options?: string[]
-  correctAnswer: string
-  correctAnswerLetter?: string
-  explanation?: string
+}
+
+interface GeneratedImageWithPlaceholder extends GeneratedImage {
+  placeholder?: string
 }
 
 interface QuestionCardProps {
@@ -24,6 +26,10 @@ interface QuestionCardProps {
   ratingLoading: { [index: number]: boolean }
   onRate: (questionId: number, index: number, rating: number) => void
   getQuestionTypeDisplay: (type: string) => string
+  // Image-related props
+  generatedImages?: GeneratedImageWithPlaceholder[]
+  onManageImages?: (question: Question) => void
+  showImagePlaceholders?: boolean
 }
 
 const QuestionCard: React.FC<QuestionCardProps> = ({
@@ -33,7 +39,10 @@ const QuestionCard: React.FC<QuestionCardProps> = ({
   avgRatings,
   ratingLoading,
   onRate,
-  getQuestionTypeDisplay
+  getQuestionTypeDisplay,
+  generatedImages = [],
+  onManageImages,
+  showImagePlaceholders = true
 }) => {
   const isMultipleChoice = q.type === 'multiple-choice'
   const isTrueFalse = q.type === 'true-false'
@@ -63,6 +72,16 @@ const QuestionCard: React.FC<QuestionCardProps> = ({
   const [attempted, setAttempted] = useState(false)
   const [showAnswer, setShowAnswer] = useState(false)
 
+  // Extract image placeholders from question text
+  const imagePlaceholders = extractImagePlaceholders(q.question)
+  
+  // Handle image generation/management trigger
+  const handleManageImages = () => {
+    if (onManageImages) {
+      onManageImages(q)
+    }
+  }
+
   // Helper: For MCQ, get correct label
   const correctLabel = q.correctAnswerLetter;
   // Helper: For True/False, get correct value
@@ -83,18 +102,33 @@ const QuestionCard: React.FC<QuestionCardProps> = ({
             <span className="text-white font-bold text-base sm:text-lg">{index + 1}</span>
           </div>
           <div className="flex-1 space-y-2 sm:space-y-3">
-            {/* Question Type Badge */}
-            <span className="inline-flex items-center px-2 py-1 rounded-full text-[11px] sm:text-xs font-semibold border bg-blue-100 text-blue-800 border-blue-200 sm:px-3 dark:bg-blue-900 dark:text-blue-200 dark:border-blue-700">
-              {getQuestionTypeDisplay(q.type)}
-            </span>
+            <div className="flex items-center gap-2 flex-wrap">
+              {/* Question Type Badge */}
+              <span className="inline-flex items-center px-2 py-1 rounded-full text-[11px] sm:text-xs font-semibold border bg-blue-100 text-blue-800 border-blue-200 sm:px-3 dark:bg-blue-900 dark:text-blue-200 dark:border-blue-700">
+                {getQuestionTypeDisplay(q.type)}
+              </span>
+              
+              {/* Manage Images Button - Only show when image placeholders exist */}
+              {imagePlaceholders.length > 0 && onManageImages && (
+                <button
+                  onClick={handleManageImages}
+                  className="inline-flex items-center px-2 py-1 rounded-full text-[11px] sm:text-xs font-semibold bg-purple-100 text-purple-800 border border-purple-200 hover:bg-purple-200 transition-colors gap-1 dark:bg-purple-900 dark:text-purple-200 dark:border-purple-700 dark:hover:bg-purple-800"
+                >
+                  <PhotoIcon className="w-3 h-3" />
+                  Manage Images
+                </button>
+              )}
+            </div>
             {/* Question Text */}
-            <div className="prose max-w-none sm:prose-lg text-justify">
-              <ReactMarkdown
-                remarkPlugins={[remarkMath, [remarkGfm, { breaks: true }]]}
-                rehypePlugins={[rehypeKatex]}
-              >
-                {q.question}
-              </ReactMarkdown>
+            <div className="text-justify">
+              <ImageRenderer
+                content={q.question}
+                generatedImages={generatedImages}
+                showPlaceholders={showImagePlaceholders}
+                className="text-white"
+                questionId={q.id}
+                placementType="question"
+              />
             </div>
           </div>
         </div>
@@ -136,19 +170,14 @@ const QuestionCard: React.FC<QuestionCardProps> = ({
                       {labelChar}
                     </div>
                     <div className="flex-1 prose max-w-none">
-                      <ReactMarkdown
-                        remarkPlugins={[remarkMath, [remarkGfm, { breaks: true }]]}
-                        rehypePlugins={[rehypeKatex]}
-                        components={{
-                          p: ({ children }) => (
-                            <p className={`leading-relaxed text-sm sm:text-base ${isCorrect ? 'text-green-200 font-semibold' : 'text-gray-200'}`}>
-                              {children}
-                            </p>
-                          )
-                        }}
-                      >
-                        {cleanedOption}
-                      </ReactMarkdown>
+                      <ImageRenderer
+                        content={cleanedOption}
+                        generatedImages={generatedImages}
+                        showPlaceholders={showImagePlaceholders}
+                        className={`leading-relaxed text-sm sm:text-base ${isCorrect ? 'text-green-200 font-semibold' : 'text-gray-200'}`}
+                        questionId={q.id}
+                        placementType={`option_${labelChar.toLowerCase()}`}
+                      />
                     </div>
                     {showFeedback && (
                       <div className={`flex items-center space-x-1 ${isCorrect ? 'text-green-300' : 'text-red-300'}`}>
@@ -292,23 +321,22 @@ const QuestionCard: React.FC<QuestionCardProps> = ({
                 <InformationCircleIcon className="w-4 h-4" />
                 <span>Explanation</span>
               </h4>
-              <div className="prose max-w-none">
-                <ReactMarkdown
-                  remarkPlugins={[[remarkGfm, { breaks: true }],remarkMath]}
-                  rehypePlugins={[rehypeKatex]}
-                  components={{
-                  p: ({ children }) => (
-                    <p className="text-blue-200 leading-relaxed text-sm sm:text-base mb-4">{children}</p>
-                  )
-                }}
-                >
-                  {q.explanation}
-                </ReactMarkdown>
+              <div>
+                <ImageRenderer
+                  content={q.explanation}
+                  generatedImages={generatedImages}
+                  showPlaceholders={showImagePlaceholders}
+                  className="text-blue-200"
+                  questionId={q.id}
+                  placementType="explanation"
+                />
               </div>
             </div>
           )}
         </div>
        )}
+
+
 
         {/* Rating UI */}
         {(q.id) && (

@@ -56,11 +56,14 @@ const questionTypeInstructions: Record<string, string[]> = {
   ]
 }
 
+// Import image generation helpers from gemini.ts
+import { getImageInstructions } from './gemini'
+
 export function createNCERTPrompt(inputs: Inputs) {
   const {
     subject, grade, chapterNumber, chapterName, learningOutcome,
     difficulty, bloomsLevel, totalQuestions, numMCQ, numTrueFalse,
-    numFillBlank, numShortAnswer, numLongAnswer, additionalNotes
+    numFillBlank, numShortAnswer, numLongAnswer, additionalNotes, enableImages
   } = inputs
 
   const contextInfo = [
@@ -185,11 +188,15 @@ export function createNCERTPrompt(inputs: Inputs) {
     ${numTrueFalse > 0 ? '□ All T/F have exactly 2 options [\'True\', \'False\'] and correctAnswer matches' : ''}
     `.split('\n').filter(line => line.trim() !== '').join('\n')
 
+  // Add image instructions for NCERT content
+  const imageInstructions = getImageInstructions(enableImages || false)
+
   return [
     "You are an expert assessment designer with deep knowledge of NCERT curriculum and pedagogy.",
     `CONTEXT:\n${contextInfo}`,
     gradeContext,
     bloomsContext,
+    imageInstructions, // Add NCERT-specific image instructions
     `QUESTION DISTRIBUTION REQUIREMENTS:\n${distributionInfo}`,
     formattingRequirements,
     questionTypeSection, // Only included if there are specific question type instructions

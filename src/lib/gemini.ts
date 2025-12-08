@@ -64,12 +64,40 @@ const questionTypeInstructions: Record<string, string[]> = {
   ]
 }
 
+/* ---------- IMAGE GENERATION HELPERS ---------- */
+export const getImageInstructions = (enableImages: boolean): string => {
+  if (!enableImages) return ""
+  
+  return `
+IMAGE GENERATION INSTRUCTIONS:
+When an image would significantly improve educational understanding, include image placeholders using this simple format:
+[IMG: detailed_description]
+
+Place the placeholder exactly where the image should appear (in question text, explanation, or option).
+
+Examples:
+- In question: "Count the apples in this picture: [IMG: Simple diagram showing exactly 4 red apples arranged in a row for counting exercise]"
+- In explanation: "The lungs work like pumps. [IMG: Simple educational illustration of a child taking a deep breath, with dotted arrows showing air entering and exiting the lungs]"
+- In option: "A) [IMG: Timeline showing major events from 1776-1800 with clear dates and labels]"
+
+IMPORTANT IMAGE GUIDELINES:
+- Only add images when they significantly enhance comprehension
+- Use exact numbers and clear descriptions: "exactly 4 items" not "several items"  
+- Focus on educational accuracy and clarity
+- Keep image descriptions under 50 words each
+- Specify educational illustration style: "simple educational diagram", "textbook illustration"
+- Consider all subjects: math diagrams, science processes, historical timelines, geographic maps, literary illustrations
+- Images are optional - only include when truly beneficial
+- Place placeholder exactly where image should appear in the text
+`
+}
+
 /* ---------- PROMPT BUILDER ---------- */
 export const createAdvancedPrompt = (inputs: Inputs) => {
   const {
     subject, subSubject, topic, subTopic, grade, difficulty,
     bloomsLevel, totalQuestions, numMCQ, numFillBlank, numTrueFalse,
-    numShortAnswer, numLongAnswer, pdfContent, additionalNotes
+    numShortAnswer, numLongAnswer, pdfContent, additionalNotes, enableImages
   } = inputs
 
   const contextInfo = [
@@ -102,6 +130,9 @@ export const createAdvancedPrompt = (inputs: Inputs) => {
   const pdfContext = pdfContent?.trim()
     ? `Reference the following content when crafting questions. Do NOT quote it verbatim. You may use it to ensure factual accuracy:\n"""${pdfContent.trim().slice(0, 50_000)}"""`
     : ""
+  
+  // Add image instructions based on user preference
+  const imageInstructions = getImageInstructions(enableImages || false)
   
   // Dynamically include only relevant question type instructions
   const qTypeSections: string[] = []
@@ -207,6 +238,8 @@ export const createAdvancedPrompt = (inputs: Inputs) => {
     bloomsContext,
     
     pdfContext,
+    
+    imageInstructions, // Add image instructions when appropriate
     
     `QUESTION DISTRIBUTION REQUIREMENTS:\n${distributionInfo}`,
     

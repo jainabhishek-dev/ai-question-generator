@@ -1,7 +1,7 @@
 import React from "react";
 import { renderToStaticMarkup } from "react-dom/server";
 import { ExportPdfDocument } from "./components/ExportPdfDocument";
-import { QuestionRecord, PdfCustomization } from "../types/question";
+import { QuestionRecord, PdfCustomization, GeneratedImage, ImagePrompt } from "../types/question";
 import { PDF_DEFAULTS } from "../constants/pdfDefaults";
 
 // Legacy support interface - can be removed when all clients migrate
@@ -71,6 +71,42 @@ export async function generatePdf({
 
     if (error || !data || data.length === 0) {
       throw new Error(error?.message || 'No questions found');
+    }
+
+    // Fetch generated images for questions that have them
+    console.log('Fetching generated images for questions...');
+    const questionIds = data.map(q => q.id).filter(id => id != null);
+    
+    const { data: imagesData, error: imagesError } = await supabase
+      .from('question_images')
+      .select(`
+        *,
+        image_prompts!inner(
+          question_id,
+          placement,
+          prompt_text
+        )
+      `)
+      .in('image_prompts.question_id', questionIds)
+      .eq('is_selected', true); // Only get selected images
+
+    if (imagesError) {
+      console.warn('Failed to fetch images, continuing without images:', imagesError.message);
+    }
+
+    // Group images by question ID
+    const questionImages: { [questionId: string]: GeneratedImage[] } = {};
+    if (imagesData && imagesData.length > 0) {
+      imagesData.forEach(img => {
+        const questionId = (img.image_prompts as ImagePrompt[])?.[0]?.question_id?.toString();
+        if (questionId) {
+          if (!questionImages[questionId]) {
+            questionImages[questionId] = [];
+          }
+          questionImages[questionId].push(img);
+        }
+      });
+      console.log(`Found images for ${Object.keys(questionImages).length} questions`);
     }
 
     // Transform data
@@ -165,6 +201,7 @@ export async function generatePdf({
             questionSpacing: PDF_DEFAULTS.QUESTION_SPACING + 4,
           }
         },
+        questionImages,
       })
     );
 

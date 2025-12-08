@@ -463,17 +463,6 @@ export const updateUserQuestion = async (
   }
 }
 
-const databaseApi = {
-  saveQuestions,
-  getQuestions,
-  getPublicQuestions, // <-- add this
-  deleteUserQuestion,
-  getUserQuestions,
-  softDeleteUserQuestion,
-  restoreUserQuestion
-};
-export default databaseApi;
-
 export interface ContactMessage {
   contact_id?: number
   name: string
@@ -500,3 +489,425 @@ export const saveContactMessage = async (
     return { success: false, error: (err as Error).message }
   }
 }
+
+/* ========== IMAGE-RELATED DATABASE FUNCTIONS ========== */
+
+import type { 
+  ImagePrompt, 
+  GeneratedImage, 
+  QuestionImage,
+  QuestionWithImages,
+  ImageGenerationResponse,
+  AccuracyFeedback 
+} from '@/types/question'
+
+/**
+ * Save image prompts for a question
+ */
+export const saveImagePrompts = async (
+  questionId: number,
+  prompts: Omit<ImagePrompt, 'id' | 'created_at' | 'updated_at' | 'is_generated' | 'is_orphaned'>[]
+): Promise<{ success: boolean; data?: ImagePrompt[]; error?: string }> => {
+  try {
+    const promptsToInsert = prompts.map(prompt => ({
+      question_id: questionId,
+      prompt_text: prompt.prompt_text,
+      original_ai_prompt: prompt.original_ai_prompt,
+      placement: prompt.placement,
+      style_preference: prompt.style_preference,
+      subject_context: prompt.subject_context || null,
+      accuracy_requirements: prompt.accuracy_requirements || null,
+      user_satisfied: prompt.user_satisfied || null,
+      question_deleted_at: null,
+      is_generated: false,
+      is_orphaned: false
+    }))
+
+    const { data, error } = await supabase
+      .from('image_prompts')
+      .insert(promptsToInsert)
+      .select()
+
+    if (error) {
+      console.error('Error saving image prompts:', error)
+      return { success: false, error: getErrorMessage(error) }
+    }
+
+    console.log(`✅ Successfully saved ${promptsToInsert.length} image prompts for question ${questionId}`)
+    return { success: true, data: data as ImagePrompt[] }
+
+  } catch (err) {
+    console.error('Unexpected error saving image prompts:', err)
+    return { success: false, error: getErrorMessage(err) }
+  }
+}
+
+/**
+ * Get image prompts for a question
+ */
+export const getImagePrompts = async (
+  questionId: number
+): Promise<{ success: boolean; data?: ImagePrompt[]; error?: string }> => {
+  try {
+    const { data, error } = await supabase
+      .from('image_prompts')
+      .select('*')
+      .eq('question_id', questionId)
+      .eq('is_orphaned', false)
+      .order('created_at', { ascending: true })
+
+    if (error) {
+      console.error('Error fetching image prompts:', error)
+      return { success: false, error: getErrorMessage(error) }
+    }
+
+    return { success: true, data: data as ImagePrompt[] || [] }
+
+  } catch (err) {
+    console.error('Unexpected error fetching image prompts:', err)
+    return { success: false, error: getErrorMessage(err) }
+  }
+}
+
+/**
+ * Generate a new image for a prompt (legacy approach)
+ */
+export const generateImage = async (
+  promptId: string,
+  imageUrl: string,
+  promptUsed: string,
+  userId?: string,
+  altText?: string
+): Promise<ImageGenerationResponse> => {
+  try {
+    // Get current highest attempt number
+    const { data: existingAttempts } = await supabase
+      .from('question_images')
+      .select('attempt_number')
+      .eq('prompt_id', promptId)
+      .order('attempt_number', { ascending: false })
+      .limit(1)
+
+    const nextAttemptNumber = (existingAttempts?.[0]?.attempt_number || 0) + 1
+
+    // Insert new image generation
+    const { data: newImage, error } = await supabase
+      .from('question_images')
+      .insert({
+        prompt_id: promptId,
+        image_url: imageUrl,
+        prompt_used: promptUsed,
+        attempt_number: nextAttemptNumber,
+        is_selected: true, // Make this the active image
+        user_id: userId || null,
+        alt_text: altText,
+        generated_at: new Date().toISOString()
+      })
+      .select()
+      .single()
+
+    if (error) {
+      console.error('Error saving generated image:', error)
+      return { success: false, error: getErrorMessage(error) }
+    }
+
+    // Mark previous attempts as not selected
+    await supabase
+      .from('question_images')
+      .update({ is_selected: false })
+      .eq('prompt_id', promptId)
+      .neq('id', newImage.id)
+
+    // Update prompt status to generated
+    await supabase
+      .from('image_prompts')
+      .update({ is_generated: true })
+      .eq('id', promptId)
+
+    console.log(`✅ Generated image attempt #${nextAttemptNumber} for prompt ${promptId}`)
+    return { success: true, data: newImage as GeneratedImage }
+
+  } catch (err) {
+    console.error('Unexpected error generating image:', err)
+    return { success: false, error: getErrorMessage(err) }
+  }
+}
+
+/**
+ * Generate a new image with new schema (question_id + placement_type)
+ */
+export const generateImageNewSchema = async (
+  questionId: number,
+  placementType: string,
+  imageUrl: string,
+  promptUsed: string,
+  promptId?: string,
+  userId?: string,
+  altText?: string
+): Promise<ImageGenerationResponse> => {
+  try {
+    // Get current highest attempt number for this question/placement
+    const { data: existingAttempts } = await supabase
+      .from('question_images')
+      .select('attempt_number')
+      .eq('question_id', questionId)
+      .eq('placement_type', placementType)
+      .order('attempt_number', { ascending: false })
+      .limit(1)
+
+    const nextAttemptNumber = (existingAttempts?.[0]?.attempt_number || 0) + 1
+
+    // Insert new image generation
+    const { data: newImage, error } = await supabase
+      .from('question_images')
+      .insert({
+        prompt_id: promptId || null,
+        question_id: questionId,
+        placement_type: placementType,
+        image_url: imageUrl,
+        prompt_used: promptUsed,
+        attempt_number: nextAttemptNumber,
+        is_selected: true, // Make this the active image
+        user_id: userId || null,
+        alt_text: altText,
+        generated_at: new Date().toISOString()
+      })
+      .select()
+      .single()
+
+    if (error) {
+      console.error('Error saving generated image (new schema):', error)
+      return { success: false, error: getErrorMessage(error) }
+    }
+
+    // Mark previous images for this question/placement as not selected
+    await supabase
+      .from('question_images')
+      .update({ is_selected: false })
+      .eq('question_id', questionId)
+      .eq('placement_type', placementType)
+      .neq('id', newImage.id)
+
+    console.log(`✅ Generated image attempt #${nextAttemptNumber} for question ${questionId} placement ${placementType}`)
+    return { success: true, data: newImage as QuestionImage }
+
+  } catch (err) {
+    console.error('Unexpected error generating image (new schema):', err)
+    return { success: false, error: getErrorMessage(err) }
+  }
+}
+
+/**
+ * Get all generation attempts for a prompt
+ */
+export const getImageAttempts = async (
+  promptId: string
+): Promise<{ success: boolean; data?: GeneratedImage[]; error?: string }> => {
+  try {
+    const { data, error } = await supabase
+      .from('question_images')
+      .select('*')
+      .eq('prompt_id', promptId)
+      .order('attempt_number', { ascending: true })
+
+    if (error) {
+      console.error('Error fetching image attempts:', error)
+      return { success: false, error: getErrorMessage(error) }
+    }
+
+    return { success: true, data: data as GeneratedImage[] || [] }
+
+  } catch (err) {
+    console.error('Unexpected error fetching image attempts:', err)
+    return { success: false, error: getErrorMessage(err) }
+  }
+}
+
+/**
+ * Select a different image attempt as active (legacy approach)
+ */
+export const selectImageAttempt = async (
+  imageId: string,
+  promptId: string
+): Promise<{ success: boolean; error?: string }> => {
+  try {
+    // Mark all attempts as not selected
+    await supabase
+      .from('question_images')
+      .update({ is_selected: false })
+      .eq('prompt_id', promptId)
+
+    // Mark chosen attempt as selected
+    const { error } = await supabase
+      .from('question_images')
+      .update({ is_selected: true })
+      .eq('id', imageId)
+
+    if (error) {
+      console.error('Error selecting image attempt:', error)
+      return { success: false, error: getErrorMessage(error) }
+    }
+
+    console.log(`✅ Selected image attempt ${imageId} for prompt ${promptId}`)
+    return { success: true }
+
+  } catch (err) {
+    console.error('Unexpected error selecting image attempt:', err)
+    return { success: false, error: getErrorMessage(err) }
+  }
+}
+
+/**
+ * Select image by ID and placement (new schema approach)
+ */
+export const selectImageByIdAndPlacement = async (
+  imageId: string,
+  questionId: number,
+  placementType: string,
+  authenticatedSupabase?: typeof supabase
+): Promise<{ success: boolean; error?: string }> => {
+  // Use the provided authenticated client, or fall back to the global one
+  const client = authenticatedSupabase || supabase
+  try {
+    // Image selection with authenticated context
+    
+    // First, deselect all images for this question/placement combination
+    const deselectResult = await client
+      .from('question_images')
+      .update({ is_selected: false })
+      .eq('question_id', questionId)
+      .eq('placement_type', placementType)
+    
+    if (deselectResult.error) {
+      console.error('Error deselecting images:', deselectResult.error)
+      return { success: false, error: getErrorMessage(deselectResult.error) }
+    }
+
+    // Then select the chosen image
+    const selectResult = await client
+      .from('question_images')
+      .update({ is_selected: true })
+      .eq('id', imageId)
+
+    if (selectResult.error) {
+      console.error('Error selecting image:', selectResult.error)
+      return { success: false, error: getErrorMessage(selectResult.error) }
+    }
+
+    return { success: true }
+
+  } catch (err) {
+    console.error('Unexpected error selecting image by placement:', err)
+    return { success: false, error: getErrorMessage(err) }
+  }
+}
+
+/**
+ * Rate an image and provide accuracy feedback
+ */
+export const rateImage = async (
+  imageId: string,
+  rating?: number,
+  accuracyFeedback?: AccuracyFeedback
+): Promise<{ success: boolean; error?: string }> => {
+  try {
+    const updateData: Record<string, unknown> = {}
+    
+    if (rating !== undefined) {
+      updateData.user_rating = rating
+    }
+    
+    if (accuracyFeedback !== undefined) {
+      updateData.accuracy_feedback = accuracyFeedback
+    }
+
+    const { error } = await supabase
+      .from('question_images')
+      .update(updateData)
+      .eq('id', imageId)
+
+    if (error) {
+      console.error('Error rating image:', error)
+      return { success: false, error: getErrorMessage(error) }
+    }
+
+    console.log(`✅ Updated rating for image ${imageId}`)
+    return { success: true }
+
+  } catch (err) {
+    console.error('Unexpected error rating image:', err)
+    return { success: false, error: getErrorMessage(err) }
+  }
+}
+
+/**
+ * Get question with all associated image data
+ */
+export const getQuestionWithImages = async (
+  questionId: number
+): Promise<{ success: boolean; data?: QuestionWithImages; error?: string }> => {
+  try {
+    // Get question data
+    const { data: question, error: questionError } = await supabase
+      .from('questions')
+      .select('*')
+      .eq('id', questionId)
+      .single()
+
+    if (questionError) {
+      console.error('Error fetching question:', questionError)
+      return { success: false, error: getErrorMessage(questionError) }
+    }
+
+    // Get image prompts
+    const { data: imagePrompts } = await getImagePrompts(questionId)
+
+    // Get generated images for each prompt
+    const generatedImages: GeneratedImage[] = []
+    
+    if (imagePrompts && imagePrompts.length > 0) {
+      for (const prompt of imagePrompts) {
+        const { data: attempts } = await getImageAttempts(prompt.id)
+        if (attempts) {
+          generatedImages.push(...attempts)
+        }
+      }
+    }
+
+    const questionWithImages: QuestionWithImages = {
+      ...question,
+      image_prompts: imagePrompts || [],
+      generated_images: generatedImages
+    }
+
+    return { success: true, data: questionWithImages }
+
+  } catch (err) {
+    console.error('Unexpected error fetching question with images:', err)
+    return { success: false, error: getErrorMessage(err) }
+  }
+}
+
+/* ========== EXPORTS ========== */
+
+const databaseApi = {
+  saveQuestions,
+  getQuestions,
+  getPublicQuestions,
+  deleteUserQuestion,
+  getUserQuestions,
+  softDeleteUserQuestion,
+  restoreUserQuestion,
+  // Image-related functions
+  saveImagePrompts,
+  getImagePrompts,
+  generateImage,
+  generateImageNewSchema,
+  getImageAttempts,
+  selectImageAttempt,
+  selectImageByIdAndPlacement,
+  rateImage,
+  getQuestionWithImages
+};
+
+export default databaseApi;

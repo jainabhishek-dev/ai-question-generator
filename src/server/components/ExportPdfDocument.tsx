@@ -1,13 +1,42 @@
 // src/server/components/ExportPdfDocument.tsx
 import React from 'react';
-import { QuestionRecord, PdfCustomization } from '../../types/question';
+import { QuestionRecord, PdfCustomization, GeneratedImage } from '../../types/question';
 import ReactMarkdown from 'react-markdown';
 import remarkGfm from 'remark-gfm';
 import remarkMath from 'remark-math';
 import rehypeKatex from 'rehype-katex';
 import { generatePdfStyles } from '../../constants/pdfStyles';
 import { PDF_DEFAULTS } from '../../constants/pdfDefaults';
+import { extractImagePlaceholders } from '../../lib/questionParser';
 
+// Preprocess content to replace image placeholders with markdown images
+function preprocessContentWithImages(content: string, questionImages: GeneratedImage[] = []): string {
+  let processedContent = content;
+  
+  // Extract placeholders from content
+  const placeholders = extractImagePlaceholders(content);
+  
+  placeholders.forEach((placeholder) => {
+    // Find matching image by description or alt text
+    const matchingImage = questionImages.find(img => 
+      img.is_selected && (
+        img.alt_text?.toLowerCase().includes(placeholder.description.toLowerCase()) ||
+        img.prompt_used.toLowerCase().includes(placeholder.description.toLowerCase())
+      )
+    );
+    
+    if (matchingImage) {
+      // Replace placeholder with markdown image
+      const imageMarkdown = `![${placeholder.description}](${matchingImage.image_url} "${placeholder.description}")`;
+      processedContent = processedContent.replace(placeholder.placeholder, imageMarkdown);
+    } else {
+      // Replace with placeholder text that will be handled by the paragraph component
+      processedContent = processedContent.replace(placeholder.placeholder, `[IMAGE_PLACEHOLDER:${placeholder.description}]`);
+    }
+  });
+  
+  return processedContent;
+}
 
 type Props = {
   questions: QuestionRecord[];
@@ -20,6 +49,8 @@ type Props = {
       questionSpacing?: number;
     };
   };
+  // Image support
+  questionImages?: { [questionId: string]: GeneratedImage[] };
 };
 
 // Keep your existing utility functions
@@ -72,11 +103,91 @@ function formatAnswer(answer: string, options: string[]): string {
   return answer.trim();
 }
 
+// Helper function to render educational images in PDF
+function renderEducationalImage(imageUrl: string, altText: string, maxWidth: number = 400): React.ReactElement {
+  return (
+    <div style={{
+      margin: '12px 0',
+      textAlign: 'center',
+      pageBreakInside: 'avoid'
+    }}>
+      <img 
+        src={imageUrl}
+        alt={altText}
+        style={{
+          maxWidth: `${maxWidth}px`,
+          maxHeight: '300px',
+          width: 'auto',
+          height: 'auto',
+          border: '1px solid #ddd',
+          borderRadius: '4px',
+          boxShadow: '0 2px 4px rgba(0,0,0,0.1)'
+        }}
+      />
+      {altText && (
+        <div style={{
+          fontSize: '11px',
+          color: '#666',
+          marginTop: '4px',
+          fontStyle: 'italic'
+        }}>
+          {altText}
+        </div>
+      )}
+    </div>
+  );
+}
+
+// Custom ReactMarkdown components for handling images in PDF
+function createPdfMarkdownComponents() {
+  return {
+    p: ({ children, ...props }: React.ComponentProps<'p'>) => {
+      const content = children?.toString() || '';
+      
+      // Check if this paragraph contains our processed image placeholder
+      const placeholderMatch = content.match(/\[IMAGE_PLACEHOLDER:([^\]]+)\]/);
+      
+      if (placeholderMatch) {
+        const description = placeholderMatch[1];
+        
+        // Show placeholder text for missing images
+        return (
+          <div style={{
+            margin: '12px 0',
+            padding: '20px',
+            border: '2px dashed #ccc',
+            borderRadius: '4px',
+            textAlign: 'center',
+            color: '#666',
+            fontSize: '12px',
+            backgroundColor: '#f9f9f9'
+          }}>
+            📷 Educational Image
+            <br />
+            <small>{description}</small>
+          </div>
+        );
+      }
+      
+      return <p {...props} style={{ margin: '0 0 8px 0', lineHeight: 1.5 }}>{children}</p>;
+    },
+    
+    // Handle other markdown elements that might contain images
+    img: ({ src, alt }: React.ComponentProps<'img'>) => {
+      if (src && typeof src === 'string') {
+        return renderEducationalImage(src, alt || 'Educational image');
+      }
+      return null;
+    }
+  };
+}
+
 export const ExportPdfDocument: React.FC<Props> = ({
   questions,
   exportType,
   customization,
   preferences,
+  questionImages = {},
 }) => {
   // Use customization settings or fallback to legacy preferences
   const customFormatting = customization?.formatting;
@@ -245,11 +356,12 @@ export const ExportPdfDocument: React.FC<Props> = ({
                         color: '#000',
                         fontWeight: '500'
                       }}>
-                        <ReactMarkdown 
+                        <ReactMarkdown
                           remarkPlugins={[remarkMath, [remarkGfm, { breaks: true }]]}
                           rehypePlugins={[rehypeKatex]}
+                          components={createPdfMarkdownComponents()}
                         >
-                          {question.question || ''}
+                          {preprocessContentWithImages(question.question || '', questionImages[question.id?.toString() || ''] || [])}
                         </ReactMarkdown>
                       </div>
                     )}
@@ -385,8 +497,9 @@ export const ExportPdfDocument: React.FC<Props> = ({
                           <ReactMarkdown 
                             remarkPlugins={[remarkMath, [remarkGfm, { breaks: true }]]}
                             rehypePlugins={[rehypeKatex]}
+                            components={createPdfMarkdownComponents()}
                           >
-                            {question.explanation}
+                            {preprocessContentWithImages(question.explanation, questionImages[question.id?.toString() || ''] || [])}
                           </ReactMarkdown>
                         </div>
                       </div>

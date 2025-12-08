@@ -19,7 +19,10 @@ import SwipeableQuestions from "@/components/SwipeableQuestions"
 import QuestionModeToggle from "@/components/QuestionModeToggle"
 import NCERTQuestionForm from "@/components/NCERTQuestionForm"
 import { generateNCERTQuestions } from "@/lib/gemini"
-import { parseQuestions, processQuestions, Question } from "@/lib/questionParser"
+import { parseQuestions, processQuestions, Question, extractImagePromptsFromQuestion } from "@/lib/questionParser"
+import ImageGenerationModal from "@/components/ImageGenerationModal"
+import ComprehensiveImageModal from "@/components/ComprehensiveImageModal"
+import type { GeneratedImage } from "@/types/question"
 
 export default function Home() {
   const resultsRef = useRef<HTMLDivElement>(null)
@@ -36,6 +39,14 @@ export default function Home() {
   const [ratingLoading, setRatingLoading] = useState<{ [index: number]: boolean }>({})
   const [questionMode, setQuestionMode] = useState<"general" | "ncert">("general")
   
+  // Image generation state
+  const [showImageModal, setShowImageModal] = useState(false)
+  const [selectedQuestionForImages, setSelectedQuestionForImages] = useState<Question | null>(null)
+  const [questionImages, setQuestionImages] = useState<{ [questionIndex: number]: GeneratedImage[] }>({})
+  
+  // Image management state
+  const [showImageManagementModal, setShowImageManagementModal] = useState(false)
+  const [selectedQuestionForManagement, setSelectedQuestionForManagement] = useState<Question | null>(null)
 
   const fetchRating = async (questionId: number, index: number) => {
   const res = await getQuestionRating(questionId, user?.id ?? null)
@@ -143,6 +154,15 @@ export default function Home() {
             }));
             setQuestions(questionsWithId);
             setSaveStatus('saved');
+            
+            // Load existing images for each question (only if user is authenticated)
+            if (user?.accessToken) {
+              questionsWithId.forEach((q, index) => {
+                if (q.id) {
+                  loadQuestionImages(q.id, index);
+                }
+              });
+            }
           } else {
             setQuestions(processedQuestions);
             setSaveStatus('saved');
@@ -200,6 +220,15 @@ export default function Home() {
           }))
           setQuestions(questionsWithId)
           setSaveStatus('saved')
+          
+          // Load existing images for each question (only if user is authenticated)
+          if (user?.accessToken) {
+            questionsWithId.forEach((q, index) => {
+              if (q.id) {
+                loadQuestionImages(q.id, index);
+              }
+            });
+          }
         } else {
           setQuestions(processedQuestions)
           setSaveStatus('saved')
@@ -218,7 +247,198 @@ export default function Home() {
   }
 }
 
+  // Image generation handlers
+  const handleGenerateImages = (question: Question) => {
+    console.log('🎨 Starting image generation for question:', question.type)
+    
+    // Ensure the question has imagePrompts populated
+    let questionWithPrompts = question;
+    if (!question.imagePrompts || question.imagePrompts.length === 0) {
+      // Dynamically extract image prompts from question text
+      const extractedPrompts = extractImagePromptsFromQuestion(question);
+      if (extractedPrompts.length > 0) {
+        questionWithPrompts = {
+          ...question,
+          imagePrompts: extractedPrompts
+        };
+        console.log('🔍 Dynamically extracted image prompts:', extractedPrompts);
+      } else {
+        console.log('⚠️ No image prompts found in question');
+        return; // Don't open modal if no images to generate
+      }
+    }
+    
+    setSelectedQuestionForImages(questionWithPrompts)
+    setShowImageModal(true)
+  }
 
+  // Load existing images for questions
+  const loadQuestionImages = async (questionId: number, index: number) => {
+    // Only proceed if user is authenticated
+    if (!user?.accessToken) {
+      console.log('⏭️ Skipping image loading - user not authenticated')
+      return
+    }
+
+    try {
+      const headers: { [key: string]: string } = {
+        'Authorization': `Bearer ${user.accessToken}`
+      }
+
+      const response = await fetch(`/api/questions/${questionId}/images`, {
+        headers
+      })
+      
+      if (response.ok) {
+        const result = await response.json()
+        if (result.success && result.data) {
+          setQuestionImages(prev => ({
+            ...prev,
+            [index]: result.data
+          }))
+        }
+      }
+    } catch (error) {
+      console.error('Failed to load question images:', error)
+    }
+  }
+
+  const handleImagesGenerated = (images: GeneratedImage[]) => {
+    if (selectedQuestionForImages) {
+      const questionIndex = questions.findIndex(q => q === selectedQuestionForImages)
+      if (questionIndex !== -1) {
+        setQuestionImages(prev => ({
+          ...prev,
+          [questionIndex]: images
+        }))
+      }
+    }
+    console.log('✅ Images generated and saved to state')
+  }
+
+  const handleImageModalClose = () => {
+    setShowImageModal(false)
+    setSelectedQuestionForImages(null)
+  }
+
+  const handleImageSelect = (imageId: string, placeholder: string) => {
+    console.log('🖼️ Image selected:', imageId, 'for placeholder:', placeholder)
+    // This could trigger an API call to update the selection in the database
+    // For now, we'll just log it
+  }
+
+  // Handle opening image management modal
+  const handleManageImages = async (question: Question) => {
+    if (!user?.accessToken) {
+      console.error('User not authenticated')
+      return
+    }
+
+    // If no imagePrompts, extract them from question text first
+    let questionWithPrompts = question;
+    if (!question.imagePrompts || question.imagePrompts.length === 0) {
+      const extractedPrompts = extractImagePromptsFromQuestion(question);
+      if (extractedPrompts.length > 0) {
+        questionWithPrompts = {
+          ...question,
+          imagePrompts: extractedPrompts
+        };
+        console.log('🔍 Extracted image prompts for management:', extractedPrompts);
+      } else {
+        console.log('⚠️ No image prompts found in question for management');
+        // Still open modal to show "No image prompts found" message
+        setSelectedQuestionForManagement(question)
+        setShowImageManagementModal(true)
+        return;
+      }
+    }
+
+    // If question has imagePrompts but no database IDs, save them first
+    if (questionWithPrompts.imagePrompts && questionWithPrompts.imagePrompts.length > 0) {
+      console.log('🔄 Saving image prompts to database before opening modal...')
+      
+      try {
+        const promptsWithIds = []
+        
+        for (const prompt of questionWithPrompts.imagePrompts) {
+          // Save each prompt to database
+          const response = await fetch('/api/images/prompts', {
+            method: 'POST',
+            headers: {
+              'Authorization': `Bearer ${user.accessToken}`,
+              'Content-Type': 'application/json'
+            },
+            body: JSON.stringify({
+              question_id: questionWithPrompts.id,
+              prompt_text: prompt.prompt,
+              placement: (prompt as { placement?: string }).placement || 'question',
+              style_preference: prompt.style || 'educational_diagram',
+              original_ai_prompt: prompt.prompt
+            })
+          })
+          
+          if (response.ok) {
+            const result = await response.json()
+            if (result.success && result.data) {
+              promptsWithIds.push({
+                ...prompt,
+                id: result.data.id, // Add database ID
+                placeholder: prompt.placeholder
+              })
+            }
+          }
+        }
+        
+        // Transform question with database IDs
+        const questionWithIds = {
+          ...questionWithPrompts,
+          imagePrompts: promptsWithIds
+        }
+        
+        setSelectedQuestionForManagement(questionWithIds)
+        setShowImageManagementModal(true)
+        
+      } catch (error) {
+        console.error('Error saving prompts to database:', error)
+        // Fallback to original behavior if saving fails
+        setSelectedQuestionForManagement(questionWithPrompts)
+        setShowImageManagementModal(true)
+      }
+    } else {
+      // No imagePrompts or already have IDs, proceed normally
+      setSelectedQuestionForManagement(questionWithPrompts)
+      setShowImageManagementModal(true)
+    }
+  }
+
+  // Handle image management modal close
+  const handleImageManagementClose = () => {
+    setShowImageManagementModal(false)
+    setSelectedQuestionForManagement(null)
+  }
+
+  // Handle image selection from management modal
+  const handleImageManagementSelect = async (imageId: string, placeholder: string, isSelected: boolean) => {
+    console.log('🖼️ Image management selection:', { imageId, placeholder, isSelected })
+    
+    // Refresh images for the question after selection
+    if (selectedQuestionForManagement?.id) {
+      const questionIndex = questions.findIndex(q => q.id === selectedQuestionForManagement.id)
+      if (questionIndex !== -1) {
+        await loadQuestionImages(selectedQuestionForManagement.id, questionIndex)
+      }
+    }
+  }
+
+  // Refresh images for management modal
+  const handleRefreshImages = async () => {
+    if (selectedQuestionForManagement?.id) {
+      const questionIndex = questions.findIndex(q => q.id === selectedQuestionForManagement.id)
+      if (questionIndex !== -1) {
+        await loadQuestionImages(selectedQuestionForManagement.id, questionIndex)
+      }
+    }
+  }
 
   return (
     <main className="min-h-screen overflow-x-hidden bg-gradient-to-br from-slate-50 via-blue-50 to-indigo-100 py-6 sm:py-8 dark:from-gray-950 dark:via-gray-900 dark:to-gray-800">
@@ -278,6 +498,8 @@ export default function Home() {
                   ratingLoading={ratingLoading}
                   onRate={handleRate}
                   getQuestionTypeDisplay={getQuestionTypeDisplay}
+                  questionImages={questionImages}
+                  onManageImages={handleManageImages}
                 />
               </div>
             </>
@@ -295,6 +517,30 @@ export default function Home() {
 
         {/* Authentication Modal */}
         <AuthModal isOpen={showAuthModal} onClose={() => setShowAuthModal(false)} />
+
+        {/* Image Generation Modal */}
+        {selectedQuestionForImages && (
+          <ImageGenerationModal
+            isOpen={showImageModal}
+            onClose={handleImageModalClose}
+            question={selectedQuestionForImages}
+            onImagesGenerated={handleImagesGenerated}
+          />
+        )}
+
+        {/* Image Management Modal */}
+        {selectedQuestionForManagement && (
+          <ComprehensiveImageModal
+            isOpen={showImageManagementModal}
+            onClose={handleImageManagementClose}
+            question={selectedQuestionForManagement}
+            images={questionImages[questions.findIndex(q => q === selectedQuestionForManagement)] || []}
+            onImageSelect={handleImageManagementSelect}
+            onRefreshImages={handleRefreshImages}
+            questionId={selectedQuestionForManagement.id}
+            useNewSchema={true}
+          />
+        )}
       </div>
     </main>
   )
