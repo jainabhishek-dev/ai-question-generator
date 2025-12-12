@@ -255,7 +255,6 @@ export const createAdvancedPrompt = (inputs: Inputs) => {
 export const generateQuestions = async (inputs: Inputs) => {
   const model = genAI.getGenerativeModel({ model: "gemini-2.5-flash" })
   const prompt = createAdvancedPrompt(inputs)
-  console.log("Advanced Prompt:", prompt) // <-- Add this line
   const res = await model.generateContent(prompt)
   return res.response?.text() ?? ""
 }
@@ -263,7 +262,6 @@ export const generateQuestions = async (inputs: Inputs) => {
 export const generateNCERTQuestions = async (inputs: Inputs) => {
   const model = genAI.getGenerativeModel({ model: "gemini-2.5-flash" })
   const prompt = createNCERTPrompt(inputs)
-  console.log("NCERT Prompt:", prompt) // <-- Add this line
   const res = await model.generateContent(prompt)
   return res.response?.text() ?? ""
 }
