@@ -330,7 +330,9 @@ export default function Home() {
   // Handle opening image management modal
   const handleManageImages = async (question: Question) => {
     if (!user?.accessToken) {
-      console.error('User not authenticated')
+      // Show user-friendly message and prompt to sign in
+      alert('To create and manage images, please sign in to your account.')
+      setShowAuthModal(true)
       return
     }
 
