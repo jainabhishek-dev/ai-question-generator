@@ -3,7 +3,7 @@ import Link from 'next/link';
 
 export const metadata: Metadata = {
   title: 'Terms of Service - Instaku | AI Question Generator Terms & Conditions',
-  description: 'Read Instaku\'s Terms of Service governing the use of our AI-powered educational question generator platform.',
+  description: 'Read Instaku\'s Terms of Service governing the use of our AI-powered educational content generator platform.',
   robots: 'index, follow',
   alternates: {
     canonical: '/terms'
@@ -16,7 +16,7 @@ export default function TermsPage() {
       <article className="max-w-4xl mx-auto bg-white/90 dark:bg-gray-900/90 backdrop-blur-sm rounded-2xl shadow-xl overflow-hidden">
         <header className="bg-gradient-to-r from-blue-600 to-indigo-600 text-white text-center py-8">
           <h1 className="text-2xl sm:text-3xl font-bold">Terms of Service</h1>
-          <p className="mt-2 text-blue-100">Last updated: September 6, 2025</p>
+          <p className="mt-2 text-blue-100">Last updated: January 17, 2026</p>
         </header>
         
         <div className="p-6 sm:p-8 space-y-8 text-gray-800 dark:text-gray-200">
@@ -27,7 +27,7 @@ export default function TermsPage() {
               If you disagree with any part of these terms, you may not access the Service.
             </p>
             <p>
-              Instaku is an AI-powered educational question generator that helps educators create curriculum-aligned 
+              Instaku is an AI-powered educational content generator that helps educators create curriculum-aligned 
               questions instantly. These Terms apply to all users of the platform.
             </p>
           </section>
@@ -44,22 +44,37 @@ export default function TermsPage() {
               <li>Short answer questions</li>
               <li>Long answer questions</li>
             </ul>
-            <p className="mt-4">
+            <p className="mt-4 mb-4">
               The Service allows users to customize difficulty levels, grade levels, and question types, 
-              save questions to personal libraries, and export content as PDF worksheets or answer keys.
+              save questions to personal libraries, and export content as CSV files.
             </p>
+            <p className="mb-4">
+              Additionally, Instaku provides interactive quiz game features that allow users to:
+            </p>
+            <ul className="list-disc ml-6 space-y-2">
+              <li>Create interactive quiz games from saved questions</li>
+              <li>Generate shareable quiz links that work on any device</li>
+              <li>Track quiz plays, scores, and player performance</li>
+              <li>Access detailed analytics dashboards with leaderboards and insights</li>
+              <li>Monitor question-level performance and learning outcomes</li>
+            </ul>
           </section>
 
           <section>
             <h2 className="text-xl font-bold mb-4 text-blue-900 dark:text-blue-200">3. User Accounts and Registration</h2>
             <p className="mb-4">
               While you can generate questions without an account, creating an account is required to save, 
-              organize, and export questions. When you create an account, you must provide accurate information 
+              organize, export questions, and create quiz games. When you create an account, you must provide accurate information 
               and maintain account security.
             </p>
             
             <p className="mb-4">
-              <strong>Free Users:</strong> Can save up to 40 questions in their library and access all core features.
+              <strong>Free Users:</strong> Can save up to 40 questions in their library, create quiz games, and access all core features including analytics.
+            </p>
+            
+            <p className="mb-4">
+              <strong>Quiz Players:</strong> Anyone with a shareable quiz link can play the quiz without creating an account. 
+              Player names and scores may be visible on leaderboards associated with that quiz.
             </p>
             
             <p>
@@ -73,6 +88,9 @@ export default function TermsPage() {
             <p className="mb-4">You agree to use Instaku only for lawful educational purposes. You may not:</p>
             <ul className="list-disc ml-6 space-y-2">
               <li>Generate content that is harmful, offensive, or inappropriate for educational settings</li>
+              <li>Create quiz games with inappropriate, offensive, or malicious content</li>
+              <li>Share quiz links for purposes other than legitimate educational activities</li>
+              <li>Attempt to manipulate quiz scores, leaderboards, or analytics data</li>
               <li>Attempt to reverse engineer or copy the AI technology</li>
               <li>Use the Service to create content that violates intellectual property rights</li>
               <li>Overload the system with excessive requests or automated tools</li>
@@ -96,6 +114,24 @@ export default function TermsPage() {
               <li>You are responsible for ensuring content appropriateness for your specific use case</li>
             </ul>
 
+            <h3 className="text-lg font-semibold mb-2">Quiz Games and Shared Content</h3>
+            <p className="mb-4">
+              When you create and share quiz games:
+            </p>
+            <ul className="list-disc ml-6 space-y-2 mb-4">
+              <li>You retain ownership of the questions used in your quiz games</li>
+              <li>By generating a shareable link, you grant permission for others to access and play that quiz</li>
+              <li>Player data (names, scores, attempt times) is collected and visible in your analytics dashboard</li>
+              <li>You are responsible for the appropriateness and accuracy of quiz content shared via public links</li>
+              <li>Instaku reserves the right to remove quiz games that violate these Terms</li>
+            </ul>
+
+            <h3 className="text-lg font-semibold mb-2">Analytics Data</h3>
+            <p className="mb-4">
+              Analytics data including play statistics, scores, and performance metrics are generated from quiz activity. 
+              This data is provided to help you track learning outcomes and is subject to our Privacy Policy.
+            </p>
+
             <h3 className="text-lg font-semibold mb-2">Platform Rights</h3>
             <p>
               Instaku retains all rights to the platform, AI technology, and Service infrastructure. 
@@ -110,7 +146,18 @@ export default function TermsPage() {
               <li>Up to 10 questions can be generated in a single request</li>
               <li>Free users are limited to 40 saved questions in their library</li>
               <li>Export functionality requires account registration</li>
+              <li>Quiz game creation requires account registration</li>
+              <li>No limit on the number of quiz games you can create</li>
+              <li>No limit on the number of players who can access shared quiz links</li>
+              <li>Analytics data is retained for the lifetime of the quiz game</li>
             </ul>
+
+            <h3 className="text-lg font-semibold mb-2">Shareable Quiz Links</h3>
+            <p className="mb-4">
+              Shareable quiz links remain active indefinitely unless you delete the associated quiz game. 
+              You are responsible for managing access to your quiz links. Once shared, anyone with the link 
+              can play the quiz without authentication.
+            </p>
 
             <h3 className="text-lg font-semibold mb-2">Service Availability</h3>
             <p>

@@ -1,8 +1,9 @@
 "use client"
 import { useState } from "react"
 import { createAdvancedPrompt } from "@/lib/gemini"
-import { BookOpenIcon, Cog6ToothIcon, ChartPieIcon, DocumentTextIcon, ArrowPathIcon } from "@heroicons/react/24/outline";
+import { BookOpenIcon, Cog6ToothIcon, ChartPieIcon, DocumentTextIcon, ArrowPathIcon } from "@heroicons/react/24/outline"
 import { subjectMap } from "./subjectMap"
+import PdfUploadSection from "./PdfUploadSection"
 
 interface Props {
   onGenerate: (prompt: string, inputs: Inputs) => void
@@ -29,6 +30,7 @@ export interface Inputs {
   learningOutcome?: string
   question_source?: string
   enableImages?: boolean // Enable AI image generation
+  pdfFileUri?: string // Gemini PDF file reference
   [key: string]: unknown
 }
 
@@ -66,6 +68,8 @@ export default function AdvancedQuestionForm({ onGenerate, isLoading = false, cu
     enableImages: false
   })
   const [error, setError] = useState("")
+  const [pdfFileUri, setPdfFileUri] = useState<string>("")
+  const [pdfFileName, setPdfFileName] = useState<string>("")
   const subSubjectOptions = subjectMap[inputs.subject] || []
 
   // Calculate total questions from individual counts
@@ -104,15 +108,26 @@ export default function AdvancedQuestionForm({ onGenerate, isLoading = false, cu
       return
     }
     if (currentQuestionCount + totalQuestions > 40) {
-      setError(`You can only create ${40 - currentQuestionCount} more questions. Reduce the total or delete some questions.`)
+      const remaining = 40 - currentQuestionCount
+      setError(`You can only create ${remaining} more ${remaining === 1 ? 'question' : 'questions'}. Reduce the total or delete some questions.`)
       return
     }
     if (!validateDistribution()) return
     
     // Update inputs with calculated total before generating
-    const updatedInputs = { ...inputs, totalQuestions }
+    const updatedInputs = { ...inputs, totalQuestions, pdfFileUri }
     const prompt = createAdvancedPrompt(updatedInputs)
     onGenerate(prompt, updatedInputs)
+  }
+
+  const handlePdfUpload = (fileUri: string, fileName: string) => {
+    setPdfFileUri(fileUri)
+    setPdfFileName(fileName)
+  }
+
+  const handlePdfClear = () => {
+    setPdfFileUri("")
+    setPdfFileName("")
   }
 
   return (
@@ -302,19 +317,38 @@ export default function AdvancedQuestionForm({ onGenerate, isLoading = false, cu
           <div className="w-10 h-10 bg-gradient-to-r from-purple-500 to-indigo-600 rounded-xl flex items-center justify-center mr-3">
             <DocumentTextIcon className="w-7 h-7 text-white" />
           </div>
-          <h3 className="text-lg font-semibold text-gray-700 border-b pb-2 flex-1">Reference Content (Optional)</h3>
+          <h3 className="text-lg font-semibold text-gray-900 border-b pb-2 flex-1">Reference Content (Optional)</h3>
         </div>
+        
+        {/* PDF Upload Section */}
+        <div className="mb-6">
+          <PdfUploadSection
+            onFileUpload={handlePdfUpload}
+            onClear={handlePdfClear}
+            uploadedFileName={pdfFileName}
+            isLoading={isLoading}
+          />
+        </div>
+
         <div>
-          <label className="block text-sm font-medium text-gray-700 mb-1">Chapter/PDF Content</label>
+          <label className="block text-sm font-medium text-gray-900 mb-1">
+            Or Paste Content Manually
+          </label>
           <textarea
             value={inputs.pdfContent}
             onChange={e => handleChange("pdfContent", e.target.value)}
             placeholder="Paste chapter content, textbook passages, or any reference material here..."
             className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500 text-gray-900 h-32 resize-vertical"
+            disabled={!!pdfFileUri}
           />
+          {pdfFileUri && (
+            <p className="text-xs text-gray-600 mt-1">
+              PDF is uploaded. Clear the PDF above to paste content manually.
+            </p>
+          )}
         </div>
         <div className="mt-4">
-          <label className="block text-sm font-medium text-gray-700 mb-1">Additional Notes to AI</label>
+          <label className="block text-sm font-medium text-gray-900 mb-1">Additional Notes to AI</label>
           <textarea
             value={inputs.additionalNotes}
             onChange={e => handleChange("additionalNotes", e.target.value)}
@@ -332,11 +366,11 @@ export default function AdvancedQuestionForm({ onGenerate, isLoading = false, cu
               onChange={e => handleChange("enableImages", e.target.checked)}
               className="w-4 h-4 text-blue-600 bg-gray-100 border-gray-300 rounded focus:ring-blue-500 focus:ring-2"
             />
-            <span className="text-sm font-medium text-gray-700">
+            <span className="text-sm font-medium text-gray-900">
               Enable Image Generation
             </span>
           </label>
-          <p className="text-xs text-gray-500 mt-1 ml-7">
+          <p className="text-xs text-gray-600 mt-1 ml-7">
             AI will add educational images where they improve understanding
           </p>
         </div>

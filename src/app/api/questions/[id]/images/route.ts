@@ -1,9 +1,11 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { getUserFromAuthenticatedRequest } from '@/lib/supabaseServer'
+import { createClient } from '@supabase/supabase-js'
 
 /**
  * GET /api/questions/[id]/images
  * Fetch all images for a specific question
+ * Supports both authenticated users and anonymous access for public games
  */
 export async function GET(
   request: NextRequest,
@@ -20,8 +22,20 @@ export async function GET(
       )
     }
 
-    // Check authentication and get user
-    const { supabase } = await getUserFromAuthenticatedRequest(request)
+    // Try to get authenticated user first
+    let supabase;
+    try {
+      const authResult = await getUserFromAuthenticatedRequest(request);
+      supabase = authResult.supabase;
+    } catch {
+      // For anonymous users (quiz games), use service role to bypass RLS
+      // This is safe because we're only reading image URLs for questions
+      const serviceRoleKey = process.env.SUPABASE_SERVICE_ROLE_KEY || process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY;
+      supabase = createClient(
+        process.env.NEXT_PUBLIC_SUPABASE_URL!,
+        serviceRoleKey!
+      );
+    }
 
     // Fetch ALL images using new schema - query directly by question_id
     const { data: images, error } = await supabase

@@ -21,16 +21,16 @@ export default function FounderNote() {
         Thought of Instaku
       </p>
       <p className="text-xs sm:text-sm text-gray-700 dark:text-gray-200">
-        Drawing from this rich tapestry of experiences - and fueled by my dual passion for education and technology, complemented by a strong analytical background - I embarked on creating Instaku. This isn&apos;t just another edtech tool; I will keep improvising it with a genuine ground reality understanding of what both educators and learners truly need in today&apos;s dynamic learning environment.
+        Drawing from this rich tapestry of experiences - and fueled by my dual passion for education and technology, complemented by a strong analytical background - I embarked on creating Instaku. What started as an AI-powered question generator has evolved into a comprehensive learning platform featuring interactive quiz games, detailed analytics, and shareable content. This isn&apos;t just another edtech tool; I will keep improvising it with a genuine ground reality understanding of what both educators and learners truly need in today&apos;s dynamic learning environment.
       </p>
 
       <p className="text-xs sm:text-sm text-gray-700 dark:text-gray-200 font-semibold mb-1 mt-4">
         Our Commitment to Excellence
       </p>
       <p className="text-xs sm:text-sm text-gray-700 dark:text-gray-200">
-        What distinguishes Instaku in the crowded edtech landscape is my unwavering commitment to precision and quality education. I personally invest significant time and effort in fine-tuning prompts, ensuring that each question that you generate from Instaku not only meets but exceeds curriculum standards and pedagogical best practices.
+        What distinguishes Instaku in the crowded edtech landscape is my unwavering commitment to precision and quality education. I personally invest significant time and effort in fine-tuning prompts, ensuring that each question you generate not only meets but exceeds curriculum standards and pedagogical best practices. Beyond question generation, I&apos;ve built features like interactive quiz games, comprehensive analytics dashboards, and seamless content sharing—all designed to create measurable learning outcomes.
         <br /><br />
-        This dedication stems from a fundamental belief: exceptional questions are the cornerstone of exceptional learning outcomes.
+        This dedication stems from a fundamental belief: exceptional content and engaging learning experiences are the cornerstones of exceptional learning outcomes.
       </p>
 
       <p className="text-xs sm:text-sm text-gray-700 dark:text-gray-200 font-semibold mb-1 mt-4">
@@ -48,7 +48,7 @@ export default function FounderNote() {
         </a>
          {" "}page. Together, we can continue building solutions that truly make a difference in education.
         <br /><br />
-        Thank you for joining me on this mission to revolutionize learning, one quality question at a time.
+        Thank you for joining me on this mission to revolutionize learning through quality content, engaging games, and actionable insights.
       </p>
       <p className="text-xs text-right text-gray-500 dark:text-gray-400 italic">— Abhishek, Founder of Instaku</p>
     </section>

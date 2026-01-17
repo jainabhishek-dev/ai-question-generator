@@ -32,7 +32,7 @@ export default function Mission() {
       <div className="w-16 h-1 bg-gradient-to-r from-blue-500 to-indigo-500 rounded-full mb-4" />
       <div className="bg-gradient-to-br from-blue-50 to-indigo-50 dark:from-blue-900/20 dark:to-indigo-900/20 rounded-xl p-4 sm:p-6 border border-blue-100 dark:border-blue-800/30">
         <p className="text-sm sm:text-base text-gray-700 dark:text-gray-200 text-justify leading-relaxed mb-6">
-          To help <span className="text-blue-600 dark:text-blue-400 font-semibold">educators and learners</span> create high-quality questions and worksheets in minutes, not hours. Instaku saves you time and ensures every question supports better learning outcomes.
+          To empower <span className="text-blue-600 dark:text-blue-400 font-semibold">educators and learners</span> to create high-quality questions, interactive quiz games, and track learning outcomes—all in minutes, not hours. Instaku combines AI-powered content generation with engaging gamification and analytics to support better learning experiences.
         </p>
         <div className="grid grid-cols-2 sm:grid-cols-4 gap-4">
           {values.map((value, index) => (

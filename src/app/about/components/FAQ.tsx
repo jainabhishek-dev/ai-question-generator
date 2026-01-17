@@ -13,9 +13,24 @@ const faqs = [
       "Instaku currently supports multiple-choice, fill-in-the-blank, true-false, short answer, and long answer questions. You can customize the mix and difficulty for each batch.",
   },
   {
-    question: "Can I export generated questions as a PDF?",
+    question: "Can I export generated questions?",
     answer:
-      "Yes! You can export your selected questions as a PDF worksheet or an answer key. Use the Export options in your 'My Questions' library to download either format.",
+      "Yes! You can export your selected questions as a CSV file from your 'My Questions' library.",
+  },
+  {
+    question: "Can I create quiz games from my questions?",
+    answer:
+      "Yes! Navigate to 'Create Game' to build interactive quiz games. You can select questions, set time limits, and generate shareable quiz links that work on any device.",
+  },
+  {
+    question: "How do shareable quiz links work?",
+    answer:
+      "When you create a quiz game, you get a unique shareable link. Anyone with the link can play the quiz—no account needed. You can track all plays and scores in your 'My Games' dashboard.",
+  },
+  {
+    question: "What analytics are available for quiz games?",
+    answer:
+      "In 'My Games', you can view detailed analytics including total plays, average scores, question-level performance, player attempts over time, and leaderboards showing top performers.",
   },
   {
     question: "Can I save the questions I have generated?",
@@ -40,7 +55,7 @@ const faqs = [
   {
     question: "Do I need an account to use Instaku?",
     answer:
-      "You can generate questions without an account, but you need to sign in to save, organize, or export your questions.",
+      "You can generate questions without an account, but you need to sign in to save, organize, or export your questions. To create quiz games, you must be signed in.",
   },
   {
     question: "Can I edit or delete questions after saving them?",

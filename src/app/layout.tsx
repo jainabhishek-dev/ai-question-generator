@@ -22,6 +22,7 @@ export default function RootLayout({
   const [showAuthModal, setShowAuthModal] = useState(false)
   const [sidebarOpen, setSidebarOpen]   = useState(false)  // mobile drawer
   const [collapsed,   setCollapsed]     = useState(true)   // 56-px rail on ≥ md
+  const [isHovering, setIsHovering]     = useState(false)  // hover state for auto-expand
   const sidebarRef = useRef<HTMLDivElement>(null);
 
   // Focus trap for sidebar (mobile only)
@@ -77,35 +78,25 @@ export default function RootLayout({
               ref={sidebarRef}
               className={`
                 fixed inset-y-0 left-0 z-40 flex flex-col bg-gray-900 text-white
-                transition-all duration-300 ease-in-out
+                transition-all duration-500 ease-out
                 overflow-y-auto overflow-x-hidden
                 ${sidebarOpen ? "translate-x-0" : "-translate-x-full md:translate-x-0"}
-                ${collapsed ? "w-20" : "w-60"}
+                ${(collapsed && !isHovering) ? "w-20" : "w-60"}
               `}
               tabIndex={sidebarOpen ? 0 : -1}
               aria-modal={sidebarOpen ? "true" : undefined}
               role={sidebarOpen ? "dialog" : undefined}
+              onMouseEnter={() => setIsHovering(true)}
+              onMouseLeave={() => setIsHovering(false)}
             >
-              {/* collapse / expand button (desktop only) */}
-              <button
-                onClick={() => setCollapsed(v => !v)}
-                aria-label="Toggle collapse"
-                className="hidden md:flex items-center justify-center h-12 text-gray-400 hover:text-white"
-              >
-                {collapsed ? (
-                  <ChevronRightIcon className="w-5 h-5 transition-transform" />
-                ) : (
-                  <ChevronLeftIcon className="w-5 h-5 transition-transform" />
-                )}
-              </button>
-
               {/* Navigation / account */}
               <Header
                 vertical
-                collapsed={collapsed}
+                collapsed={collapsed && !isHovering}
                 onNavigate={() => {
                   setSidebarOpen(false);
-                  setCollapsed(true); // Collapse sidebar when navigating
+                  setCollapsed(true);
+                  setIsHovering(false);
                 }}
                 onSignIn={() => setShowAuthModal(true)}
               />
@@ -141,12 +132,7 @@ export default function RootLayout({
             </button>
 
             {/* ─────────── Main content ─────────── */}
-              <main
-                className={`
-                  flex-1 min-h-screen bg-white dark:bg-gray-950 overflow-x-hidden
-                  ${collapsed ? "md:ml-14" : "md:ml-64"}
-                `}
-              >
+              <main className="flex-1 min-h-screen bg-white dark:bg-gray-950 overflow-x-hidden md:ml-20">
               <div className="px-4 pb-8 pt-16 md:px-8 md:pt-2">
                 {children}
                 <Footer />

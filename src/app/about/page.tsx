@@ -5,6 +5,7 @@ import Trust from "./components/Trust";
 import FounderNote from "./components/FounderNote";
 import FAQ from "./components/FAQ";
 import UserJourney from "./components/UserJourney";
+import Features from "./components/Features";
 import TechStack from "./components/TechStack";
 import Statistics from "./components/Statistics";
 import Link from "next/link";
@@ -53,7 +54,7 @@ export default function AboutPage() {
           <header className="bg-transparent text-center pt-8 pb-2">
             <LogoHeader />
             <p className="text-sm sm:text-base mt-2 text-gray-700 dark:text-gray-200">
-              <span className="font-semibold">Create quality questions in seconds, not hours.</span>
+              <span className="font-semibold">Create quality content in seconds, not hours.</span>
             </p>
             <div className="mt-3 inline-flex items-center gap-2 bg-white/10 rounded-full px-3 py-1 text-xs">
               <span className="w-2 h-2 bg-green-400 rounded-full animate-pulse"></span>
@@ -64,6 +65,7 @@ export default function AboutPage() {
             <Mission />
             <Statistics />
             <UserJourney />
+            <Features />
             <Trust />
             <FounderNote />
             <TechStack />
@@ -71,7 +73,7 @@ export default function AboutPage() {
             <footer className="text-center pt-6 pb-2">
               <div className="space-y-2">
                 <Link
-                  href="/"
+                  href="/create-questions"
                   className="inline-block bg-gradient-to-r from-blue-600 to-indigo-600 hover:from-blue-700 hover:to-indigo-700 text-white font-semibold py-3 px-6 rounded-full shadow-lg transition-all duration-300 transform hover:scale-105 hover:shadow-xl text-sm"
                   aria-label="Start using Instaku question generator"
                 >

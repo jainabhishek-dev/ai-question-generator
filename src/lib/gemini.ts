@@ -3,7 +3,10 @@ import { Inputs } from "@/components/AdvancedQuestionForm"
 import { createNCERTPrompt } from "@/lib/ncertPrompt"
 import { createObjectiveExtractionPrompt, createLessonPlanPrompt } from "@/lib/lessonPlanPrompt"
 
-const genAI = new GoogleGenerativeAI(process.env.NEXT_PUBLIC_GEMINI_API_KEY!)
+// Use server-side API key (no referrer restrictions) or fall back to public key
+const genAI = new GoogleGenerativeAI(
+  process.env.GEMINI_API_KEY_SERVER || process.env.NEXT_PUBLIC_GEMINI_API_KEY!
+)
 
 /* ---------- STATIC MAPS ---------- */
 const gradeContexts: Record<string,string> = {
@@ -252,16 +255,50 @@ export const createAdvancedPrompt = (inputs: Inputs) => {
 }
 
 /* ---------- AI CALL ---------- */
-export const generateQuestions = async (inputs: Inputs) => {
+export const generateQuestions = async (inputs: Inputs, pdfFileUri?: string) => {
   const model = genAI.getGenerativeModel({ model: "gemini-2.5-flash" })
   const prompt = createAdvancedPrompt(inputs)
+  
+  // If PDF file reference is provided, include it in the request
+  if (pdfFileUri) {
+    const parts = [
+      prompt,
+      {
+        fileData: {
+          fileUri: pdfFileUri,
+          mimeType: 'application/pdf'
+        }
+      }
+    ]
+    const res = await model.generateContent(parts)
+    return res.response?.text() ?? ""
+  }
+  
+  // Otherwise, generate without PDF
   const res = await model.generateContent(prompt)
   return res.response?.text() ?? ""
 }
 
-export const generateNCERTQuestions = async (inputs: Inputs) => {
+export const generateNCERTQuestions = async (inputs: Inputs, pdfFileUri?: string) => {
   const model = genAI.getGenerativeModel({ model: "gemini-2.5-flash" })
   const prompt = createNCERTPrompt(inputs)
+  
+  // If PDF file reference is provided, include it in the request
+  if (pdfFileUri) {
+    const parts = [
+      prompt,
+      {
+        fileData: {
+          fileUri: pdfFileUri,
+          mimeType: 'application/pdf'
+        }
+      }
+    ]
+    const res = await model.generateContent(parts)
+    return res.response?.text() ?? ""
+  }
+  
+  // Otherwise, generate without PDF
   const res = await model.generateContent(prompt)
   return res.response?.text() ?? ""
 }
@@ -348,5 +385,178 @@ export const generateLessonPlan = async (
   const result = res.response?.text() ?? ""
   console.log("🤖 AI Raw Response:", result)
   console.log("📊 Response length:", result.length)
+  return result
+}
+
+/**
+ * Generate quiz game configuration from topic
+ */
+export const generateQuizGame = async (
+  topic: string,
+  subject?: string,
+  grade?: string,
+  difficulty?: 'easy' | 'medium' | 'hard',
+  numberOfQuestions: number = 10,
+  timeLimit?: number,
+  enableImages: boolean = false,
+  distribution?: { mcq: number; trueFalse: number; fib: number }
+): Promise<string> => {
+  const model = genAI.getGenerativeModel({ model: "gemini-2.5-flash" })
+  
+  const gradeContext = grade && gradeContexts[grade] 
+    ? `\nGrade-Specific Context (${grade}): ${gradeContexts[grade]}`
+    : ""
+
+  const imageInstructions = getImageInstructions(enableImages)
+  
+  // Default distribution if not provided (all MCQ for backward compatibility)
+  const dist = distribution || { mcq: numberOfQuestions, trueFalse: 0, fib: 0 };
+  
+  // Build question type instructions dynamically
+  let questionTypeInstructions = '';
+  let questionTypeList = '';
+  const examples: string[] = [];
+  
+  // Only include instructions for requested types
+  if (dist.mcq > 0) {
+    questionTypeList += `- ${dist.mcq} Multiple Choice (MCQ) questions with 4 options\n`;
+    questionTypeInstructions += `
+Each MCQ question MUST have:
+- Clear, educational question text
+- Exactly 4 options (A, B, C, D)
+- ONE correct answer (letter only: A, B, C, or D)
+- Educational explanation (2-3 sentences)
+- "question_type": "MCQ"
+- All distractors must be plausible but clearly incorrect
+`;
+    
+    examples.push(`{
+      "question": "What is the capital of France?",
+      "question_type": "MCQ",
+      "options": ["A) London", "B) Paris", "C) Berlin", "D) Madrid"],
+      "correct_answer": "B",
+      "explanation": "Paris is the capital and largest city of France.",
+      "hint": "This city is known as the City of Light and is home to the Eiffel Tower.",
+      "difficulty": "${difficulty || 'medium'}",
+      "points": 100
+    }`);
+  }
+  
+  if (dist.trueFalse > 0) {
+    questionTypeList += `- ${dist.trueFalse} True/False questions\n`;
+    questionTypeInstructions += `
+Each True/False question MUST have:
+- Clear statement to evaluate as true or false
+- 2 options: ["True", "False"]
+- Correct answer: "True" or "False" (exact match, case-sensitive)
+- Explanation why it's true or false (2-3 sentences)
+- "question_type": "True/False"
+`;
+    
+    examples.push(`{
+      "question": "The Earth orbits around the Sun.",
+      "question_type": "True/False",
+      "options": ["True", "False"],
+      "correct_answer": "True",
+      "explanation": "The Earth takes approximately 365.25 days to complete one orbit around the Sun.",
+      "hint": "Think about what is at the center of our solar system.",
+      "difficulty": "${difficulty || 'medium'}",
+      "points": 100
+    }`);
+  }
+  
+  if (dist.fib > 0) {
+    questionTypeList += `- ${dist.fib} Fill in the Blank (FIB) questions\n`;
+    questionTypeInstructions += `
+Each FIB question MUST have:
+- Question with EXACTLY ONE blank (use "______" to indicate the blank)
+- NO options field (completely omit the "options" key)
+- correct_answer: the exact text answer (single word or short phrase)
+- Explanation (2-3 sentences)
+- "question_type": "FIB"
+- "case_sensitive": false
+- CRITICAL: Only ONE blank per question - do not create questions with multiple blanks
+- The answer should be a single word or short phrase (2-3 words max)
+`;
+    
+    examples.push(`{
+      "question": "The chemical symbol for water is ______.",
+      "question_type": "FIB",
+      "correct_answer": "H2O",
+      "explanation": "Water's chemical formula is H2O, consisting of two hydrogen atoms and one oxygen atom.",
+      "hint": "It consists of 2 hydrogen atoms and 1 oxygen atom.",
+      "difficulty": "${difficulty || 'medium'}",
+      "points": 100,
+      "case_sensitive": false
+    }`);
+  }
+
+  const prompt = `Generate a quiz game configuration for an educational game platform.
+
+CONTEXT:
+Topic: ${topic}${subject ? `\nSubject: ${subject}` : ""}${gradeContext}
+Difficulty: ${difficulty || 'medium'}
+Total Questions: ${numberOfQuestions}${timeLimit ? `\nTime Limit: ${timeLimit} seconds` : ""}
+
+QUIZ GAME REQUIREMENTS:
+Generate EXACTLY ${numberOfQuestions} questions about "${topic}" with the following distribution:
+${questionTypeList}
+${questionTypeInstructions}
+
+Question Quality Standards:
+- Questions should test understanding, not just memorization
+- Use concrete, factual questions rather than hypothetical scenarios
+- Avoid trick questions, double negatives, or confusing wording
+- Questions should be age-appropriate for the grade level
+- Use clear question stems: "Which of the following...", "What is...", "How does...", "Why is..."
+- AVOID vague starters like "Imagine...", "Picture this...", "Think about..."
+- EVERY question must include a helpful hint (1 sentence that guides without revealing the answer)
+
+${imageInstructions}
+
+Mathematical & Currency Formatting:
+- For mathematical expressions: Use single dollar signs: $x^2 + y^2 = z^2$, $\\frac{a}{b} = c$
+- For currency amounts: ALWAYS use escaped dollars: \\$45, \\$12.00, \\$0.75
+- Use Unicode symbols when appropriate: ₹, €, £, %, °C, π, ∞
+
+OUTPUT FORMAT:
+Return ONLY valid JSON matching this exact structure (no additional text before or after):
+
+{
+  "questions": [
+    ${examples.join(',\n    ')}
+  ],
+  "settings": {
+    "time_limit": ${timeLimit || 300},
+    "lives": 3,
+    "hints_enabled": true,
+    "show_explanations": true
+  }
+}
+
+CRITICAL JSON RULES:
+- Return ONLY the JSON object, no markdown code blocks, no additional text
+- question_type must be exactly: "MCQ", "True/False", or "FIB" (case-sensitive)
+- MCQ: options array required with 4 items, correct_answer is letter (A, B, C, or D)
+- True/False: options array required ["True", "False"], correct_answer is "True" or "False"
+- FIB: NO options field (completely omit it), correct_answer is the text answer, ONLY ONE BLANK per question
+- Generate EXACTLY ${numberOfQuestions} questions in the specified distribution (${dist.mcq} MCQ, ${dist.trueFalse} True/False, ${dist.fib} FIB)
+- All string values must use double quotes
+- points should be 100 for all questions
+- hint must be provided for EVERY question (1 sentence, helpful guidance without revealing the answer)
+- Ensure valid JSON syntax (no trailing commas, proper escaping)
+- settings must be an object with time_limit, lives, hints_enabled, show_explanations
+
+Generate the quiz game now:`
+
+  console.log("🎮 Generating quiz game configuration:", { 
+    topic, subject, grade, difficulty, numberOfQuestions,
+    distribution: dist
+  })
+  
+  const res = await model.generateContent(prompt)
+  const result = res.response?.text() ?? ""
+  
+  console.log("🤖 Quiz Game AI Response length:", result.length)
   return result
 }

@@ -11,7 +11,25 @@ export default function sitemap(): MetadataRoute.Sitemap {
       priority: 1.0,
     },
     {
+      url: baseUrl + '/create-questions',
+      lastModified: new Date(),
+      changeFrequency: 'daily',
+      priority: 0.9,
+    },
+    {
       url: baseUrl + '/my-questions',
+      lastModified: new Date(),
+      changeFrequency: 'daily',
+      priority: 0.8,
+    },
+    {
+      url: baseUrl + '/create-game',
+      lastModified: new Date(),
+      changeFrequency: 'daily',
+      priority: 0.9,
+    },
+    {
+      url: baseUrl + '/my-games',
       lastModified: new Date(),
       changeFrequency: 'daily',
       priority: 0.8,

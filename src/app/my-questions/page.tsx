@@ -7,7 +7,7 @@ import { useAuth } from '@/contexts/AuthContext'
 import 'katex/dist/katex.min.css'
 import Link from 'next/link'
 import { ExclamationCircleIcon, SparklesIcon, MagnifyingGlassIcon, ArrowLeftIcon } from "@heroicons/react/24/outline";
-import { QuestionRecord, PdfCustomization, GeneratedImage } from '@/types/question'
+import { QuestionRecord, GeneratedImage } from '@/types/question'
 import { getUserQuestions, softDeleteUserQuestion } from '@/lib/database'
 import FilterPanel from './FilterPanel'
 import ExportPanel from './ExportPanel'
@@ -85,6 +85,11 @@ function MyQuestionsPage() {
   useEffect(() => {
     setCurrentPage(1)
   }, [typeFilter, gradeFilter, difficultyFilter, bloomsFilter])
+
+  // Scroll to top when page changes
+  useEffect(() => {
+    window.scrollTo({ top: 0, behavior: 'smooth' })
+  }, [currentPage])
 
   // Show SWR error if present
   useEffect(() => {
@@ -170,87 +175,71 @@ function MyQuestionsPage() {
 
 
 
-  // Unified export handler
-  async function handleExport(customization?: PdfCustomization): Promise<void> {
+  // CSV Export handler
+  const handleCsvExport = () => {
     setError(null)
     if (selectedIds.length === 0) {
       setError('No questions selected to export.')
       return
     }
+
     try {
-      const accessToken = user?.accessToken
-      if (!accessToken) {
-        setError('Could not get user access token. Please log in again.')
-        return
+      // Get selected questions
+      const selectedQuestions = questions.filter(q => q.id && selectedIds.includes(q.id))
+
+      // Helper function to escape CSV fields
+      const escapeCSV = (value: string | null | undefined): string => {
+        if (!value) return ''
+        const escaped = value.replace(/"/g, '""')
+        return escaped.includes(',') || escaped.includes('"') || escaped.includes('\n') 
+          ? `"${escaped}"` 
+          : escaped
       }
-      const res = await fetch('/api/export-pdf', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          selectedIds,
-          userId: user?.id,
-          exportType: 'unified', // New unified export type
-          customization: customization || { 
-            template: 'default', // Simplified template
-            formatting: { fontSize: 14, showHeaders: true, showFooters: true },
-            includeQuestionText: true,
-            includeOptions: true,
-            includeCorrectAnswer: false,
-            includeExplanation: false,
-            showQuestionNumbers: true,
-            showQuestionTypes: true,
-            showSubjectBadges: false,
-            includeCommonInstructions: true,
-            commonInstructionsText: 'Read all questions carefully before answering.'
-          },
-          accessToken
-        })
+
+      // Generate CSV content
+      const headers = [
+        'Question', 'Type', 'Options', 'Correct Answer', 'Explanation',
+        'Image URL', 'Subject', 'Topic', 'Grade', 'Difficulty'
+      ]
+
+      const rows = selectedQuestions.map(q => {
+        const selectedImage = questionImages[q.id!]?.find(img => img.is_selected)
+        const options = q.options?.join(' | ') || ''
+        
+        return [
+          escapeCSV(q.question),
+          escapeCSV(q.question_type),
+          escapeCSV(options),
+          escapeCSV(q.correct_answer),
+          escapeCSV(q.explanation),
+          escapeCSV(selectedImage?.image_url || ''),
+          escapeCSV(q.subject),
+          escapeCSV(q.topic),
+          escapeCSV(q.grade),
+          escapeCSV(q.difficulty)
+        ]
       })
-      if (!res.ok) {
-        let errMsg = 'Failed to export PDF'
-        try {
-          const err = await res.json()
-          errMsg = err.error || errMsg
-        } catch {}
-        setError(errMsg)
-        return
-      }
-      const contentType = res.headers.get('content-type')
-      if (!contentType?.includes('application/pdf')) {
-        setError('Invalid response format - expected PDF')
-        return
-      }
-      const blob = await res.blob()
-      if (blob.size === 0) {
-        setError('Received empty PDF file')
-        return
-      }
-      try {
-        const url = window.URL.createObjectURL(new Blob([blob], { type: 'application/pdf' }))
-        const a = document.createElement('a')
-        a.href = url
-        a.download = 'questions.pdf'
-        document.body.appendChild(a)
-        a.click()
-        a.remove()
-        window.URL.revokeObjectURL(url)
-      } catch (error) {
-        console.error('Error occurred:', error)
-        setError(error instanceof Error ? error.message : 'Failed to download PDF file')
-      }
+
+      const csvContent = [headers, ...rows].map(row => row.join(',')).join('\n')
+
+      // Create and download CSV file
+      const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' })
+      const url = window.URL.createObjectURL(blob)
+      const a = document.createElement('a')
+      a.href = url
+      a.download = `questions-${new Date().toISOString().split('T')[0]}.csv`
+      document.body.appendChild(a)
+      a.click()
+      document.body.removeChild(a)
+      window.URL.revokeObjectURL(url)
+
     } catch (err: unknown) {
       const errorMessage =
         typeof err === 'object' && err !== null && 'message' in err
           ? (err as { message?: string }).message
           : undefined
-      setError(`Failed to export PDF: ${errorMessage || 'Unknown error'}`)
+      setError(`Failed to export CSV: ${errorMessage || 'Unknown error'}`)
     }
-  }
-
-  // Preview handler
-  const handlePreview = (customization: PdfCustomization) => {
-    // For now, we'll just perform the export as preview
-    handleExport(customization)
   }
 
   const applyFilters = () => {
@@ -502,8 +491,7 @@ function MyQuestionsPage() {
 
         <ExportPanel
           selectedCount={selectedIds.length}
-          handleExport={handleExport}
-          onPreview={handlePreview}
+          onCsvExport={handleCsvExport}
         />
 
         {/* Content */}
@@ -519,7 +507,7 @@ function MyQuestionsPage() {
               Get started by creating your first question!
             </p>
             <Link
-              href="/"
+              href="/create-questions"
               className="btn-primary inline-flex items-center"
             >
               Create Your First Question
@@ -583,7 +571,7 @@ function MyQuestionsPage() {
             className="inline-flex items-center px-4 py-2 sm:px-6 sm:py-3 text-blue-600 hover:text-blue-800 font-medium transition-colors space-x-2 bg-white/50 rounded-lg sm:rounded-xl hover:bg-white/80 backdrop-blur-sm border border-white/30 dark:bg-gray-900/50 dark:text-blue-300 dark:hover:text-blue-200 dark:hover:bg-gray-900/80 dark:border-gray-700/50"
           >
             <ArrowLeftIcon className="w-4 h-4" />
-            <span>Back to Home</span>
+            <span>Back to Dashboard</span>
           </Link>
         </div>
 
