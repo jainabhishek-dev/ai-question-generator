@@ -370,7 +370,7 @@ export default function AdvancedQuestionForm({ onGenerate, isLoading = false, cu
               Enable Image Generation
             </span>
           </label>
-          <p className="text-xs text-gray-600 mt-1 ml-7">
+          <p className="text-xs text-gray-900 mt-1 ml-7">
             AI will add educational images where they improve understanding
           </p>
         </div>

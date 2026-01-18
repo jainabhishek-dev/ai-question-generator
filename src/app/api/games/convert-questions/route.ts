@@ -18,9 +18,30 @@ export async function POST(req: NextRequest) {
       allowAnonymousPlay = true
     } = body;
 
-    if (!title || !title.trim()) {
+    const trimmedTitle = title?.trim() || '';
+    if (!trimmedTitle) {
       return NextResponse.json(
         { error: 'Title is required' },
+        { status: 400 }
+      );
+    }
+    if (trimmedTitle.length < 3) {
+      return NextResponse.json(
+        { error: 'Title must be at least 3 characters long' },
+        { status: 400 }
+      );
+    }
+    if (trimmedTitle.length > 200) {
+      return NextResponse.json(
+        { error: 'Title must not exceed 200 characters' },
+        { status: 400 }
+      );
+    }
+
+    const trimmedDescription = description?.trim() || '';
+    if (trimmedDescription.length > 1000) {
+      return NextResponse.json(
+        { error: 'Description must not exceed 1000 characters' },
         { status: 400 }
       );
     }
@@ -123,8 +144,8 @@ export async function POST(req: NextRequest) {
     // Create game in database
     const gameResult = await createGame(
       {
-        title: title,
-        description: description || `Quiz game with ${quizQuestions.length} questions`,
+        title: trimmedTitle,
+        description: trimmedDescription || `Quiz game with ${quizQuestions.length} questions`,
         topic: 'Mixed Topics',
         game_type: 'quiz',
         difficulty: difficulty as Difficulty,

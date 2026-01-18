@@ -57,8 +57,17 @@ export default function QuizGameForm({ existingQuestions, onSuccess, user }: Qui
   ];
 
   const handleGenerateQuiz = async () => {
-    if (!topic.trim()) {
+    const trimmedTopic = topic.trim();
+    if (!trimmedTopic) {
       setError('Please enter a topic');
+      return;
+    }
+    if (trimmedTopic.length < 2) {
+      setError('Topic must be at least 2 characters long');
+      return;
+    }
+    if (trimmedTopic.length > 100) {
+      setError('Topic must not exceed 100 characters');
       return;
     }
 
@@ -117,8 +126,23 @@ export default function QuizGameForm({ existingQuestions, onSuccess, user }: Qui
       return;
     }
 
-    if (!gameTitle.trim()) {
+    const trimmedTitle = gameTitle.trim();
+    if (!trimmedTitle) {
       setError('Please enter a game title');
+      return;
+    }
+    if (trimmedTitle.length < 3) {
+      setError('Title must be at least 3 characters long');
+      return;
+    }
+    if (trimmedTitle.length > 200) {
+      setError('Title must not exceed 200 characters');
+      return;
+    }
+
+    const trimmedDescription = gameDescription.trim();
+    if (trimmedDescription.length > 1000) {
+      setError('Description must not exceed 1000 characters');
       return;
     }
 
@@ -433,6 +457,13 @@ export default function QuizGameForm({ existingQuestions, onSuccess, user }: Qui
               placeholder="e.g., Photosynthesis, World War II, Quadratic Equations"
               className="w-full px-4 py-2 border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-blue-500 dark:bg-gray-700 dark:text-white"
             />
+            <p className={`text-xs mt-1 ${
+              topic.length > 100 ? 'text-red-600 dark:text-red-400' : 
+              topic.length < 2 && topic.length > 0 ? 'text-yellow-600 dark:text-yellow-400' : 
+              'text-gray-500 dark:text-gray-400'
+            }`}>
+              {topic.length}/100 characters {topic.length < 2 && topic.length > 0 ? '(minimum 2)' : ''} {topic.length > 100 ? '(exceeds limit)' : ''}
+            </p>
           </div>
 
           <div className="grid grid-cols-2 gap-4">
@@ -625,6 +656,13 @@ export default function QuizGameForm({ existingQuestions, onSuccess, user }: Qui
               placeholder="e.g., Science Quiz Challenge"
               className="w-full px-4 py-2 border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-blue-500 dark:bg-gray-700 dark:text-white"
             />
+            <p className={`text-xs mt-1 ${
+              gameTitle.length > 200 ? 'text-red-600 dark:text-red-400' : 
+              gameTitle.length < 3 && gameTitle.length > 0 ? 'text-yellow-600 dark:text-yellow-400' : 
+              'text-gray-500 dark:text-gray-400'
+            }`}>
+              {gameTitle.length}/200 characters {gameTitle.length < 3 && gameTitle.length > 0 ? '(minimum 3)' : ''} {gameTitle.length > 200 ? '(exceeds limit)' : ''}
+            </p>
           </div>
 
           <div>
@@ -638,6 +676,12 @@ export default function QuizGameForm({ existingQuestions, onSuccess, user }: Qui
               rows={2}
               className="w-full px-4 py-2 border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-blue-500 dark:bg-gray-700 dark:text-white"
             />
+            <p className={`text-xs mt-1 ${
+              gameDescription.length > 1000 ? 'text-red-600 dark:text-red-400' : 
+              'text-gray-500 dark:text-gray-400'
+            }`}>
+              {gameDescription.length}/1000 characters {gameDescription.length > 1000 ? '(exceeds limit)' : ''}
+            </p>
           </div>
 
           {/* Filters */}

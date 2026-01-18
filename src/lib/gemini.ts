@@ -536,6 +536,8 @@ Return ONLY valid JSON matching this exact structure (no additional text before 
 
 CRITICAL JSON RULES:
 - Return ONLY the JSON object, no markdown code blocks, no additional text
+- title: Create a concise, engaging title (5-10 words). DO NOT include 'Quiz' suffix as game_type already identifies this as a quiz
+- description: One clear sentence describing the quiz content and scope
 - question_type must be exactly: "MCQ", "True/False", or "FIB" (case-sensitive)
 - MCQ: options array required with 4 items, correct_answer is letter (A, B, C, or D)
 - True/False: options array required ["True", "False"], correct_answer is "True" or "False"

@@ -126,7 +126,7 @@ export default function PdfUploadSection({
 
   return (
     <div className="space-y-2">
-      <label className="block text-sm font-medium text-gray-900 dark:text-gray-100">
+      <label className="block text-sm font-medium text-gray-900">
         Upload PDF (Optional)
       </label>
       
@@ -159,7 +159,7 @@ export default function PdfUploadSection({
         ) : (
           <>
             <DocumentArrowUpIcon className="w-12 h-12 mx-auto text-gray-400 dark:text-gray-500 mb-3" />
-            <p className="text-sm text-gray-700 dark:text-gray-300 font-medium mb-1">
+            <p className="text-sm text-gray-900 font-medium mb-1">
               Drop your PDF here or click to browse
             </p>
             <p className="text-xs text-gray-600 dark:text-gray-400">
@@ -175,7 +175,7 @@ export default function PdfUploadSection({
         </div>
       )}
 
-      <p className="text-xs text-gray-600 dark:text-gray-400">
+      <p className="text-xs text-gray-900">
         Upload a PDF to generate questions based on its content. The AI will analyze the document and create relevant questions.
       </p>
     </div>

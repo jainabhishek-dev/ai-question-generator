@@ -54,6 +54,20 @@ export async function POST(req: NextRequest) {
       );
     }
 
+    const trimmedTopic = topic.trim();
+    if (trimmedTopic.length < 2) {
+      return NextResponse.json(
+        { error: 'Topic must be at least 2 characters long' },
+        { status: 400 }
+      );
+    }
+    if (trimmedTopic.length > 100) {
+      return NextResponse.json(
+        { error: 'Topic must not exceed 100 characters' },
+        { status: 400 }
+      );
+    }
+
     // Validate distribution
     if (numMcq + numTrueFalse + numFib !== numberOfQuestions) {
       return NextResponse.json(
@@ -158,7 +172,7 @@ export async function POST(req: NextRequest) {
     // Create game in database
     const gameResult = await createGame(
       {
-        title: config.title || `${topic} Quiz`,
+        title: config.title || `${topic.slice(0, 195)} Quiz`,
         description: config.description || `Test your knowledge about ${topic}`,
         topic: config.topic || topic,
         game_type: 'quiz',

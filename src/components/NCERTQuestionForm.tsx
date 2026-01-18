@@ -349,13 +349,13 @@ export default function NCERTQuestionForm({ onGenerate, isLoading, currentQuesti
           <div className="w-10 h-10 bg-gradient-to-r from-purple-500 to-indigo-600 rounded-xl flex items-center justify-center mr-3">
             <DocumentTextIcon className="w-7 h-7 text-white" />
           </div>
-          <h3 className="text-lg font-semibold text-gray-700 border-b pb-2 flex-1">Additional Notes to AI</h3>
+          <h3 className="text-lg font-semibold text-gray-900 border-b pb-2 flex-1">Additional Notes to AI</h3>
         </div>
         <textarea
           value={additionalNotes}
           onChange={e => setAdditionalNotes(e.target.value)}
           placeholder="Any special instructions or focus areas for the AI..."
-          className="w-full px-3 py-2 border border-gray-300 rounded-md h-24 resize-vertical"
+          className="w-full px-3 py-2 border border-gray-300 rounded-md h-24 resize-vertical text-gray-900"
         />
 
         {/* Image Generation Toggle */}
@@ -367,11 +367,11 @@ export default function NCERTQuestionForm({ onGenerate, isLoading, currentQuesti
               onChange={e => setEnableImages(e.target.checked)}
               className="w-4 h-4 text-blue-600 bg-gray-100 border-gray-300 rounded focus:ring-blue-500 focus:ring-2"
             />
-            <span className="text-sm font-medium text-gray-700">
+            <span className="text-sm font-medium text-gray-900">
               Enable Image Generation
             </span>
           </label>
-          <p className="text-xs text-gray-500 mt-1 ml-7">
+          <p className="text-xs text-gray-900 mt-1 ml-7">
             AI will add educational images where they improve understanding
           </p>
         </div>
