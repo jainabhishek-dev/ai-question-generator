@@ -6,6 +6,7 @@ import { Game, isQuizConfig } from '@/types/game';
 import QuizGameTemplate from '@/components/games/QuizGameTemplate';
 import QuizWelcomeScreen from '@/components/games/QuizWelcomeScreen';
 import LoadingSpinner from '@/components/LoadingSpinner';
+import { soundService } from '@/lib/soundService';
 
 export default function PlayPage() {
   const params = useParams();
@@ -53,6 +54,20 @@ export default function PlayPage() {
 
     fetchGame();
   }, [shareCode]);
+
+  // Play/stop game-start sound based on welcome screen visibility
+  useEffect(() => {
+    if (showWelcome && game) {
+      soundService.playGameStart();
+    } else {
+      soundService.stopGameStart();
+    }
+
+    // Cleanup on unmount
+    return () => {
+      soundService.stopGameStart();
+    };
+  }, [showWelcome, game]);
 
   const handleWelcomeComplete = (name: string) => {
     setPlayerName(name);

@@ -76,9 +76,8 @@ export default function QuizGameTemplate({ config, onGameComplete, onGameQuit }:
 
   // Timer and Initial Setup
   useEffect(() => {
-    // Set music style to Kahoot-style quiz music (only once on mount)
-    soundService.setMusicStyle('kahoot');
-    soundService.playGameStart();
+    // Stop game start sound and start background music
+    soundService.stopGameStart();
     soundService.startBackgroundMusic();
     
     // Load images for all questions that have question_id
@@ -143,6 +142,7 @@ export default function QuizGameTemplate({ config, onGameComplete, onGameQuit }:
         clearInterval(timerInterval.current);
       }
       soundService.stopBackgroundMusic();
+      soundService.stopGameEnd();
     };
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []); // Empty array = run only once on mount (images loading is intentional)
