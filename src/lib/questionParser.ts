@@ -45,46 +45,144 @@ interface OptionWithText {
 }
 
 /**
+ * Normalizes parsed result to Question array format
+ */
+function normalizeParseResult(parsed: unknown): Question[] | null {
+  if (Array.isArray(parsed)) {
+    return parsed;
+  }
+  if (parsed && typeof parsed === 'object') {
+    const obj = parsed as Record<string, unknown>;
+    // Check for questions array property
+    if (obj.questions && Array.isArray(obj.questions)) {
+      return obj.questions;
+    }
+    // Check if single question object
+    if (obj.type && obj.question) {
+      return [obj as unknown as Question];
+    }
+  }
+  return null;
+}
+
+/**
  * Parses AI-generated text into structured Question objects
- * Handles various formats and edge cases in AI responses
+ * Uses 8 sequential parsing strategies for bulletproof parsing
  */
 export function parseQuestions(text: string): Question[] {
   const cleanText = cleanJsonText(text);
 
+  // Strategy 1: Direct parse of cleaned text
   try {
     const parsed = JSON.parse(cleanText);
-
-    // If the parsed result is an object with a 'questions' array, return that array
-    if (!Array.isArray(parsed) && parsed.questions && Array.isArray(parsed.questions)) {
-      return parsed.questions;
-    }
-    // If it's a single question object, wrap in array
-    if (!Array.isArray(parsed) && parsed.type && parsed.question) {
-      return [parsed];
-    }
-    return Array.isArray(parsed) ? parsed : [];
+    const normalized = normalizeParseResult(parsed);
+    if (normalized) return normalized;
   } catch {
-    // Last resort: try to extract JSON from the text using regex
-    try {
-      const jsonMatch = cleanText.match(/(\[[\s\S]*\]|\{[\s\S]*\})/);
-      if (jsonMatch) {
-        const extractedJson = jsonMatch[1];
-        const fallbackParsed = JSON.parse(extractedJson);
-        
-        if (Array.isArray(fallbackParsed)) {
-          return fallbackParsed;
-        } else if (fallbackParsed.questions && Array.isArray(fallbackParsed.questions)) {
-          return fallbackParsed.questions;
-        } else if (fallbackParsed.type && fallbackParsed.question) {
-          return [fallbackParsed];
+    // Continue to next strategy
+  }
+
+  // Strategy 2: Trim all leading/trailing whitespace and parse
+  try {
+    const trimmed = cleanText.replace(/^\s+|\s+$/g, '');
+    const parsed = JSON.parse(trimmed);
+    const normalized = normalizeParseResult(parsed);
+    if (normalized) return normalized;
+  } catch {
+    // Continue to next strategy
+  }
+
+  // Strategy 3: Strip markdown code fences more aggressively
+  try {
+    const noMarkdown = cleanText
+      .replace(/^\s*```[a-z]*\s*/gi, '')
+      .replace(/\s*```\s*$/gi, '')
+      .trim();
+    const parsed = JSON.parse(noMarkdown);
+    const normalized = normalizeParseResult(parsed);
+    if (normalized) return normalized;
+  } catch {
+    // Continue to next strategy
+  }
+
+  // Strategy 4: Extract JSON array with permissive regex
+  try {
+    const arrayMatch = cleanText.match(/\[\s*\{[\s\S]*?\}\s*\]/);
+    if (arrayMatch) {
+      const parsed = JSON.parse(arrayMatch[0]);
+      const normalized = normalizeParseResult(parsed);
+      if (normalized) return normalized;
+    }
+  } catch {
+    // Continue to next strategy
+  }
+
+  // Strategy 5: Extract JSON object with questions key
+  try {
+    const objMatch = cleanText.match(/\{\s*["']questions["']\s*:[\s\S]*\}/);
+    if (objMatch) {
+      const parsed = JSON.parse(objMatch[0]);
+      const normalized = normalizeParseResult(parsed);
+      if (normalized) return normalized;
+    }
+  } catch {
+    // Continue to next strategy
+  }
+
+  // Strategy 6: Unicode normalize and parse
+  try {
+    const normalized = cleanText.normalize('NFKC');
+    const parsed = JSON.parse(normalized);
+    const result = normalizeParseResult(parsed);
+    if (result) return result;
+  } catch {
+    // Continue to next strategy
+  }
+
+  // Strategy 7: Remove control characters and parse
+  try {
+    // eslint-disable-next-line no-control-regex
+    const noControl = cleanText.replace(/[\x00-\x1F\x7F-\x9F]/g, '');
+    const parsed = JSON.parse(noControl);
+    const normalized = normalizeParseResult(parsed);
+    if (normalized) return normalized;
+  } catch {
+    // Continue to next strategy
+  }
+
+  // Strategy 8: Aggressive extraction - find any JSON-like structure
+  try {
+    const matches = cleanText.match(/\{[\s\S]*?\}/g);
+    if (matches) {
+      for (const match of matches) {
+        try {
+          const parsed = JSON.parse(match);
+          if (parsed && typeof parsed === 'object' && parsed.type && parsed.question) {
+            // Found at least one valid question, collect all similar objects
+            const questions: Question[] = [];
+            for (const m of matches) {
+              try {
+                const p = JSON.parse(m);
+                if (p && typeof p === 'object' && p.type && p.question) {
+                  questions.push(p as Question);
+                }
+              } catch {
+                // Skip invalid objects
+              }
+            }
+            if (questions.length > 0) return questions;
+          }
+        } catch {
+          // Continue to next match
         }
       }
-    } catch {
-      // Silent fallback failure
     }
-    
-    return [];
+  } catch {
+    // Final strategy failed
   }
+
+  // All strategies failed - log error for debugging
+  console.error('[QuestionParser] All parsing strategies failed. First 300 chars:', cleanText.substring(0, 300));
+  return [];
 }
 
 /**

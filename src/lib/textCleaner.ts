@@ -3,6 +3,61 @@
  */
 
 /**
+ * Checks if text content looks like mathematical expression
+ * @param text - Content to validate
+ * @returns true if contains math operators, variables, or LaTeX commands
+ */
+function isMathContent(text: string): boolean {
+  if (!text) return false;
+  
+  // Check for mathematical operators
+  if (/[=+\-*/^()><≤≥≠]/.test(text)) return true;
+  
+  // Check for LaTeX commands (\frac, \pi, \circ, etc.)
+  if (/\\[a-zA-Z]+/.test(text)) return true;
+  
+  // Check for variables (letters that aren't common words)
+  // Exclude common words that might appear: "and", "or", "to", "by", "is", "are", "the", "a", "an"
+  const words = text.match(/[a-zA-Z]+/g);
+  if (words) {
+    const commonWords = new Set(['and', 'or', 'to', 'by', 'is', 'are', 'was', 'were', 'the', 'a', 'an', 'of', 'in', 'on', 'at']);
+    const hasVariable = words.some(word => !commonWords.has(word.toLowerCase()) && word.length <= 2);
+    if (hasVariable) return true;
+  }
+  
+  return false;
+}
+
+/**
+ * Whitelist of legitimate compound words that should NOT be split
+ */
+const COMPOUND_WORD_WHITELIST = [
+  'database', 'username', 'password', 'JavaScript', 'TypeScript', 'understood',
+  'withstand', 'nevertheless', 'therefore', 'moreover', 'however', 'whatever',
+  'whenever', 'wherever', 'furthermore', 'otherwise', 'meanwhile', 'nonetheless',
+  'somewhere', 'anywhere', 'nowhere', 'everywhere', 'somebody', 'anybody',
+  'nobody', 'everybody', 'someone', 'anyone', 'everyone', 'something',
+  'anything', 'nothing', 'everything', 'somehow', 'somewhat', 'already',
+  'although', 'together', 'another', 'cannot', 'within', 'without',
+  'throughout', 'upon', 'into', 'onto', 'yourself', 'himself', 'herself',
+  'itself', 'themselves', 'ourselves', 'myself', 'background', 'underground',
+  'playground', 'overseas', 'overboard', 'understand', 'underline', 'undertake',
+  'overcome', 'overlook', 'overflow', 'endpoint', 'checkbox', 'textbox',
+  'dropdown', 'breakdown', 'breakthrough', 'makeup', 'setup', 'backup',
+  'startup', 'shutdown', 'rundown', 'countdown', 'upward', 'downward',
+  'forward', 'backward', 'toward', 'inward', 'outward', 'onward',
+  'straightforward', 'framework', 'network', 'artwork', 'homework', 'teamwork',
+  'paperwork', 'housework', 'fieldwork', 'groundwork', 'footwork'
+];
+
+/**
+ * Checks if a word is in the compound word whitelist (case-insensitive)
+ */
+function isWhitelistedCompound(word: string): boolean {
+  return COMPOUND_WORD_WHITELIST.some(w => w.toLowerCase() === word.toLowerCase());
+}
+
+/**
  * Smart currency and text formatting for display
  * Handles currency symbols, math equations, line breaks, and ReactMarkdown compatibility
  */
@@ -11,76 +66,57 @@ export function escapeCurrencyDollarsSmart(str: string): string {
   
   let result = str;
   
-  // 1) FIRST: Protect ALL math expressions (including those with currency like $18 + x = 45$)
-  // This must happen BEFORE currency conversion to keep math equations intact
+  // Storage for all protected content types
+  const imageExpressions: Array<{placeholder: string, original: string}> = [];
   const mathExpressions: Array<{placeholder: string, original: string}> = [];
-  let mathCounter = 0;
-  
-  // 1.5) ALSO: Protect markdown tables before any processing
-  // Tables need consecutive rows - blank lines break table structure
+  const displayMathExpressions: Array<{placeholder: string, original: string}> = [];
   const tableBlocks: Array<{placeholder: string, original: string}> = [];
+  
+  let imageCounter = 0;
+  let mathCounter = 0;
+  let displayMathCounter = 0;
   let tableCounter = 0;
   
-
-  
-  // Protect simple numbers in math delimiters like $103$, $97$, $45$
-  // This must come FIRST to catch simple mathematical numbers before complex expressions
-  result = result.replace(/\$(\d+)\$/g, (match) => {
-    const placeholder = `__MATH_EXPR_${mathCounter++}__`;
-    mathExpressions.push({ placeholder, original: match });
+  // STEP 1: Protect image placeholders FIRST (preserve literal content unchanged)
+  // Image descriptions should never be modified, even if they contain $ symbols
+  result = result.replace(/\[IMG:[^\]]+\]/g, (match) => {
+    const placeholder = `__IMAGE_${imageCounter++}__`;
+    imageExpressions.push({ placeholder, original: match });
     return placeholder;
   });
   
-  // Protect ALL complex math expressions (including those with operators like $18 + x = 45$)
-  // Look for content between $ that contains:
-  // - Variables like x, y, p
-  // - Operators =, +, -, *, /, ^  
-  // - Numbers followed by operators (like 18 + x)
-  // - Variables followed by operators (like x = 5)
-  // - LaTeX commands like \frac
-  result = result.replace(/\$([^$]*(?:[a-zA-Z=+\-*/^\\]|\\[a-zA-Z]+|\d+\s*[+\-*/^=]|[+\-*/^=]\s*\d+)[^$]*)\$/g, (match) => {
-    const placeholder = `__MATH_EXPR_${mathCounter++}__`;
-    mathExpressions.push({ placeholder, original: match });
-    return placeholder;
-  });
-  
-  // Protect display math expressions $$...$$
+  // STEP 2: Protect display math expressions ($$...$$) FIRST
+  // Note: $ symbol is now exclusively for math (currency uses ₹)
   result = result.replace(/\$\$[\s\S]*?\$\$/g, (match) => {
-    const placeholder = `__MATH_EXPR_${mathCounter++}__`;
-    mathExpressions.push({ placeholder, original: match });
+    const placeholder = `__DISPLAY_MATH_${displayMathCounter++}__`;
+    displayMathExpressions.push({ placeholder, original: match });
     return placeholder;
   });
   
-  // Protect markdown table blocks (consecutive lines with pipes)
-  // Match table structures: header row + separator + data rows
-  // This regex captures complete table blocks including alignment separators like |:---|---:|
+  // STEP 3: Protect markdown tables early to prevent corruption of content inside
   result = result.replace(/^(\s*\|.*\|.*\n)(\s*\|[-:\s|]*\|.*\n)?(\s*\|.*\|.*\n)*/gm, (match) => {
-    // Only protect if it looks like a proper table (has at least 2 rows with pipes)
     const lines = match.trim().split('\n').filter(line => line.includes('|'));
     if (lines.length >= 2) {
       const placeholder = `__TABLE_BLOCK_${tableCounter++}__`;
       tableBlocks.push({ placeholder, original: match });
       return placeholder;
     }
-    return match; // Return unchanged if not a proper table
+    return match;
+  });
+  
+  // STEP 4: Protect ALL inline math expressions $...$ ($ is now math-only, no currency ambiguity)
+  // Since AI uses ₹ for currency, all $ symbols are mathematical
+  result = result.replace(/\$([^$]+)\$/g, (match) => {
+    const placeholder = `__MATH_EXPR_${mathCounter++}__`;
+    mathExpressions.push({ placeholder, original: match });
+    return placeholder;
   });
 
   
-  // 2) NOW convert remaining currency symbols to HTML entities
-  // Math expressions are protected, so this won't break equations like $18 + x = 45$
-  result = result
-    // Handle all currency variations now that math is protected
-    .replace(/\\\\\$(\d)/g, '&#36;$1')  // \\$1.23 -> &#36;1.23
-    .replace(/\\\$(\d)/g, '&#36;$1')    // \$1.23 -> &#36;1.23  
-    .replace(/\$(\d)/g, '&#36;$1');     // $1.23 -> &#36;1.23
+  // STEP 5: Currency handling - AI uses ₹ for currency, so no conversion needed
+  // The ₹ symbol will pass through unchanged as it's not $ (math-only)
   
-  // 3) Add missing currency symbols where numbers should be currency
-  // Look for patterns like "costs 12.00" and convert to "costs &#36;12.00"
-  result = result.replace(/\b(cost|costs|price|spent|total|bill|pay|paid)\s+(\d+\.\d{2})\b/gi, '$1 &#36;$2');
-  
-
-  
-  // 4) Handle line breaks and formatting
+  // STEP 6: Handle line breaks and formatting
   result = result
     // Convert \n to proper line breaks for display
     .replace(/\\n/g, '\n')
@@ -94,7 +130,19 @@ export function escapeCurrencyDollarsSmart(str: string): string {
     .replace(/[ \t]{3,}/g, ' ')
     .trim();
   
-  // 5) Fix spacing issues more carefully (but don't break currency or math)
+  // STEP 7: Fix ONLY unambiguous concatenation errors (conservative approach)
+  // Avoid false positives on valid compound words by targeting clear error patterns
+  
+  // Fix sentence boundaries: period/question/exclamation followed by capital letter
+  result = result.replace(/([.!?])([A-Z])/g, '$1 $2');
+  
+  // Fix number boundaries: digit followed by capital letter
+  result = result.replace(/(\d)([A-Z])/g, '$1 $2');
+  
+  // Fix punctuation boundaries: comma/semicolon/colon followed by capital letter
+  result = result.replace(/([,;:])([A-Z])/g, '$1 $2');
+
+  // STEP 8: Fix spacing issues more carefully (but don't break math)
   result = result
     // Add space after commas if missing (but not in HTML entities)
     .replace(/,(?=[a-zA-Z](?!#36;))/g, ', ')
@@ -106,8 +154,19 @@ export function escapeCurrencyDollarsSmart(str: string): string {
   
 
   
-  // 6) Fix line breaks for ReactMarkdown
+  // STEP 9: Fix line breaks for ReactMarkdown
   // ReactMarkdown needs either double newlines for paragraphs or two spaces + newline for line breaks
+  // BUT: Preserve markdown table structure (table rows need single newlines between them)
+  
+  // Protect markdown table rows (lines starting with |) - preserve their single newlines
+  const tableRowPattern = /\|[^\n]+\|\n(?=\|)/g;
+  const protectedTableNewlines: Array<{ placeholder: string; original: string }> = [];
+  result = result.replace(tableRowPattern, (match) => {
+    const placeholder = `__TABLE_ROW_${protectedTableNewlines.length}__`;
+    protectedTableNewlines.push({ placeholder, original: match });
+    return placeholder;
+  });
+  
   // Convert single newlines to double newlines for proper paragraph breaks
   result = result
     // First, protect existing double newlines
@@ -119,13 +178,30 @@ export function escapeCurrencyDollarsSmart(str: string): string {
     // Clean up excessive newlines (more than 2)
     .replace(/\n{3,}/g, '\n\n');
   
-  // 7) Restore protected math expressions
+  // Restore protected table rows with their original single newlines
+  protectedTableNewlines.forEach(({ placeholder, original }) => {
+    result = result.replace(placeholder, original);
+  });
+  
+  // STEP 10: Restore all protected content in reverse order of protection
+  
+  // First restore display math
+  displayMathExpressions.forEach(({ placeholder, original }) => {
+    result = result.replace(placeholder, original);
+  });
+  
+  // Then restore inline math expressions
   mathExpressions.forEach(({ placeholder, original }) => {
     result = result.replace(placeholder, original);
   });
   
-  // 8) Restore protected table blocks unchanged
+  // Restore table blocks
   tableBlocks.forEach(({ placeholder, original }) => {
+    result = result.replace(placeholder, original);
+  });
+  
+  // Finally restore image placeholders LAST (preserve literal content)
+  imageExpressions.forEach(({ placeholder, original }) => {
     result = result.replace(placeholder, original);
   });
   

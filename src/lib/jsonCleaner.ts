@@ -41,16 +41,19 @@ export function cleanJsonText(text: string): string {
   // Now fix any remaining unescaped backslashes
   cleanText = cleanText.replace(/\\/g, '\\\\');
   
-  // Restore protected sequences
+  // Restore protected sequences WITH PROPER JSON ESCAPING
+  // LaTeX commands like \circ must become \\circ for valid JSON
   protectedSequences.forEach((original, placeholder) => {
-    cleanText = cleanText.replace(new RegExp(placeholder.replace(/[.*+?^${}()|[\]\\]/g, '\\$&'), 'g'), original);
+    // Double the backslash for JSON parsing to avoid "Invalid escape sequence" errors
+    const jsonEscaped = original.replace(/\\/g, '\\\\');
+    cleanText = cleanText.replace(new RegExp(placeholder.replace(/[.*+?^${}()|[\]\\]/g, '\\$&'), 'g'), jsonEscaped);
   });
   
-  // 4. After restoring, we need to make \$ valid JSON by converting it to \\$
-  // This is the key fix: JSON doesn't recognize \$ as valid, so we need \\$
-  // Also handle cases where AI generates multiple backslashes before $
-  // BUT: Don't affect LaTeX in math expressions - only standalone \$ currency symbols
-  cleanText = cleanText.replace(/\\{1,}\$/g, '\\\\$');
+  // 4. Smart currency escape handling
+  // Only escape \$ when followed by digits (currency), preserve LaTeX commands
+  // This prevents \$45 from becoming \\$45 which breaks rendering
+  // Check if it's already properly escaped for JSON (\\$) and don't double-escape
+  cleanText = cleanText.replace(/(?<!\\)\\\$(?=\d)/g, '\\\\$');
   
   // 5. Fix common array/object formatting issues
   // Handle trailing commas in arrays/objects

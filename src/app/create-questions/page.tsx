@@ -384,6 +384,8 @@ export default function CreateQuestionsPage() {
     }
   }
 
+  // TODO: REMOVE BEFORE PRODUCTION DEPLOYMENT
+  // Test button handler to load comprehensive test question
   return (
     <main className="min-h-screen overflow-x-hidden bg-gradient-to-br from-slate-50 via-blue-50 to-indigo-100 py-6 sm:py-8 dark:from-gray-950 dark:via-gray-900 dark:to-gray-800">
       <div className="max-w-full sm:max-w-4xl mx-auto px-3 sm:px-4 space-y-6 sm:space-y-8">
@@ -447,7 +449,14 @@ export default function CreateQuestionsPage() {
             {isLoading && <LoadingSpinner />}
 
             {output && questions.length === 0 && !isLoading && (
-              <RawOutputFallback output={output} />
+              <RawOutputFallback 
+                output={output}
+                onQuestionsRecovered={(recovered) => {
+                  // Process recovered questions and update state
+                  const processedQuestions = processQuestions(recovered as Question[]);
+                  setQuestions(processedQuestions);
+                }}
+              />
               )}
             </div>
           )}
