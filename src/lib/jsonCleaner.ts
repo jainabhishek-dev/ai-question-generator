@@ -30,8 +30,9 @@ export function cleanJsonText(text: string): string {
   const protectedSequences = new Map();
   let protectedIndex = 0;
   
-  // Protect valid JSON escapes and LaTeX commands, INCLUDING \$ for currency
-  // This includes LaTeX commands like \frac, \pi, \sum, etc.
+  // Protect valid JSON escapes and LaTeX commands
+  // This includes LaTeX commands like \frac, \pi, \sum, \left, \right, etc.
+  // Note: \$ is for literal dollar signs in LaTeX, not currency (we use ₹ for currency)
   cleanText = cleanText.replace(/\\(["\\\/bfnrtu]|\$|[a-zA-Z]+(?:\{[^}]*\})?)/g, (match) => {
     const placeholder = `__PROTECTED_${protectedIndex++}__`;
     protectedSequences.set(placeholder, match);
@@ -41,19 +42,12 @@ export function cleanJsonText(text: string): string {
   // Now fix any remaining unescaped backslashes
   cleanText = cleanText.replace(/\\/g, '\\\\');
   
-  // Restore protected sequences WITH PROPER JSON ESCAPING
-  // LaTeX commands like \circ must become \\circ for valid JSON
+  // Restore protected sequences as-is (they already have correct escaping from AI)
+  // The AI provides LaTeX commands pre-escaped for JSON (e.g., \\frac, \\left)
+  // We don't need to double-escape them - just restore them directly
   protectedSequences.forEach((original, placeholder) => {
-    // Double the backslash for JSON parsing to avoid "Invalid escape sequence" errors
-    const jsonEscaped = original.replace(/\\/g, '\\\\');
-    cleanText = cleanText.replace(new RegExp(placeholder.replace(/[.*+?^${}()|[\]\\]/g, '\\$&'), 'g'), jsonEscaped);
+    cleanText = cleanText.replace(new RegExp(placeholder.replace(/[.*+?^${}()|[\]\\]/g, '\\$&'), 'g'), original);
   });
-  
-  // 4. Smart currency escape handling
-  // Only escape \$ when followed by digits (currency), preserve LaTeX commands
-  // This prevents \$45 from becoming \\$45 which breaks rendering
-  // Check if it's already properly escaped for JSON (\\$) and don't double-escape
-  cleanText = cleanText.replace(/(?<!\\)\\\$(?=\d)/g, '\\\\$');
   
   // 5. Fix common array/object formatting issues
   // Handle trailing commas in arrays/objects

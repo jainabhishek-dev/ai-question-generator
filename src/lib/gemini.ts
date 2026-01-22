@@ -51,8 +51,9 @@ const questionTypeInstructions: Record<string, string[]> = {
   ],
   fillBlank: [
     "fill-in-the-blank questions:",
-    "- Use clear blanks: 'The capital of France is _______.'",
-    "- correctAnswer should be the exact word(s) expected",
+    "- Use clear blank: 'The capital of France is _______.'",
+    "-Use only 1 blank per question",
+    "- correctAnswer should be the exact word expected",
     "- For multiple acceptable answers, provide the most common/standard answer"
   ],
   shortAnswer: [
@@ -186,42 +187,18 @@ export const createAdvancedPrompt = (inputs: Inputs) => {
   
   "- Questions should be concrete and factual rather than hypothetical scenarios",
 
-  // SPACING RULES - CRITICAL
-  "SPACING RULES (CRITICAL - READ CAREFULLY):",
-  "- ALWAYS insert spaces between all words in questions, options, and explanations",
-  "- Test each sentence: Read it aloud. If you cannot identify word boundaries, add spaces.",
-  "- WRONG: 'applesand', 'islessthan', 'whichmeansit', 'tothe', 'ofthe'",
-  "- CORRECT: 'apples and', 'is less than', 'which means it', 'to the', 'of the'",
-  "- Common errors to avoid: Concatenating conjunctions (and/or/but), auxiliary verbs (is/are/was/were), prepositions (to/in/on/at/of) with other words",
-  "- Before submitting, verify every word has proper spacing around it",
-  "",
-
   // Mathematical & Currency Formatting - CRITICAL RULES
   "Mathematical Expressions & Currency Symbols:",
   "- For mathematical expressions: Use single dollar signs ONLY for math: $x^2 + y^2 = z^2$, $18 + x = 45$, $\\frac{a}{b} = c$",
   "- For LaTeX fractions: Use proper escaping: $\\frac{3}{4}$, not $\frac{3}{4}$ or $3/4$ in text",
   "- For decimal numbers in math context: Use plain decimals WITHOUT any symbols: 0.75, 2.4, 3.14159",
   "- For variable references in text: Use math delimiters: the variable $x$ represents...",
+  "- Never use \\text{} command for currency inside math expressions. Keep currency symbols outside of $...$ delimiters.",
   "",
   "CURRENCY SYMBOL RULE (CRITICAL - READ CAREFULLY):",
   "✅ For ALL currency amounts: Use ₹ (rupee symbol) - NEVER use $ for currency",
-  "✅ CORRECT: 'costs ₹45', 'saved ₹18', 'total of ₹15.00', 'price ₹0.75'",
-  "✅ CORRECT: 'Budget is ₹2,400 and expenses are ₹360'",
-  "❌ WRONG: 'costs $45', 'saved $18', 'price $0.75' ($ is ONLY for math, not currency!)",
-  "",
-  "WHY: The $ symbol is reserved exclusively for LaTeX/mathematical expressions.",
+
   "Using $ for currency creates parsing conflicts. Always use ₹ for money.",
-  "",
-  "CALCULATIONS WITH CURRENCY:",
-  "✅ CORRECT: '0.23 × ₹360 = ₹82.80' (plain decimal × currency = currency)",
-  "✅ CORRECT: '$\\frac{1}{4} \\times 360 = 90$, which equals ₹90' (math in LaTeX, currency outside)",
-  "✅ CORRECT: 'Calculate $0.25 \\times 360$: the result is ₹90' (math expression, currency result)",
-  "❌ WRONG: 'costs $45' or '0.23 × $360' (use ₹ for currency, not $)",
-  "",
-  "MIXED CURRENCY & MATH EXAMPLES:",
-  "✅ CORRECT: 'Jamie saved ₹18. The equation $18 + x = 45$ represents his situation.'",
-  "✅ CORRECT: 'If $x = 27$, then the cost is ₹45'",
-  "❌ WRONG: 'Jamie saved $18' (use ₹18 for currency)",
   "",
   "- Use Unicode symbols when appropriate: ₹, €, £, ¥, %, °C, π, ∞",
   "- Format large numbers with commas: 1,000,000 not 1000000",
@@ -232,7 +209,7 @@ export const createAdvancedPrompt = (inputs: Inputs) => {
   "  | Header 1 | Header 2 | Header 3 |",
   "  |----------|----------|----------|",
   "  | Data 1   | Data 2   | Data 3   |",
-  "  - Can include math ($x^2$) or currency (\\$50) in cells",
+  "  - Can include math ($x^2$) in cells",
   "  - Leave blank line after tables for proper rendering",
   "Lists:",
   "  - Bullet points: Use '-' or '*' for unordered lists",
@@ -240,7 +217,7 @@ export const createAdvancedPrompt = (inputs: Inputs) => {
   "  - Nested lists: Indent with 2-4 spaces",
   "Multi-paragraph:",
   "  - Use double newlines (\\n\\n) for paragraph breaks",
-  "  - Single newlines for line breaks within paragraphs",
+  "  - Single newlines (\\n) for line breaks within paragraphs",
   "Code blocks:",
   "  - Use triple backticks (```) for code blocks",
   "  - Specify language: ```python or ```javascript",
@@ -251,7 +228,7 @@ export const createAdvancedPrompt = (inputs: Inputs) => {
   // Explanation Requirements  
   "Explanation Standards:",
   "- Keep explanations concise but complete (2-4 sentences ideal)",
-  "- Explain WHY the correct answer is right, not just WHAT it is",
+  "- When subject is Mathematics, show step-by step solution like a student is expected to solve in exam.",
   ...(numMCQ > 0 ? ["- For MCQ: briefly explain why incorrect options are wrong when helpful"] : []),
   "- Use grade-appropriate vocabulary in explanations",
 
@@ -260,13 +237,12 @@ export const createAdvancedPrompt = (inputs: Inputs) => {
   "- All factual information must be current and accurate",
   "- Cross-reference dates, names, formulas, and statistics",
   "- Ensure consistency in terminology throughout all questions",
-  "- Round numerical answers appropriately for the grade level",
 
   // Validation Rules
   "Quality Checks:",
   "- Each question must align with the specified Bloom's taxonomy level",
   "- Verify that difficulty matches the grade level appropriately", 
-  "- Ensure no duplicate questions or overly similar questions",
+  "- Ensure no duplicate questions or similar questions. All questions should be different and unique",
   "- Check that the total question count matches the requested distribution exactly"
 ].join("\n")
   
@@ -321,7 +297,9 @@ export const generateQuestions = async (inputs: Inputs, pdfFileUri?: string) => 
   
   // Otherwise, generate without PDF
   const res = await model.generateContent(prompt)
-  return res.response?.text() ?? ""
+  const rawOutput = res.response?.text() ?? ""
+  console.log('🤖 RAW AI OUTPUT (generateQuestions):', rawOutput)
+  return rawOutput
 }
 
 export const generateNCERTQuestions = async (inputs: Inputs, pdfFileUri?: string) => {
@@ -340,12 +318,16 @@ export const generateNCERTQuestions = async (inputs: Inputs, pdfFileUri?: string
       }
     ]
     const res = await model.generateContent(parts)
-    return res.response?.text() ?? ""
+    const rawOutput = res.response?.text() ?? ""
+    console.log('🤖 RAW AI OUTPUT (generateNCERTQuestions with PDF):', rawOutput)
+    return rawOutput
   }
   
   // Otherwise, generate without PDF
   const res = await model.generateContent(prompt)
-  return res.response?.text() ?? ""
+  const rawOutput = res.response?.text() ?? ""
+  console.log('🤖 RAW AI OUTPUT (generateNCERTQuestions):', rawOutput)
+  return rawOutput
 }
 
 /* ---------- LESSON PLAN AI FUNCTIONS ---------- */

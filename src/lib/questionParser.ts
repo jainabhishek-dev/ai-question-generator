@@ -1,6 +1,35 @@
 import { cleanJsonText } from './jsonCleaner';
 import { escapeCurrencyDollarsSmart } from './textCleaner';
 
+/**
+ * Cleans up double-backslashed LaTeX commands from legacy data
+ * Fixes issues where LaTeX like \\left becomes \left for proper KaTeX rendering
+ * @param text - Text content that may contain over-escaped LaTeX
+ * @returns Text with properly escaped LaTeX commands
+ */
+export function cleanLatexBackslashes(text: string): string {
+  if (!text || typeof text !== 'string') return text || '';
+  
+  // Fix double-backslashed LaTeX commands within math delimiters
+  // Pattern: Find $...$ or $$...$$ blocks and fix double backslashes within them
+  
+  // Fix inline math $...$
+  text = text.replace(/\$([^$]+)\$/g, (match, mathContent) => {
+    // Replace double backslashes with single backslashes for LaTeX commands
+    const fixed = mathContent.replace(/\\\\([a-zA-Z]+)/g, '\\$1');
+    return `$${fixed}$`;
+  });
+  
+  // Fix display math $$...$$
+  text = text.replace(/\$\$([\s\S]+?)\$\$/g, (match, mathContent) => {
+    // Replace double backslashes with single backslashes for LaTeX commands
+    const fixed = mathContent.replace(/\\\\([a-zA-Z]+)/g, '\\$1');
+    return `$$${fixed}$$`;
+  });
+  
+  return text;
+}
+
 export interface Question {
   id?: number;
   type: string;
@@ -71,6 +100,7 @@ function normalizeParseResult(parsed: unknown): Question[] | null {
  */
 export function parseQuestions(text: string): Question[] {
   const cleanText = cleanJsonText(text);
+  console.log('🧹 CLEANED TEXT (after jsonCleaner):', cleanText)
 
   // Strategy 1: Direct parse of cleaned text
   try {
@@ -451,17 +481,22 @@ export function processQuestions(parsedQuestions: RawQuestionData[]): Question[]
       }
 
       // Check if question text contains image placeholders (any format)
-      const questionText = [q.question, q.explanation, ...(options || [])].join(' ');
-      const hasImagePlaceholders = /\[(IMG|IMAGE):\s*[^\]]+\]/i.test(questionText);
+      const combinedText = [q.question, q.explanation, ...(options || [])].join(' ');
+      const hasImagePlaceholders = /\[(IMG|IMAGE):\s*[^\]]+\]/i.test(combinedText);
       const hasImages = imagePrompts.length > 0 || hasImagePlaceholders || q.hasImages === true;
 
+      // Apply text cleaning and LaTeX cleanup (for legacy data with double backslashes)
+      const questionText = escapeCurrencyDollarsSmart(q.question || q.prompt || "");
+      const explanationText = escapeCurrencyDollarsSmart(q.explanation || "");
+      const answerText = escapeCurrencyDollarsSmart(correctAnswer);
+      
       const processedQuestion: Question = {
         type: q.type || "unknown",
-        question: escapeCurrencyDollarsSmart(q.question || q.prompt || ""),
-        options: options.map(escapeCurrencyDollarsSmart),
-        correctAnswer: escapeCurrencyDollarsSmart(correctAnswer),
+        question: cleanLatexBackslashes(questionText),
+        options: options.map(opt => cleanLatexBackslashes(escapeCurrencyDollarsSmart(opt))),
+        correctAnswer: cleanLatexBackslashes(answerText),
         correctAnswerLetter,
-        explanation: escapeCurrencyDollarsSmart(q.explanation || ""),
+        explanation: cleanLatexBackslashes(explanationText),
         imagePrompts: imagePrompts.length > 0 ? imagePrompts : undefined,
         hasImages
       };

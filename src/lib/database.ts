@@ -83,6 +83,8 @@ export const saveQuestions = async (
       
     }))
 
+    console.log('💾 SAVING TO DATABASE (first question):', JSON.stringify(questionsToInsert[0], null, 2))
+
     // FIXED: Execute different queries based on user authentication
     const { data, error } = await supabase
       .from('questions')
