@@ -33,7 +33,8 @@ export function cleanJsonText(text: string): string {
   // Protect valid JSON escapes and LaTeX commands
   // This includes LaTeX commands like \frac, \pi, \sum, \left, \right, etc.
   // Note: \$ is for literal dollar signs in LaTeX, not currency (we use ₹ for currency)
-  cleanText = cleanText.replace(/\\(["\\\/bfnrtu]|\$|[a-zA-Z]+(?:\{[^}]*\})?)/g, (match) => {
+  // This pattern captures BOTH single (\circ) and double (\\circ) backslash sequences
+  cleanText = cleanText.replace(/\\\\?([a-zA-Z]+(?:\{[^}]*\})?)|\\(["\\\/bfnrtu\$])/g, (match) => {
     const placeholder = `__PROTECTED_${protectedIndex++}__`;
     protectedSequences.set(placeholder, match);
     return placeholder;
@@ -42,11 +43,26 @@ export function cleanJsonText(text: string): string {
   // Now fix any remaining unescaped backslashes
   cleanText = cleanText.replace(/\\/g, '\\\\');
   
-  // Restore protected sequences as-is (they already have correct escaping from AI)
-  // The AI provides LaTeX commands pre-escaped for JSON (e.g., \\frac, \\left)
-  // We don't need to double-escape them - just restore them directly
+  // Restore protected sequences with proper JSON escaping
+  // LaTeX commands with single backslashes need to be doubled for JSON validity
+  // LaTeX commands with double backslashes should stay doubled
   protectedSequences.forEach((original, placeholder) => {
-    cleanText = cleanText.replace(new RegExp(placeholder.replace(/[.*+?^${}()|[\]\\]/g, '\\$&'), 'g'), original);
+    // Count backslashes at start
+    const backslashCount = original.match(/^\\/g)?.[0].length || 0;
+    let jsonSafe;
+    
+    if (backslashCount === 1) {
+      // Single backslash: \circ → \\circ for valid JSON
+      jsonSafe = original.replace(/^\\/, '\\\\');
+    } else if (backslashCount === 2) {
+      // Double backslash: already correct for JSON (\\circ stays \\circ)
+      jsonSafe = original;
+    } else {
+      // Default: use smart escaping
+      jsonSafe = original.replace(/\\(?!\\)/g, '\\\\');
+    }
+    
+    cleanText = cleanText.replace(new RegExp(placeholder.replace(/[.*+?^${}()|[\]\\]/g, '\\$&'), 'g'), jsonSafe);
   });
   
   // 5. Fix common array/object formatting issues
