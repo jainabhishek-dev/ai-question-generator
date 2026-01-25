@@ -26,15 +26,30 @@ export function cleanJsonText(text: string): string {
   cleanText = cleanText.replace(/\\+$/gm, '');
   
   // 3. Fix common JSON escape issues while preserving valid ones
-  // First, temporarily protect already-escaped sequences we want to keep
+  // IMPORTANT: Order of protection matters! Protect in priority order:
+  // 1. Image placeholders FIRST (can contain anything including LaTeX)
+  // 2. LaTeX commands SECOND (now they won't interfere with image descriptions)
+  
+  // STEP 1: Protect image placeholders FIRST (highest priority)
+  // Image descriptions can contain LaTeX, quotes, special chars - preserve exactly as-is
+  const imageExpressions: Array<{placeholder: string, original: string}> = [];
+  let imageCounter = 0;
+  
+  cleanText = cleanText.replace(/\[(IMG|IMAGE):[^\]]+\]|\[IMAGE_PLACEHOLDER_\d+\]/gi, (match) => {
+    const placeholder = `__IMAGE_${imageCounter++}__`;
+    imageExpressions.push({ placeholder, original: match });
+    return placeholder;
+  });
+  
+  // STEP 2: Protect LaTeX commands and valid JSON escapes
   const protectedSequences = new Map();
   let protectedIndex = 0;
   
   // Protect valid JSON escapes and LaTeX commands
   // This includes LaTeX commands like \frac, \pi, \sum, \left, \right, etc.
   // Note: \$ is for literal dollar signs in LaTeX, not currency (we use ₹ for currency)
-  // This pattern captures BOTH single (\circ) and double (\\circ) backslash sequences
-  cleanText = cleanText.replace(/\\\\?([a-zA-Z]+(?:\{[^}]*\})?)|\\(["\\\/bfnrtu\$])/g, (match) => {
+  // FIXED: Changed ? to * to capture ALL brace pairs (e.g., \frac{1+5}{2})
+  cleanText = cleanText.replace(/\\\\?([a-zA-Z]+(?:\{[^}]*\})*)|\\(["\\\/bfnrtu\$])/g, (match) => {
     const placeholder = `__PROTECTED_${protectedIndex++}__`;
     protectedSequences.set(placeholder, match);
     return placeholder;
@@ -47,8 +62,9 @@ export function cleanJsonText(text: string): string {
   // LaTeX commands with single backslashes need to be doubled for JSON validity
   // LaTeX commands with double backslashes should stay doubled
   protectedSequences.forEach((original, placeholder) => {
-    // Count backslashes at start
-    const backslashCount = original.match(/^\\/g)?.[0].length || 0;
+    // Count consecutive leading backslashes (fixed: use \\+ to match all consecutive backslashes)
+    const leadingBackslashes = original.match(/^\\+/);
+    const backslashCount = leadingBackslashes ? leadingBackslashes[0].length : 0;
     let jsonSafe;
     
     if (backslashCount === 1) {
@@ -63,6 +79,12 @@ export function cleanJsonText(text: string): string {
     }
     
     cleanText = cleanText.replace(new RegExp(placeholder.replace(/[.*+?^${}()|[\]\\]/g, '\\$&'), 'g'), jsonSafe);
+  });
+  
+  // STEP 3: Restore image placeholders LAST (preserve exactly as-is, no modifications)
+  // These were protected first, so restore them last (LIFO order)
+  imageExpressions.forEach(({ placeholder, original }) => {
+    cleanText = cleanText.replace(placeholder, original);
   });
   
   // 5. Fix common array/object formatting issues
