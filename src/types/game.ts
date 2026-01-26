@@ -585,6 +585,17 @@ export interface SubmitGamePlayRequest {
   max_streak?: number;
   hints_used?: number;
   lives_remaining?: number;
+  answers?: Array<{
+    questionIndex: number;
+    questionId?: number;
+    question: string;
+    userAnswer: string;
+    correctAnswer: string;
+    isCorrect: boolean;
+    explanation: string;
+    timeTaken: number;
+    pointsEarned: number;
+  }>;
 
   // Simulation-specific
   stars_earned?: number;

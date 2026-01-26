@@ -160,14 +160,25 @@ export default function QuizGameForm({ existingQuestions, onSuccess, user }: Qui
       }
 
       // Transform QuestionRecord to GeneratedQuestion format for API
-      const transformedQuestions = questionsToConvert.map(q => ({
-        type: 'mcq',
-        question: q.question,
-        options: q.options || [],
-        correctAnswer: q.correct_answer,
-        explanation: q.explanation || '',
-        question_id: q.id // Pass original ID for image/content loading
-      }));
+      const transformedQuestions = questionsToConvert.map(q => {
+        // Preserve the actual question type from database
+        const questionType = q.question_type;
+        
+        // For true-false questions without options, provide default options
+        let options = q.options || [];
+        if (questionType === 'true-false' && (!options || options.length === 0)) {
+          options = ['True', 'False'];
+        }
+        
+        return {
+          type: questionType,
+          question: q.question,
+          options: options,
+          correctAnswer: q.correct_answer,
+          explanation: q.explanation || '',
+          question_id: q.id // Pass original ID for image/content loading
+        };
+      });
 
       const response = await fetch('/api/games/convert-questions', {
         method: 'POST',

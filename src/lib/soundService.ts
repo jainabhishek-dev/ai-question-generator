@@ -183,7 +183,7 @@ class SoundService {
   /**
    * Play game complete sound - custom instaku sound
    */
-  playGameComplete(won: boolean) {
+  playGameComplete() {
     if (this.isMuted || !this.gameEndAudio) return;
 
     // Use same sound for both win and lose

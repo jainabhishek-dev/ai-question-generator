@@ -15,6 +15,18 @@ interface QuizGameTemplateProps {
   onGameQuit?: (reason: string) => void;
 }
 
+export interface QuizAnswer {
+  questionIndex: number;
+  questionId?: number;
+  question: string;
+  userAnswer: string;
+  correctAnswer: string;
+  isCorrect: boolean;
+  explanation: string;
+  timeTaken: number;
+  pointsEarned: number;
+}
+
 export interface GameResults {
   timeElapsed: number;
   score: number;
@@ -23,6 +35,7 @@ export interface GameResults {
   maxStreak: number;
   hintsUsed: number;
   livesRemaining: number;
+  answers: QuizAnswer[];
 }
 
 export default function QuizGameTemplate({ config, onGameComplete, onGameQuit }: QuizGameTemplateProps) {
@@ -41,6 +54,7 @@ export default function QuizGameTemplate({ config, onGameComplete, onGameQuit }:
 
   // UI state
   const [selectedAnswer, setSelectedAnswer] = useState<string | null>(null);
+  const [answerProcessed, setAnswerProcessed] = useState<boolean>(false);
   const [showExplanation, setShowExplanation] = useState(false);
   const [isAnswerCorrect, setIsAnswerCorrect] = useState<boolean | null>(null);
   const [questionStartTime, setQuestionStartTime] = useState<number>(Date.now());
@@ -54,6 +68,9 @@ export default function QuizGameTemplate({ config, onGameComplete, onGameQuit }:
   const maxStreakRef = useRef<number>(0);
   const stateRef = useRef(state);
   const [gameEnded, setGameEnded] = useState(false);
+  
+  // Track answers for review
+  const answersArrayRef = useRef<QuizAnswer[]>([]);
 
   // Keep stateRef in sync with state
   useEffect(() => {
@@ -64,15 +81,6 @@ export default function QuizGameTemplate({ config, onGameComplete, onGameQuit }:
   const currentQuestion: QuizQuestion | undefined = config.questions[state.current_question];
   const isLastQuestion = state.current_question === config.questions.length - 1;
 
-  // Debug: Log questionImages state and current question images
-  useEffect(() => {
-    console.log('🎯 Current question ID:', currentQuestion?.question_id);
-    console.log('📚 All loaded images:', questionImages);
-    if (currentQuestion?.question_id) {
-      console.log(`🖼️ Images for current question ${currentQuestion.question_id}:`, 
-        questionImages[currentQuestion.question_id] || 'NONE');
-    }
-  }, [currentQuestion?.question_id, questionImages]);
 
   // Timer and Initial Setup
   useEffect(() => {
@@ -82,44 +90,26 @@ export default function QuizGameTemplate({ config, onGameComplete, onGameQuit }:
     
     // Load images for all questions that have question_id
     const loadAllImages = async () => {
-      console.log('🖼️ Starting to load images for quiz questions...');
-      console.log('📝 Total questions:', config.questions.length);
-      
       for (const question of config.questions) {
-        console.log(`🔍 Checking question:`, { 
-          hasQuestionId: !!question.question_id, 
-          questionId: question.question_id,
-          questionText: question.question.substring(0, 50) + '...'
-        });
-        
         if (question.question_id) {
           try {
-            console.log(`📡 Fetching images for question ID: ${question.question_id}`);
             const response = await fetch(`/api/questions/${question.question_id}/images`);
-            console.log(`📥 Response status:`, response.status);
             
             if (response.ok) {
               const result = await response.json();
-              console.log(`✅ Image API result:`, result);
               
               if (result.success && result.data) {
-                console.log(`🎨 Loaded ${result.data.length} images for question ${question.question_id}`);
                 setQuestionImages(prev => ({
                   ...prev,
                   [question.question_id!]: result.data
                 }));
-              } else {
-                console.log(`⚠️ No image data in response for question ${question.question_id}`);
               }
-            } else {
-              console.warn(`❌ Failed to fetch images for question ${question.question_id}: ${response.status}`);
             }
           } catch (error) {
-            console.error(`❌ Error loading images for question ${question.question_id}:`, error);
+            console.error(`Error loading images for question ${question.question_id}:`, error);
           }
         }
       }
-      console.log('🏁 Finished loading images');
     };
     
     loadAllImages();
@@ -150,7 +140,7 @@ export default function QuizGameTemplate({ config, onGameComplete, onGameQuit }:
   // Check if time limit exceeded
   useEffect(() => {
     if (config.settings.time_limit && state.time_elapsed >= config.settings.time_limit) {
-      handleGameEnd(false);
+      handleGameEnd();
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [state.time_elapsed, config.settings.time_limit]);
@@ -158,7 +148,7 @@ export default function QuizGameTemplate({ config, onGameComplete, onGameQuit }:
   // Check if lives depleted
   useEffect(() => {
     if (state.lives_remaining <= 0) {
-      handleGameEnd(false);
+      handleGameEnd();
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [state.lives_remaining]);
@@ -189,7 +179,7 @@ export default function QuizGameTemplate({ config, onGameComplete, onGameQuit }:
   }, [currentQuestion, state.streak]);
 
   // Handle game end (defined before other handlers to avoid reference errors)
-  const handleGameEnd = useCallback((completed: boolean) => {
+  const handleGameEnd = useCallback(() => {
     if (timerInterval.current) {
       clearInterval(timerInterval.current);
     }
@@ -198,8 +188,7 @@ export default function QuizGameTemplate({ config, onGameComplete, onGameQuit }:
     const currentState = stateRef.current;
 
     // Play game complete sound
-    const won = completed && currentState.correct_answers >= config.questions.length / 2;
-    soundService.playGameComplete(won);
+    soundService.playGameComplete();
     soundService.stopBackgroundMusic();
 
     // Mark game as ended to prevent further rendering
@@ -212,7 +201,8 @@ export default function QuizGameTemplate({ config, onGameComplete, onGameQuit }:
       totalQuestions: config.questions.length,
       maxStreak: maxStreakRef.current,
       hintsUsed: currentState.hints_used,
-      livesRemaining: currentState.lives_remaining
+      livesRemaining: currentState.lives_remaining,
+      answers: answersArrayRef.current // Include answers for review
     };
 
     onGameComplete(results);
@@ -228,6 +218,7 @@ export default function QuizGameTemplate({ config, onGameComplete, onGameQuit }:
 
     // Reset UI state
     setSelectedAnswer(null);
+    setAnswerProcessed(false);
     setShowExplanation(false);
     setIsAnswerCorrect(null);
     setQuestionStartTime(Date.now());
@@ -237,7 +228,7 @@ export default function QuizGameTemplate({ config, onGameComplete, onGameQuit }:
     if (isLastQuestion) {
       // Use setTimeout to allow state to update first
       setTimeout(() => {
-        handleGameEnd(true);
+        handleGameEnd();
       }, 50);
     }
   }, [isLastQuestion, handleGameEnd]);
@@ -254,12 +245,11 @@ export default function QuizGameTemplate({ config, onGameComplete, onGameQuit }:
 
   // Handle answer selection
   const handleAnswerSelect = useCallback((answer: string) => {
-    // For MCQ/True-False: prevent re-selection if already answered
-    // For FIB: only prevent if explanation is showing (answer has been submitted)
-    if (showExplanation) return; // Already answered and showing explanation
+    // Prevent re-processing if already answered
+    if (answerProcessed) return;
 
     setSelectedAnswer(answer);
-    const timeTaken = Date.now() - questionStartTime;
+    const timeTaken = (Date.now() - questionStartTime) / 1000; // Convert to seconds
     
     // Detect question type with fallback logic
     const questionType = currentQuestion.question_type;
@@ -284,12 +274,15 @@ export default function QuizGameTemplate({ config, onGameComplete, onGameQuit }:
     }
     setIsAnswerCorrect(isCorrect);
 
+    let pointsEarned = 0;
+
     if (isCorrect) {
       // Play correct sound
       soundService.playCorrect();
       
       // Correct answer
-      const points = calculatePoints(timeTaken, true);
+      const points = calculatePoints((Date.now() - questionStartTime), true);
+      pointsEarned = points;
       const newStreak = state.streak + 1;
       
       // Play streak sound if streak is 2 or more
@@ -316,7 +309,9 @@ export default function QuizGameTemplate({ config, onGameComplete, onGameQuit }:
       // Play incorrect sound
       soundService.playIncorrect();
       
-      // Wrong answer
+      // Wrong answer - penalty
+      pointsEarned = -25;
+      
       setState(prev => ({
         ...prev,
         lives_remaining: prev.lives_remaining - 1,
@@ -326,16 +321,28 @@ export default function QuizGameTemplate({ config, onGameComplete, onGameQuit }:
       }));
     }
 
-    // Show explanation if enabled
-    if (config.settings.show_explanations) {
-      setShowExplanation(true);
-    } else {
-      // Auto-advance after 1 second
-      setTimeout(() => {
-        handleNextQuestion();
-      }, 1000);
-    }
-  }, [showExplanation, currentQuestion, questionStartTime, calculatePoints, config.settings.show_explanations, handleNextQuestion, checkFIBAnswer, state.streak]);
+    // Store answer for review (without showing explanation during quiz)
+    const answerRecord: QuizAnswer = {
+      questionIndex: state.current_question,
+      questionId: currentQuestion.question_id,
+      question: currentQuestion.question,
+      userAnswer: answer,
+      correctAnswer: currentQuestion.correct_answer,
+      isCorrect,
+      explanation: currentQuestion.explanation || '',
+      timeTaken,
+      pointsEarned
+    };
+    answersArrayRef.current.push(answerRecord);
+
+    // Mark answer as processed to prevent re-submission
+    setAnswerProcessed(true);
+
+    // Auto-advance after brief feedback (1.5 seconds)
+    setTimeout(() => {
+      handleNextQuestion();
+    }, 1500);
+  }, [answerProcessed, currentQuestion, questionStartTime, calculatePoints, handleNextQuestion, checkFIBAnswer, state.streak, state.current_question]);
 
   // Handle hint
   const handleShowHint = useCallback(() => {
@@ -354,7 +361,7 @@ export default function QuizGameTemplate({ config, onGameComplete, onGameQuit }:
     if (onGameQuit) {
       onGameQuit('interrupted');
     }
-    handleGameEnd(false);
+    handleGameEnd();
   }, [onGameQuit, handleGameEnd]);
 
   // Remaining time
@@ -535,15 +542,6 @@ export default function QuizGameTemplate({ config, onGameComplete, onGameQuit }:
             const isTrueFalse = questionType === 'True/False' || 
                                 (currentQuestion.options?.length === 2 && 
                                  currentQuestion.options.some(o => o.toLowerCase().includes('true')));
-            
-            console.log('🎯 Question type detection:', {
-              questionType,
-              hasOptions: !!currentQuestion.options,
-              optionsLength: currentQuestion.options?.length,
-              hasBlank: currentQuestion.question.includes('______'),
-              isFIB,
-              isTrueFalse
-            });
 
             if (isFIB) return 'FIB';
             if (isTrueFalse) return 'True/False';
@@ -692,45 +690,17 @@ export default function QuizGameTemplate({ config, onGameComplete, onGameQuit }:
             </div>
           )}
 
-          {/* Explanation */}
-          {showExplanation && currentQuestion.explanation && (
+          {/* Brief feedback - no explanation shown during quiz */}
+          {answerProcessed && (
             <div className={`
-              rounded-lg p-4 border-2
+              rounded-lg p-3 border-2 text-center font-semibold text-lg
               ${isAnswerCorrect 
-                ? 'bg-green-50 dark:bg-green-900/20 border-green-200 dark:border-green-800' 
-                : 'bg-red-50 dark:bg-red-900/20 border-red-200 dark:border-red-800'
+                ? 'bg-green-50 dark:bg-green-900/20 border-green-500 text-green-700 dark:text-green-300' 
+                : 'bg-red-50 dark:bg-red-900/20 border-red-500 text-red-700 dark:text-red-300'
               }
             `}>
-              <div className="flex items-start gap-2">
-                {isAnswerCorrect ? (
-                  <CheckCircleIcon className="w-6 h-6 text-green-500 flex-shrink-0" />
-                ) : (
-                  <XCircleIcon className="w-6 h-6 text-red-500 flex-shrink-0" />
-                )}
-                <div className="flex-1">
-                  <div className={`font-medium mb-1 ${isAnswerCorrect ? 'text-green-900 dark:text-green-300' : 'text-red-900 dark:text-red-300'}`}>
-                    {isAnswerCorrect ? 'Correct! ✨' : 'Incorrect'}
-                  </div>
-                  <div className={`prose dark:prose-invert max-w-none ${isAnswerCorrect ? 'text-green-700 dark:text-green-400' : 'text-red-700 dark:text-red-400'}`}>
-                    <ImageRenderer
-                      content={currentQuestion.explanation}
-                      questionId={currentQuestion.question_id}
-                      placementType="explanation"
-                      showPlaceholders={false}                      generatedImages={currentQuestion.question_id ? questionImages[currentQuestion.question_id] : []}                    />
-                  </div>
-                </div>
-              </div>
+              {isAnswerCorrect ? '✓ Correct!' : '✗ Incorrect'}
             </div>
-          )}
-
-          {/* Next button */}
-          {showExplanation && (
-            <button
-              onClick={handleNextQuestion}
-              className="w-full py-3 bg-gradient-to-r from-blue-600 to-purple-600 hover:from-blue-700 hover:to-purple-700 text-white font-medium rounded-xl transition-all duration-200 shadow-lg hover:shadow-xl"
-            >
-              {isLastQuestion ? 'Finish Game' : 'Next Question →'}
-            </button>
           )}
         </div>
       </div>

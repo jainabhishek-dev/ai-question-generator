@@ -20,7 +20,8 @@ export async function POST(req: NextRequest) {
       lives_remaining,
       feedback_rating,
       feedback_text,
-      quit_reason
+      quit_reason,
+      answers // New field for quiz review
     } = body;
 
     if (!game_id) {
@@ -51,12 +52,6 @@ export async function POST(req: NextRequest) {
     );
 
     const { data: { user } } = await supabase.auth.getUser();
-    
-    console.log('🔐 User authentication status:', {
-      isAuthenticated: !!user,
-      userId: user?.id || 'ANONYMOUS',
-      playerName: player_name
-    });
 
     // Submit game play (works for both authenticated and anonymous users)
     // NOTE: For anonymous users, we DON'T pass the supabase client
@@ -77,7 +72,8 @@ export async function POST(req: NextRequest) {
         lives_remaining,
         feedback_rating,
         feedback_text,
-        quit_reason
+        quit_reason,
+        answers // Include answers for review
       },
       user?.id || null,
       undefined // Use default client instead of custom client
@@ -89,22 +85,19 @@ export async function POST(req: NextRequest) {
         game_id,
         player_name,
         user_id: user?.id || null,
-        points_earned
+        points_earned,
+        has_answers: !!answers
       });
       return NextResponse.json(
         { error: result.error || 'Failed to submit game play' },
         { status: 500 }
       );
     }
-    
-    console.log('✅ Game play submitted successfully!', {
-      playId: result.data?.id,
-      playerName: player_name
-    });
 
     return NextResponse.json({
       success: true,
-      gamePlay: result.data
+      gamePlay: result.data,
+      gamePlayId: result.data?.id // Return ID for review page
     });
 
   } catch (error) {

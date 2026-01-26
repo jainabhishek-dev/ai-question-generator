@@ -1,5 +1,4 @@
 import React, { useState, useEffect } from "react"
-import { parseQuestions, processQuestions } from "@/lib/questionParser"
 
 interface RawOutputFallbackProps {
   output: string

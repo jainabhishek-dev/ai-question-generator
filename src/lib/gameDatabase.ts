@@ -351,6 +351,8 @@ export const submitGamePlay = async (
         max_streak: playData.max_streak || null,
         hints_used: playData.hints_used || null,
         lives_remaining: playData.lives_remaining || null,
+        // Quiz answers for review
+        answers: playData.answers || null,
         // Simulation-specific
         stars_earned: playData.stars_earned || null,
         interactions_count: playData.interactions_count || null,
@@ -367,14 +369,6 @@ export const submitGamePlay = async (
         feedback_text: playData.feedback_text || null,
         quit_reason: playData.quit_reason || null
     };
-    
-    console.log('💾 Attempting to insert game_play:', {
-      game_id: insertData.game_id,
-      user_id: insertData.user_id,
-      player_name: insertData.player_name,
-      points_earned: insertData.points_earned,
-      usingClient: supabaseClient ? 'custom' : 'default'
-    });
     
     const { data, error } = await supabase
       .from('game_plays')

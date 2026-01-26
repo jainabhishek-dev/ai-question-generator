@@ -39,10 +39,6 @@ export default function PlayPage() {
           throw new Error('Game not found');
         }
 
-        console.log('🎮 Fetched game:', data.game);
-        console.log('🎮 Game config:', data.game.config);
-        console.log('🎮 Config type:', typeof data.game.config);
-
         setGame(data.game);
       } catch (err) {
         console.error('Error fetching game:', err);
@@ -82,17 +78,24 @@ export default function PlayPage() {
     maxStreak: number;
     hintsUsed: number;
     livesRemaining: number;
+    answers: Array<{
+      questionIndex: number;
+      questionId?: number;
+      question: string;
+      userAnswer: string;
+      correctAnswer: string;
+      isCorrect: boolean;
+      explanation: string;
+      timeTaken: number;
+      pointsEarned: number;
+    }>;
   }) => {
     if (!game) return;
 
-    try {
-      console.log('🎮 Submitting game play:', {
-        game_id: game.id,
-        player_name: playerName,
-        points_earned: results.score
-      });
+    let gamePlayId: string | null = null;
 
-      // Submit game play to database
+    try {
+      // Submit game play to database with answers
       const response = await fetch('/api/games/submit-play', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
@@ -107,7 +110,8 @@ export default function PlayPage() {
           questions_total: results.totalQuestions,
           max_streak: results.maxStreak,
           hints_used: results.hintsUsed,
-          lives_remaining: results.livesRemaining
+          lives_remaining: results.livesRemaining,
+          answers: results.answers // Include answers for review
         })
       });
 
@@ -121,10 +125,10 @@ export default function PlayPage() {
         alert(`Failed to save game results: ${JSON.stringify(errorData)}`);
       } else {
         const successData = await response.json();
-        console.log('✅ Game play submitted successfully:', successData);
+        gamePlayId = successData.gamePlayId; // Get the game play ID for review
       }
 
-      // Navigate to results page with query params
+      // Navigate to results page with query params including gamePlayId
       const params = new URLSearchParams({
         gameId: game.id,
         playerName: playerName,
@@ -133,6 +137,11 @@ export default function PlayPage() {
         total: results.totalQuestions.toString(),
         time: results.timeElapsed.toString()
       });
+      
+      if (gamePlayId) {
+        params.append('playId', gamePlayId);
+      }
+      
       router.push(`/play/${shareCode}/results?${params.toString()}`);
     } catch (err) {
       console.error('Error submitting game play:', err);

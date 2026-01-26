@@ -1,7 +1,7 @@
 "use client"
 
 import { Geist, Geist_Mono as GeistMono } from "next/font/google"
-import { ChevronRightIcon, ChevronLeftIcon, Bars3Icon, XMarkIcon } from "@heroicons/react/24/outline";
+import { Bars3Icon, XMarkIcon } from "@heroicons/react/24/outline";
 import "./globals.css"
 import ClientProviders from "./ClientProviders"
 import Header from "@/components/Header"

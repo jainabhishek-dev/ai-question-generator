@@ -6,7 +6,6 @@ import { useAuth } from "@/contexts/AuthContext"
 import { useState, useRef, useEffect, ReactElement } from "react"
 import { usePathname } from "next/navigation"
 import {
-  ClipboardDocumentListIcon,
   ArrowRightStartOnRectangleIcon,
   XMarkIcon,
   ChevronDownIcon,

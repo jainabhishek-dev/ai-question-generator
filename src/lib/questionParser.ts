@@ -170,7 +170,6 @@ export function parseQuestions(text: string): Question[] {
 
   // Strategy 7: Remove control characters and parse
   try {
-    // eslint-disable-next-line no-control-regex
     const noControl = cleanText.replace(/[\x00-\x1F\x7F-\x9F]/g, '');
     const parsed = JSON.parse(noControl);
     const normalized = normalizeParseResult(parsed);

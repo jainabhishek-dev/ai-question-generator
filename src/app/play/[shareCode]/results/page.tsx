@@ -2,7 +2,38 @@
 
 import { useSearchParams, useRouter, useParams } from 'next/navigation';
 import { useEffect, useState } from 'react';
-import { TrophyIcon, ClockIcon, CheckCircleIcon, FireIcon } from '@heroicons/react/24/solid';
+import Link from 'next/link';
+import { TrophyIcon, ClockIcon, CheckCircleIcon, FireIcon, DocumentTextIcon } from '@heroicons/react/24/solid';
+import QuizReview from '@/components/games/QuizReview';
+import PublicLeaderboard from '@/components/games/PublicLeaderboard';
+
+interface QuizAnswer {
+  questionIndex: number;
+  questionId?: number;
+  question: string;
+  userAnswer: string;
+  correctAnswer: string;
+  isCorrect: boolean;
+  explanation: string;
+  timeTaken: number;
+  pointsEarned: number;
+}
+
+interface LeaderboardEntry {
+  rank: number;
+  player_name: string;
+  best_score: number;
+  best_time_seconds: number | null;
+  best_accuracy: number | null;
+  total_plays: number;
+  is_current_player?: boolean;
+}
+
+interface LeaderboardResponse {
+  topPlayers: LeaderboardEntry[];
+  currentPlayer?: LeaderboardEntry | null;
+  totalPlayers: number;
+}
 
 export default function ResultsPage() {
   const router = useRouter();
@@ -18,8 +49,13 @@ export default function ResultsPage() {
     total: number;
     time: number;
     accuracy: number;
-    grade: string;
   } | null>(null);
+
+  const [answers, setAnswers] = useState<QuizAnswer[] | null>(null);
+  const [showReview, setShowReview] = useState(false);
+  const [loadingAnswers, setLoadingAnswers] = useState(false);
+  const [leaderboard, setLeaderboard] = useState<LeaderboardResponse | null>(null);
+  const [loadingLeaderboard, setLoadingLeaderboard] = useState(true);
 
   useEffect(() => {
     if (!searchParams) return;
@@ -30,6 +66,7 @@ export default function ResultsPage() {
     const correct = parseInt(searchParams.get('correct') || '0');
     const total = parseInt(searchParams.get('total') || '0');
     const time = parseInt(searchParams.get('time') || '0');
+    const playId = searchParams.get('playId');
 
     if (!gameId || !total) {
       router.push('/');
@@ -37,12 +74,6 @@ export default function ResultsPage() {
     }
 
     const accuracy = Math.round((correct / total) * 100);
-    let grade = 'F';
-    if (accuracy >= 90) grade = 'A';
-    else if (accuracy >= 80) grade = 'B';
-    else if (accuracy >= 70) grade = 'C';
-    else if (accuracy >= 60) grade = 'D';
-
     setResults({
       gameId,
       playerName,
@@ -50,10 +81,61 @@ export default function ResultsPage() {
       correct,
       total,
       time,
-      accuracy,
-      grade
+      accuracy
     });
+
+    // Fetch answers if playId is available
+    if (playId) {
+      fetchAnswers(playId);
+    }
   }, [searchParams, router]);
+
+  const fetchAnswers = async (playId: string) => {
+    setLoadingAnswers(true);
+    try {
+      const response = await fetch(`/api/games/play/${playId}`);
+      
+      if (response.ok) {
+        const data = await response.json();
+        
+        if (data.success && data.gamePlay?.answers) {
+          setAnswers(data.gamePlay.answers);
+        }
+      } else {
+        console.error('Failed to fetch answers:', response.status, response.statusText);
+      }
+    } catch (error) {
+      console.error('Failed to fetch answers:', error);
+    } finally {
+      setLoadingAnswers(false);
+    }
+  };
+
+  // Fetch leaderboard
+  useEffect(() => {
+    if (!results) return;
+    
+    const fetchLeaderboard = async () => {
+      try {
+        const params = new URLSearchParams({
+          playerName: results.playerName
+        });
+        const response = await fetch(`/api/games/${results.gameId}/leaderboard?${params}`);
+        if (response.ok) {
+          const data = await response.json();
+          if (data.success) {
+            setLeaderboard(data);
+          }
+        }
+      } catch (error) {
+        console.error('Failed to fetch leaderboard:', error);
+      } finally {
+        setLoadingLeaderboard(false);
+      }
+    };
+
+    fetchLeaderboard();
+  }, [results]);
 
   if (!results) {
     return (
@@ -99,7 +181,7 @@ export default function ResultsPage() {
           </div>
 
           {/* Stats Grid */}
-          <div className="grid grid-cols-1 md:grid-cols-3 gap-6 p-8">
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-6 p-8">
             {/* Accuracy */}
             <div className="text-center p-6 bg-gradient-to-br from-green-50 to-emerald-50 dark:from-green-900/20 dark:to-emerald-900/20 rounded-xl">
               <CheckCircleIcon className="w-12 h-12 text-green-600 dark:text-green-400 mx-auto mb-3" />
@@ -122,16 +204,6 @@ export default function ResultsPage() {
               </div>
             </div>
 
-            {/* Grade */}
-            <div className="text-center p-6 bg-gradient-to-br from-purple-50 to-pink-50 dark:from-purple-900/20 dark:to-pink-900/20 rounded-xl">
-              <FireIcon className="w-12 h-12 text-purple-600 dark:text-purple-400 mx-auto mb-3" />
-              <div className="text-3xl font-bold text-gray-900 dark:text-white mb-1">
-                {results.grade}
-              </div>
-              <div className="text-sm text-gray-600 dark:text-gray-400 font-medium">
-                Grade
-              </div>
-            </div>
           </div>
 
           {/* Performance Message */}
@@ -149,6 +221,79 @@ export default function ResultsPage() {
                 {results.accuracy < 70 && `💪 Keep learning, ${results.playerName}! Review the material and try again!`}
               </p>
             </div>
+          </div>
+        </div>
+
+        {/* Review Answers Section */}
+        {answers && answers.length > 0 && (
+          <div className="bg-white dark:bg-gray-800 rounded-2xl shadow-xl overflow-hidden mb-6">
+            <div className="p-6 border-b border-gray-200 dark:border-gray-700">
+              <button
+                onClick={() => setShowReview(!showReview)}
+                className="w-full flex items-center justify-between text-left cursor-pointer hover:opacity-80 transition-opacity"
+              >
+                <div className="flex items-center gap-3">
+                  <DocumentTextIcon className="w-6 h-6 text-blue-600 dark:text-blue-400" />
+                  <h2 className="text-xl font-bold text-gray-900 dark:text-white">
+                    Review Your Answers
+                  </h2>
+                </div>
+                <span className="text-sm text-gray-500 dark:text-gray-400">
+                  {showReview ? 'Hide' : 'Show'} ({answers.length} questions)
+                </span>
+              </button>
+            </div>
+            
+            {showReview && (
+              <div className="p-6">
+                <QuizReview answers={answers} />
+              </div>
+            )}
+          </div>
+        )}
+
+        {/* Loading state for answers */}
+        {loadingAnswers && (
+          <div className="bg-white dark:bg-gray-800 rounded-2xl shadow-xl p-6 mb-6 text-center">
+            <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-blue-600 mx-auto mb-2"></div>
+            <p className="text-sm text-gray-600 dark:text-gray-400">Loading review...</p>
+          </div>
+        )}
+
+        {/* Leaderboard Section */}
+        {!loadingLeaderboard && leaderboard && (
+          <div className="mb-6">
+            <PublicLeaderboard 
+              topPlayers={leaderboard.topPlayers}
+              currentPlayer={leaderboard.currentPlayer}
+              totalPlayers={leaderboard.totalPlayers}
+            />
+          </div>
+        )}
+
+        {/* Loading state for leaderboard */}
+        {loadingLeaderboard && (
+          <div className="bg-white dark:bg-gray-800 rounded-2xl shadow-xl p-6 mb-6 text-center">
+            <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-yellow-600 mx-auto mb-2"></div>
+            <p className="text-sm text-gray-600 dark:text-gray-400">Loading leaderboard...</p>
+          </div>
+        )}
+
+        {/* Create Your Own Quiz Promo */}
+        <div className="bg-gradient-to-r from-blue-600 to-indigo-600 rounded-2xl shadow-xl p-6 mb-6 text-white">
+          <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
+            <div>
+              <h3 className="text-xl font-bold mb-1">Create your own AI-powered quiz</h3>
+              <p className="text-white/90 text-sm">
+                Turn your knowledge into a fun quiz and share it with anyone.
+              </p>
+            </div>
+            <Link
+              href="/create-game"
+              className="inline-flex items-center justify-center px-5 py-2.5 bg-white text-blue-700 font-semibold rounded-lg shadow-sm hover:bg-blue-50 transition-colors"
+            >
+              Create Quiz
+            </Link>
           </div>
         </div>
 

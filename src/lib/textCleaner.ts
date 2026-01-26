@@ -3,61 +3,6 @@
  */
 
 /**
- * Checks if text content looks like mathematical expression
- * @param text - Content to validate
- * @returns true if contains math operators, variables, or LaTeX commands
- */
-function isMathContent(text: string): boolean {
-  if (!text) return false;
-  
-  // Check for mathematical operators
-  if (/[=+\-*/^()><≤≥≠]/.test(text)) return true;
-  
-  // Check for LaTeX commands (\frac, \pi, \circ, etc.)
-  if (/\\[a-zA-Z]+/.test(text)) return true;
-  
-  // Check for variables (letters that aren't common words)
-  // Exclude common words that might appear: "and", "or", "to", "by", "is", "are", "the", "a", "an"
-  const words = text.match(/[a-zA-Z]+/g);
-  if (words) {
-    const commonWords = new Set(['and', 'or', 'to', 'by', 'is', 'are', 'was', 'were', 'the', 'a', 'an', 'of', 'in', 'on', 'at']);
-    const hasVariable = words.some(word => !commonWords.has(word.toLowerCase()) && word.length <= 2);
-    if (hasVariable) return true;
-  }
-  
-  return false;
-}
-
-/**
- * Whitelist of legitimate compound words that should NOT be split
- */
-const COMPOUND_WORD_WHITELIST = [
-  'database', 'username', 'password', 'JavaScript', 'TypeScript', 'understood',
-  'withstand', 'nevertheless', 'therefore', 'moreover', 'however', 'whatever',
-  'whenever', 'wherever', 'furthermore', 'otherwise', 'meanwhile', 'nonetheless',
-  'somewhere', 'anywhere', 'nowhere', 'everywhere', 'somebody', 'anybody',
-  'nobody', 'everybody', 'someone', 'anyone', 'everyone', 'something',
-  'anything', 'nothing', 'everything', 'somehow', 'somewhat', 'already',
-  'although', 'together', 'another', 'cannot', 'within', 'without',
-  'throughout', 'upon', 'into', 'onto', 'yourself', 'himself', 'herself',
-  'itself', 'themselves', 'ourselves', 'myself', 'background', 'underground',
-  'playground', 'overseas', 'overboard', 'understand', 'underline', 'undertake',
-  'overcome', 'overlook', 'overflow', 'endpoint', 'checkbox', 'textbox',
-  'dropdown', 'breakdown', 'breakthrough', 'makeup', 'setup', 'backup',
-  'startup', 'shutdown', 'rundown', 'countdown', 'upward', 'downward',
-  'forward', 'backward', 'toward', 'inward', 'outward', 'onward',
-  'straightforward', 'framework', 'network', 'artwork', 'homework', 'teamwork',
-  'paperwork', 'housework', 'fieldwork', 'groundwork', 'footwork'
-];
-
-/**
- * Checks if a word is in the compound word whitelist (case-insensitive)
- */
-function isWhitelistedCompound(word: string): boolean {
-  return COMPOUND_WORD_WHITELIST.some(w => w.toLowerCase() === word.toLowerCase());
-}
-
-/**
  * Smart currency and text formatting for display
  * Handles currency symbols, math equations, line breaks, and ReactMarkdown compatibility
  */
