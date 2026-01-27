@@ -1,4 +1,5 @@
 import React, { useState, useEffect } from "react"
+import { cleanJsonText } from '@/lib/jsonCleaner'
 
 interface RawOutputFallbackProps {
   output: string
@@ -7,11 +8,24 @@ interface RawOutputFallbackProps {
 
 /**
  * Attempts aggressive recovery strategies for parsing failed AI responses
+ * CRITICAL: Uses jsonCleaner first to fix LaTeX backslashes and JSON issues
  */
 function attemptRecovery(text: string): unknown[] | null {
-  // Strategy 1: Strip all markdown code blocks
+  // STEP 0: Clean the text FIRST using jsonCleaner
+  // This fixes LaTeX commands like \circ, \sqrt, \frac which have invalid escape sequences
+  const cleanedText = cleanJsonText(text);
+  // Strategy 1: Direct parse of cleaned text
   try {
-    const noMarkdown = text.replace(/```[a-z]*\n?/gi, '').trim();
+    const parsed = JSON.parse(cleanedText);
+    if (Array.isArray(parsed) && parsed.length > 0) return parsed;
+    if (parsed.questions && Array.isArray(parsed.questions)) return parsed.questions;
+  } catch {
+    // Continue to next strategy
+  }
+
+  // Strategy 2: Strip all markdown code blocks from cleaned text
+  try {
+    const noMarkdown = cleanedText.replace(/```[a-z]*\n?/gi, '').trim();
     const parsed = JSON.parse(noMarkdown);
     if (Array.isArray(parsed) && parsed.length > 0) return parsed;
     if (parsed.questions && Array.isArray(parsed.questions)) return parsed.questions;
@@ -19,9 +33,9 @@ function attemptRecovery(text: string): unknown[] | null {
     // Continue to next strategy
   }
 
-  // Strategy 2: Extract JSON array with permissive regex
+  // Strategy 3: Extract JSON array with permissive regex
   try {
-    const arrayMatches = text.match(/\[\s*\{[\s\S]*?\}\s*\]/g);
+    const arrayMatches = cleanedText.match(/\[\s*\{[\s\S]*?\}\s*\]/g);
     if (arrayMatches) {
       for (const match of arrayMatches) {
         try {
@@ -36,9 +50,9 @@ function attemptRecovery(text: string): unknown[] | null {
     // Continue to next strategy
   }
 
-  // Strategy 3: Extract JSON object with questions key
+  // Strategy 4: Extract JSON object with questions key
   try {
-    const objMatch = text.match(/\{\s*["']questions["']\s*:\s*\[[\s\S]*?\]\s*\}/);
+    const objMatch = cleanedText.match(/\{\s*["']questions["']\s*:\s*\[[\s\S]*?\]\s*\}/);
     if (objMatch) {
       const parsed = JSON.parse(objMatch[0]);
       if (parsed.questions && Array.isArray(parsed.questions)) return parsed.questions;
@@ -47,9 +61,9 @@ function attemptRecovery(text: string): unknown[] | null {
     // Continue to next strategy
   }
 
-  // Strategy 4: Unicode normalization + parse
+  // Strategy 5: Unicode normalization + parse
   try {
-    const normalized = text.normalize('NFKC');
+    const normalized = cleanedText.normalize('NFKC');
     const parsed = JSON.parse(normalized);
     if (Array.isArray(parsed) && parsed.length > 0) return parsed;
     if (parsed.questions && Array.isArray(parsed.questions)) return parsed.questions;
@@ -57,9 +71,9 @@ function attemptRecovery(text: string): unknown[] | null {
     // Continue to next strategy
   }
 
-  // Strategy 5: Find individual question objects and collect them
+  // Strategy 6: Find individual question objects and collect them
   try {
-    const objectMatches = text.match(/\{[^{}]*"type"[^{}]*"question"[^{}]*\}/g);
+    const objectMatches = cleanedText.match(/\{[^{}]*"type"[^{}]*"question"[^{}]*\}/g);
     if (objectMatches && objectMatches.length > 0) {
       const questions: unknown[] = [];
       for (const match of objectMatches) {
