@@ -1,10 +1,12 @@
 "use client";
 
-import { useEffect, useState } from 'react';
+import { useEffect, useState, useRef } from 'react';
 import { useRouter } from 'next/navigation';
-import { Game } from '@/types/game';
+import { Game, UpdateGameRequest } from '@/types/game';
 import { useAuth } from '@/contexts/AuthContext';
 import LoadingSpinner from '@/components/LoadingSpinner';
+import { EllipsisHorizontalIcon, PencilIcon, TrashIcon } from '@heroicons/react/24/outline';
+import EditGameModal from '@/components/games/EditGameModal';
 
 export default function MyGamesPage() {
   const router = useRouter();
@@ -12,6 +14,9 @@ export default function MyGamesPage() {
   const [games, setGames] = useState<Game[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
+  const [openDropdownId, setOpenDropdownId] = useState<string | null>(null);
+  const [editingGame, setEditingGame] = useState<Game | null>(null);
+  const dropdownRefs = useRef<{ [key: string]: HTMLDivElement | null }>({});
 
   useEffect(() => {
     if (authLoading) return;
@@ -42,6 +47,21 @@ export default function MyGamesPage() {
     fetchGames();
   }, [user, authLoading, router]);
 
+  // Click outside handler for dropdown
+  useEffect(() => {
+    const handleClickOutside = (event: MouseEvent) => {
+      if (openDropdownId && dropdownRefs.current[openDropdownId]) {
+        const dropdown = dropdownRefs.current[openDropdownId];
+        if (dropdown && !dropdown.contains(event.target as Node)) {
+          setOpenDropdownId(null);
+        }
+      }
+    };
+
+    document.addEventListener('mousedown', handleClickOutside);
+    return () => document.removeEventListener('mousedown', handleClickOutside);
+  }, [openDropdownId]);
+
   const handleDeleteGame = async (gameId: string) => {
     if (!confirm('Are you sure you want to delete this game?')) {
       return;
@@ -61,6 +81,33 @@ export default function MyGamesPage() {
     } catch (err) {
       console.error('Error deleting game:', err);
       alert('Failed to delete game. Please try again.');
+    }
+  };
+
+  const handleSaveGame = async (gameId: string, updates: UpdateGameRequest) => {
+    try {
+      const response = await fetch(`/api/games/${gameId}`, {
+        method: 'PUT',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(updates)
+      });
+
+      if (!response.ok) {
+        const data = await response.json();
+        throw new Error(data.error || 'Failed to update game');
+      }
+
+      const data = await response.json();
+      
+      // Update local state with the updated game
+      setGames(games.map(g => g.id === gameId ? data.game : g));
+      setEditingGame(null);
+      
+      // Show success message
+      alert('Quiz updated successfully!');
+    } catch (err) {
+      console.error('Error updating game:', err);
+      throw err; // Re-throw to let the modal handle the error
     }
   };
 
@@ -171,16 +218,59 @@ export default function MyGamesPage() {
                 {/* Game Header */}
                 <div className="p-6">
                   <div className="flex items-start justify-between mb-3">
-                    <h3 className="text-lg font-semibold text-gray-900 dark:text-white line-clamp-2">
+                    <h3 className="text-lg font-semibold text-gray-900 dark:text-white line-clamp-2 flex-1">
                       {game.title}
                     </h3>
-                    <span className={`px-2 py-1 text-xs rounded-full shrink-0 ml-2 ${
-                      game.game_type === 'quiz'
-                        ? 'bg-blue-100 dark:bg-blue-900/30 text-blue-800 dark:text-blue-200'
-                        : 'bg-gray-100 dark:bg-gray-700 text-gray-800 dark:text-gray-200'
-                    }`}>
-                      {game.game_type.toUpperCase()}
-                    </span>
+                    <div className="flex items-center gap-2 shrink-0 ml-2">
+                      <span className={`px-2 py-1 text-xs rounded-full ${
+                        game.game_type === 'quiz'
+                          ? 'bg-blue-100 dark:bg-blue-900/30 text-blue-800 dark:text-blue-200'
+                          : 'bg-gray-100 dark:bg-gray-700 text-gray-800 dark:text-gray-200'
+                      }`}>
+                        {game.game_type.toUpperCase()}
+                      </span>
+                      
+                      {/* Three-dot menu */}
+                      <div 
+                        className="relative"
+                        ref={(el) => {
+                          if (el) dropdownRefs.current[game.id] = el;
+                        }}
+                      >
+                        <button
+                          onClick={() => setOpenDropdownId(openDropdownId === game.id ? null : game.id)}
+                          className="p-1.5 hover:bg-gray-100 dark:hover:bg-gray-700 rounded-lg transition-colors"
+                          title="More options"
+                        >
+                          <EllipsisHorizontalIcon className="w-5 h-5 text-gray-600 dark:text-gray-300" />
+                        </button>
+
+                        {openDropdownId === game.id && (
+                          <div className="absolute right-0 top-8 z-10 w-40 bg-white dark:bg-gray-800 rounded-lg shadow-lg border border-gray-200 dark:border-gray-700 py-1">
+                            <button
+                              onClick={() => {
+                                setEditingGame(game);
+                                setOpenDropdownId(null);
+                              }}
+                              className="w-full px-4 py-2 text-left text-sm text-gray-700 dark:text-gray-300 hover:bg-blue-50 dark:hover:bg-blue-900/20 flex items-center gap-2"
+                            >
+                              <PencilIcon className="w-4 h-4" />
+                              Edit
+                            </button>
+                            <button
+                              onClick={() => {
+                                setOpenDropdownId(null);
+                                handleDeleteGame(game.id);
+                              }}
+                              className="w-full px-4 py-2 text-left text-sm text-red-700 dark:text-red-400 hover:bg-red-50 dark:hover:bg-red-900/20 flex items-center gap-2"
+                            >
+                              <TrashIcon className="w-4 h-4" />
+                              Delete
+                            </button>
+                          </div>
+                        )}
+                      </div>
+                    </div>
                   </div>
 
                   {game.description && (
@@ -257,15 +347,6 @@ export default function MyGamesPage() {
                     >
                       Analytics
                     </button>
-                    <button
-                      onClick={() => handleDeleteGame(game.id)}
-                      className="px-4 py-2 bg-red-100 dark:bg-red-900/20 hover:bg-red-200 dark:hover:bg-red-900/40 text-red-700 dark:text-red-400 text-sm font-medium rounded-lg transition-colors"
-                      title="Delete game"
-                    >
-                      <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" />
-                      </svg>
-                    </button>
                   </div>
                 </div>
 
@@ -283,6 +364,15 @@ export default function MyGamesPage() {
           </div>
         )}
       </div>
+
+      {/* Edit Game Modal */}
+      {editingGame && (
+        <EditGameModal
+          game={editingGame}
+          onClose={() => setEditingGame(null)}
+          onSave={handleSaveGame}
+        />
+      )}
     </div>
   );
 }

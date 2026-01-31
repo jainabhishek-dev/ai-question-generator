@@ -11,13 +11,11 @@ interface ParsedQuizResponse {
   questions: QuizQuestion[];
   settings?: {
     time_limit: number;
-    lives: number;
     hints_enabled: boolean;
     show_explanations: boolean;
   };
   // Optional flat structure fields (backward compatibility)
   time_limit?: number;
-  lives?: number;
   hints_enabled?: boolean;
   show_explanations?: boolean;
   // Game metadata
@@ -150,23 +148,35 @@ export async function POST(req: NextRequest) {
       );
     }
 
+    // Apply per-question time limit to all generated questions
+    const questionsWithTime = config.questions.map(q => ({
+      ...q,
+      time_limit: timeLimit || 30 // Apply the per-question time
+    }));
+
     // Transform flat structure to nested structure if needed (backward compatibility)
     let quizConfig: QuizGameConfig;
-    if (!config.settings && (config.time_limit || config.lives || config.hints_enabled !== undefined)) {
+    if (!config.settings && (config.time_limit || config.hints_enabled !== undefined)) {
       // Old flat structure - transform to new nested structure
       console.log('🔄 Transforming flat config to nested structure');
       quizConfig = {
-        questions: config.questions,
+        questions: questionsWithTime,
         settings: {
-          time_limit: config.time_limit || timeLimit || 300,
-          lives: config.lives || 3,
+          time_limit: timeLimit || 30, // Store as default per-question time
           hints_enabled: config.hints_enabled !== undefined ? config.hints_enabled : true,
           show_explanations: config.show_explanations !== undefined ? config.show_explanations : true
         }
       };
     } else {
       // Already has correct structure
-      quizConfig = config as QuizGameConfig;
+      quizConfig = {
+        ...config,
+        questions: questionsWithTime,
+        settings: {
+          ...config.settings,
+          time_limit: timeLimit || 30
+        }
+      } as QuizGameConfig;
     }
 
     // Create game in database

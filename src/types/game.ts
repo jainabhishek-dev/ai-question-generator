@@ -48,8 +48,7 @@ export type TagType = 'topic' | 'skill' | 'curriculum' | 'feature';
 export interface QuizGameConfig {
   questions: QuizQuestion[];
   settings: {
-    time_limit: number; // Total time in seconds
-    lives: number; // Number of mistakes allowed
+    time_limit: number; // Default time per question in seconds (5-180)
     hints_enabled: boolean;
     show_explanations: boolean;
   };
@@ -63,7 +62,7 @@ export interface QuizQuestion {
   explanation: string;
   difficulty: Difficulty;
   points?: number; // Optional custom points (default: 100)
-  time_limit?: number; // Optional per-question time limit
+  time_limit?: number; // Per-question time limit in seconds (defaults to settings.time_limit)
   hint?: string; // Optional hint text
   question_id?: number; // Original question ID for loading images/metadata
   // FIB-specific options
@@ -460,7 +459,6 @@ export interface QuizGameState {
   points: number;
   time_elapsed: number;
   streak: number;
-  lives_remaining: number;
   hints_used: number;
   answers: Record<number, string>; // question_index -> selected_answer
 }

@@ -3,7 +3,7 @@
 import { useSearchParams, useRouter, useParams } from 'next/navigation';
 import { useEffect, useState } from 'react';
 import Link from 'next/link';
-import { TrophyIcon, ClockIcon, CheckCircleIcon, FireIcon, DocumentTextIcon } from '@heroicons/react/24/solid';
+import { TrophyIcon, ClockIcon, CheckCircleIcon, DocumentTextIcon } from '@heroicons/react/24/solid';
 import QuizReview from '@/components/games/QuizReview';
 import PublicLeaderboard from '@/components/games/PublicLeaderboard';
 

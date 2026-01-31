@@ -174,7 +174,7 @@ export async function GET(
     if (insightsResult.error && insightsResult.error.message.includes('function')) {
       const { data: plays } = await supabase
         .from('game_plays')
-        .select('time_taken_seconds, questions_total, hints_used, lives_remaining')
+        .select('time_taken_seconds, questions_total, hints_used')
         .eq('game_id', gameId)
         .not('questions_total', 'is', null)
         .gt('questions_total', 0);
@@ -185,9 +185,6 @@ export async function GET(
       const avgHintsUsed = plays && plays.length > 0
         ? plays.reduce((sum, p) => sum + (p.hints_used || 0), 0) / plays.length
         : 0;
-      const avgLivesRemaining = plays && plays.length > 0
-        ? plays.reduce((sum, p) => sum + (p.lives_remaining || 0), 0) / plays.length
-        : 0;
       const hintsUsageRate = plays && plays.length > 0
         ? (plays.filter(p => (p.hints_used || 0) > 0).length / plays.length) * 100
         : 0;
@@ -195,7 +192,6 @@ export async function GET(
       playerInsights = {
         avg_time_per_question: Math.round(avgTimePerQuestion),
         avg_hints_used: Math.round(avgHintsUsed * 10) / 10,
-        avg_lives_remaining: Math.round(avgLivesRemaining * 10) / 10,
         hints_usage_rate: Math.round(hintsUsageRate)
       };
     } else {

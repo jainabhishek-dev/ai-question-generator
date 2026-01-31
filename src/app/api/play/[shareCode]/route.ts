@@ -28,7 +28,6 @@ function transformQuizConfig(game: Game): Game {
       questions: config.questions || [],
       settings: {
         time_limit: config.time_limit || 300,
-        lives: config.lives || 3,
         hints_enabled: config.hints_enabled !== undefined ? config.hints_enabled : true,
         show_explanations: config.show_explanations !== undefined ? config.show_explanations : true
       }

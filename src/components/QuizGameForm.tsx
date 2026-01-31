@@ -3,6 +3,7 @@
 import { useState } from 'react';
 import { QuestionRecord } from '@/lib/database';
 import { User } from '@supabase/supabase-js';
+import { ClockIcon } from '@heroicons/react/24/outline';
 
 interface QuizGameFormProps {
   existingQuestions?: QuestionRecord[];
@@ -21,7 +22,7 @@ export default function QuizGameForm({ existingQuestions, onSuccess, user }: Qui
   const [grade, setGrade] = useState('');
   const [difficulty, setDifficulty] = useState<'easy' | 'medium' | 'hard'>('medium');
   const [numberOfQuestions, setNumberOfQuestions] = useState(10);
-  const [timeLimit, setTimeLimit] = useState(300);
+  const [timeLimit, setTimeLimit] = useState(30);
   const [enableImages, setEnableImages] = useState(false);
   
   // Question type distribution state
@@ -33,6 +34,7 @@ export default function QuizGameForm({ existingQuestions, onSuccess, user }: Qui
   const [selectedQuestions, setSelectedQuestions] = useState<Set<number>>(new Set());
   const [gameTitle, setGameTitle] = useState('');
   const [gameDescription, setGameDescription] = useState('');
+  const [questionTimeLimits, setQuestionTimeLimits] = useState<Map<number, number>>(new Map());
 
   // Filter state for convert mode
   const [filterSubject, setFilterSubject] = useState('');
@@ -176,7 +178,8 @@ export default function QuizGameForm({ existingQuestions, onSuccess, user }: Qui
           options: options,
           correctAnswer: q.correct_answer,
           explanation: q.explanation || '',
-          question_id: q.id // Pass original ID for image/content loading
+          question_id: q.id, // Pass original ID for image/content loading
+          time_limit: questionTimeLimits.get(q.id!) || timeLimit // Include per-question time
         };
       });
 
@@ -554,17 +557,20 @@ export default function QuizGameForm({ existingQuestions, onSuccess, user }: Qui
 
             <div>
               <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
-                Time Limit (sec)
+                Time Per Question (sec)
               </label>
               <input
                 type="number"
-                min="60"
-                max="1800"
-                step="30"
+                min="5"
+                max="180"
+                step="5"
                 value={timeLimit}
-                onChange={(e) => setTimeLimit(parseInt(e.target.value) || 300)}
+                onChange={(e) => setTimeLimit(parseInt(e.target.value) || 30)}
                 className="w-full px-4 py-2 border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-blue-500 dark:bg-gray-700 dark:text-white"
               />
+              <p className="text-xs text-gray-500 dark:text-gray-400 mt-1">
+                Each AI-generated question will have this time limit
+              </p>
             </div>
           </div>
 
@@ -820,17 +826,20 @@ export default function QuizGameForm({ existingQuestions, onSuccess, user }: Qui
 
             <div>
               <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
-                Time Limit (sec)
+                Default Time Per Question (sec)
               </label>
               <input
                 type="number"
-                min="60"
-                max="1800"
-                step="30"
+                min="5"
+                max="180"
+                step="5"
                 value={timeLimit}
-                onChange={(e) => setTimeLimit(parseInt(e.target.value) || 300)}
+                onChange={(e) => setTimeLimit(parseInt(e.target.value) || 30)}
                 className="w-full px-4 py-2 border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-blue-500 dark:bg-gray-700 dark:text-white"
               />
+              <p className="text-xs text-gray-500 dark:text-gray-400 mt-1">
+                Default time for all selected questions (can customize each below)
+              </p>
             </div>
           </div>
 
@@ -892,6 +901,30 @@ export default function QuizGameForm({ existingQuestions, onSuccess, user }: Qui
                         <p className="text-sm text-gray-900 dark:text-white font-medium mb-2">
                           {question.question}
                         </p>
+                        
+                        {/* Per-question time input */}
+                        {isSelected && (
+                          <div className="mt-3 mb-3 flex items-center gap-2">
+                            <ClockIcon className="w-4 h-4 text-gray-500 dark:text-gray-400" />
+                            <label className="text-xs text-gray-600 dark:text-gray-400">Time (sec):</label>
+                            <input
+                              type="number"
+                              min="5"
+                              max="180"
+                              step="5"
+                              value={questionTimeLimits.get(question.id!) || timeLimit}
+                              onChange={(e) => {
+                                e.stopPropagation();
+                                const newMap = new Map(questionTimeLimits);
+                                newMap.set(question.id!, parseInt(e.target.value) || timeLimit);
+                                setQuestionTimeLimits(newMap);
+                              }}
+                              onClick={(e) => e.stopPropagation()}
+                              className="w-20 px-2 py-1 text-xs border border-gray-300 dark:border-gray-600 rounded focus:ring-2 focus:ring-blue-500 dark:bg-gray-700 dark:text-white"
+                            />
+                          </div>
+                        )}
+                        
                         <div className="flex flex-wrap gap-2 text-xs">
                           {question.subject && (
                             <span className="px-2 py-0.5 bg-blue-100 dark:bg-blue-900/30 text-blue-700 dark:text-blue-300 rounded">

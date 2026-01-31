@@ -37,12 +37,6 @@ export default function LeaderboardSection({ leaderboard }: LeaderboardSectionPr
     }
   };
 
-  const formatTime = (seconds: number) => {
-    const mins = Math.floor(seconds / 60);
-    const secs = seconds % 60;
-    return `${mins}:${secs.toString().padStart(2, '0')}`;
-  };
-
   return (
     <div className="bg-white dark:bg-gray-800 rounded-xl shadow-sm overflow-hidden">
       <div className="px-6 py-4 border-b border-gray-200 dark:border-gray-700">
@@ -96,36 +90,11 @@ export default function LeaderboardSection({ leaderboard }: LeaderboardSectionPr
                 </div>
 
                 {/* Stats */}
-                <div className="flex items-center gap-6">
-                  {/* Best Score */}
-                  <div className="text-right">
-                    <p className="text-2xl font-bold text-gray-900 dark:text-white">
-                      {entry.best_score}
-                    </p>
-                    <p className="text-xs text-gray-500 dark:text-gray-400">Best Score</p>
-                  </div>
-
-                  {/* Accuracy */}
-                  {entry.best_accuracy !== null && (
-                    <div className="text-right">
-                      <p className={`text-lg font-semibold ${
-                        entry.best_accuracy >= 90 ? 'text-green-600 dark:text-green-400' :
-                        entry.best_accuracy >= 70 ? 'text-yellow-600 dark:text-yellow-400' :
-                        'text-gray-600 dark:text-gray-400'
-                      }`}>
-                        {Math.round(entry.best_accuracy)}%
-                      </p>
-                      <p className="text-xs text-gray-500 dark:text-gray-400">Accuracy</p>
-                    </div>
-                  )}
-
-                  {/* Time */}
-                  <div className="text-right">
-                    <p className="text-lg font-semibold text-gray-900 dark:text-white">
-                      {entry.best_time_seconds !== null ? formatTime(entry.best_time_seconds) : 'N/A'}
-                    </p>
-                    <p className="text-xs text-gray-500 dark:text-gray-400">Best Time</p>
-                  </div>
+                <div className="text-right">
+                  <p className="text-2xl font-bold text-gray-900 dark:text-white">
+                    {entry.best_score}
+                  </p>
+                  <p className="text-xs text-gray-500 dark:text-gray-400">pts</p>
                 </div>
               </div>
             );

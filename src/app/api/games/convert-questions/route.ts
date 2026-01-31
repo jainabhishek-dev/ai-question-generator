@@ -95,7 +95,7 @@ export async function POST(req: NextRequest) {
     };
 
     // Convert GeneratedQuestion[] to QuizQuestion[]
-    const typedQuestions = questions as (GeneratedQuestion & { question_id?: number })[];
+    const typedQuestions = questions as (GeneratedQuestion & { question_id?: number; time_limit?: number })[];
     
     // Filter for quiz-compatible question types
     const quizCompatibleTypes = ['mcq', 'multiple-choice', 'true/false', 'true-false', 't/f', 'fill in the blank', 'fill-in-the-blank', 'fib'];
@@ -116,6 +116,7 @@ export async function POST(req: NextRequest) {
           points: 100,
           hint: undefined,
           question_id: q.question_id,
+          time_limit: q.time_limit || timeLimit, // Use per-question time or default
           case_sensitive: questionType === 'FIB' ? false : undefined
         };
       });
@@ -132,7 +133,6 @@ export async function POST(req: NextRequest) {
       questions: quizQuestions,
       settings: {
         time_limit: timeLimit,
-        lives: 3,
         hints_enabled: false,
         show_explanations: true
       }

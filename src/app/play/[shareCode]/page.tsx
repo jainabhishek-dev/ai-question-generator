@@ -77,7 +77,6 @@ export default function PlayPage() {
     totalQuestions: number;
     maxStreak: number;
     hintsUsed: number;
-    livesRemaining: number;
     answers: Array<{
       questionIndex: number;
       questionId?: number;
@@ -110,7 +109,6 @@ export default function PlayPage() {
           questions_total: results.totalQuestions,
           max_streak: results.maxStreak,
           hints_used: results.hintsUsed,
-          lives_remaining: results.livesRemaining,
           answers: results.answers // Include answers for review
         })
       });
@@ -282,7 +280,6 @@ export default function PlayPage() {
           gradeLevel={game.grade_level || undefined}
           numberOfQuestions={game.config.questions.length}
           timeLimit={game.config.settings.time_limit}
-          lives={game.config.settings.lives}
           onStart={handleWelcomeComplete}
         />
       );

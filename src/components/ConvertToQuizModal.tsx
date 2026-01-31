@@ -8,7 +8,6 @@ interface QuizConfig {
   description: string
   difficulty: 'easy' | 'medium' | 'hard'
   timeLimit: number
-  livesEnabled: boolean
   hintsEnabled: boolean
   isPublic: boolean
   allowAnonymous: boolean
@@ -32,7 +31,6 @@ export default function ConvertToQuizModal({
     description: '',
     difficulty: 'medium',
     timeLimit: 30,
-    livesEnabled: true,
     hintsEnabled: true,
     isPublic: true,
     allowAnonymous: true
@@ -156,18 +154,6 @@ export default function ConvertToQuizModal({
               Game Features
             </label>
             
-            <label className="flex items-center space-x-3 cursor-pointer">
-              <input
-                type="checkbox"
-                checked={config.livesEnabled}
-                onChange={(e) => handleChange('livesEnabled', e.target.checked)}
-                className="w-4 h-4 text-blue-600 border-gray-300 rounded focus:ring-blue-500"
-              />
-              <span className="text-sm text-gray-700 dark:text-gray-300">
-                Enable Lives (3 lives per player)
-              </span>
-            </label>
-
             <label className="flex items-center space-x-3 cursor-pointer">
               <input
                 type="checkbox"

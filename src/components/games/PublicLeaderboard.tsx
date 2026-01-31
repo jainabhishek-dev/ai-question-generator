@@ -40,12 +40,6 @@ export default function PublicLeaderboard({ topPlayers, currentPlayer, totalPlay
     }
   };
 
-  const formatTime = (seconds: number) => {
-    const mins = Math.floor(seconds / 60);
-    const secs = seconds % 60;
-    return `${mins}:${secs.toString().padStart(2, '0')}`;
-  };
-
   const shouldShowCurrentPlayerSeparately = currentPlayer && currentPlayer.rank > 15;
 
   return (
@@ -109,40 +103,13 @@ export default function PublicLeaderboard({ topPlayers, currentPlayer, totalPlay
             </div>
 
             {/* Stats */}
-            <div className="flex items-center gap-4">
-              {/* Score */}
-              <div className="text-right">
-                <p className={`text-xl font-bold ${
-                  entry.is_current_player ? 'text-blue-700 dark:text-blue-300' : 'text-gray-900 dark:text-white'
-                }`}>
-                  {entry.best_score}
-                </p>
-                <p className="text-xs text-gray-500 dark:text-gray-400">pts</p>
-              </div>
-
-              {/* Accuracy */}
-              {entry.best_accuracy !== null && (
-                <div className="text-right hidden sm:block">
-                  <p className={`text-sm font-semibold ${
-                    entry.best_accuracy >= 90 ? 'text-green-600 dark:text-green-400' :
-                    entry.best_accuracy >= 70 ? 'text-yellow-600 dark:text-yellow-400' :
-                    'text-gray-600 dark:text-gray-400'
-                  }`}>
-                    {entry.best_accuracy}%
-                  </p>
-                  <p className="text-xs text-gray-500 dark:text-gray-400">accuracy</p>
-                </div>
-              )}
-
-              {/* Time */}
-              {entry.best_time_seconds !== null && (
-                <div className="text-right hidden md:block">
-                  <p className="text-sm font-semibold text-gray-700 dark:text-gray-300">
-                    {formatTime(entry.best_time_seconds)}
-                  </p>
-                  <p className="text-xs text-gray-500 dark:text-gray-400">time</p>
-                </div>
-              )}
+            <div className="text-right">
+              <p className={`text-xl font-bold ${
+                entry.is_current_player ? 'text-blue-700 dark:text-blue-300' : 'text-gray-900 dark:text-white'
+              }`}>
+                {entry.best_score}
+              </p>
+              <p className="text-xs text-gray-500 dark:text-gray-400">pts</p>
             </div>
           </div>
         ))}
@@ -172,13 +139,11 @@ export default function PublicLeaderboard({ topPlayers, currentPlayer, totalPlay
                   </p>
                 </div>
               </div>
-              <div className="flex items-center gap-4">
-                <div className="text-right">
-                  <p className="text-xl font-bold text-blue-700 dark:text-blue-300">
-                    {currentPlayer.best_score}
-                  </p>
-                  <p className="text-xs text-gray-600 dark:text-gray-400">pts</p>
-                </div>
+              <div className="text-right">
+                <p className="text-xl font-bold text-blue-700 dark:text-blue-300">
+                  {currentPlayer.best_score}
+                </p>
+                <p className="text-xs text-gray-600 dark:text-gray-400">pts</p>
               </div>
             </div>
           </>

@@ -1,7 +1,6 @@
 interface PlayerInsights {
   avg_time_per_question?: number;
   avg_hints_used?: number;
-  avg_lives_remaining?: number;
   hints_usage_rate?: number;
 }
 
@@ -34,14 +33,6 @@ export default function QuizInsights({ insights }: QuizInsightsProps) {
       description: 'Average number of hints used per quiz',
       color: 'from-purple-500 to-purple-600',
       bgColor: 'from-purple-50 to-purple-100 dark:from-purple-900/20 dark:to-purple-800/20'
-    },
-    {
-      label: 'Avg Lives Remaining',
-      value: insights.avg_lives_remaining !== undefined ? insights.avg_lives_remaining.toFixed(1) : '-',
-      icon: '❤️',
-      description: 'Average lives left at completion',
-      color: 'from-red-500 to-red-600',
-      bgColor: 'from-red-50 to-red-100 dark:from-red-900/20 dark:to-red-800/20'
     }
   ];
 

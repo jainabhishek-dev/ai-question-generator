@@ -350,7 +350,6 @@ export const submitGamePlay = async (
         questions_total: playData.questions_total || null,
         max_streak: playData.max_streak || null,
         hints_used: playData.hints_used || null,
-        lives_remaining: playData.lives_remaining || null,
         // Quiz answers for review
         answers: playData.answers || null,
         // Simulation-specific

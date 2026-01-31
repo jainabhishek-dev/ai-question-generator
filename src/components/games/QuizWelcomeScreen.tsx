@@ -1,7 +1,7 @@
 "use client";
 
 import { useState, FormEvent } from 'react';
-import { UserIcon, AcademicCapIcon, ClockIcon, FireIcon } from '@heroicons/react/24/outline';
+import { UserIcon, AcademicCapIcon, ClockIcon } from '@heroicons/react/24/outline';
 
 interface QuizWelcomeScreenProps {
   gameTitle: string;
@@ -12,7 +12,6 @@ interface QuizWelcomeScreenProps {
   gradeLevel?: string;
   numberOfQuestions?: number;
   timeLimit?: number;
-  lives?: number;
   onStart: (playerName: string) => void;
 }
 
@@ -25,7 +24,6 @@ export default function QuizWelcomeScreen({
   gradeLevel,
   numberOfQuestions,
   timeLimit,
-  lives,
   onStart
 }: QuizWelcomeScreenProps) {
   const [playerName, setPlayerName] = useState('');
@@ -130,7 +128,7 @@ export default function QuizWelcomeScreen({
             </div>
 
             {/* Quiz Stats */}
-            {(numberOfQuestions || timeLimit || lives) && (
+            {(numberOfQuestions || timeLimit) && (
               <div className="flex flex-wrap gap-6 justify-center mt-6">
                 {numberOfQuestions && (
                   <div className="flex items-center gap-2 text-gray-700 dark:text-gray-300">
@@ -151,17 +149,6 @@ export default function QuizWelcomeScreen({
                     <div>
                       <div className="text-sm text-gray-500 dark:text-gray-400">Time Limit</div>
                       <div className="font-semibold">{Math.floor(timeLimit / 60)}:{(timeLimit % 60).toString().padStart(2, '0')}</div>
-                    </div>
-                  </div>
-                )}
-                {lives && (
-                  <div className="flex items-center gap-2 text-gray-700 dark:text-gray-300">
-                    <div className="w-10 h-10 bg-red-100 dark:bg-red-900/30 rounded-full flex items-center justify-center">
-                      <FireIcon className="w-5 h-5 text-red-600 dark:text-red-400" />
-                    </div>
-                    <div>
-                      <div className="text-sm text-gray-500 dark:text-gray-400">Lives</div>
-                      <div className="font-semibold">{lives}</div>
                     </div>
                   </div>
                 )}
