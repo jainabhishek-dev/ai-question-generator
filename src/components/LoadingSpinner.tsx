@@ -1,7 +1,15 @@
 
 import { ArrowPathIcon } from "@heroicons/react/24/outline";
 
-const LoadingSpinner = () => (
+interface LoadingSpinnerProps {
+  title?: string;
+  message?: string;
+}
+
+const LoadingSpinner = ({ 
+  title = "Generating Questions", 
+  message = "Our AI is crafting personalized questions..." 
+}: LoadingSpinnerProps = {}) => (
   <div className="text-center py-10 sm:py-12">
     <div className="w-14 h-14 sm:w-16 sm:h-16 mx-auto mb-5 sm:mb-6 relative">
       <div className="w-full h-full border-4 border-blue-200 rounded-full animate-spin border-t-blue-600 dark:border-blue-800 dark:border-t-blue-400"></div>
@@ -9,8 +17,8 @@ const LoadingSpinner = () => (
         <ArrowPathIcon className="w-5 h-5 text-white" />
       </div>
     </div>
-    <h3 className="text-lg sm:text-xl font-bold text-gray-900 mb-2 dark:text-gray-100">Generating Questions</h3>
-    <p className="text-sm sm:text-base text-gray-600 dark:text-gray-300">Our AI is crafting personalized questions...</p>
+    <h3 className="text-lg sm:text-xl font-bold text-gray-900 mb-2 dark:text-gray-100">{title}</h3>
+    <p className="text-sm sm:text-base text-gray-600 dark:text-gray-300">{message}</p>
   </div>
 )
 

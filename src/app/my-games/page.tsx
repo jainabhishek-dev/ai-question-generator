@@ -6,7 +6,9 @@ import { Game, UpdateGameRequest } from '@/types/game';
 import { useAuth } from '@/contexts/AuthContext';
 import LoadingSpinner from '@/components/LoadingSpinner';
 import { EllipsisHorizontalIcon, PencilIcon, TrashIcon } from '@heroicons/react/24/outline';
+import { PlayIcon } from '@heroicons/react/24/solid';
 import EditGameModal from '@/components/games/EditGameModal';
+import ConfirmGoLiveModal from '@/components/live/ConfirmGoLiveModal';
 
 export default function MyGamesPage() {
   const router = useRouter();
@@ -16,6 +18,7 @@ export default function MyGamesPage() {
   const [error, setError] = useState<string | null>(null);
   const [openDropdownId, setOpenDropdownId] = useState<string | null>(null);
   const [editingGame, setEditingGame] = useState<Game | null>(null);
+  const [goingLiveGame, setGoingLiveGame] = useState<Game | null>(null);
   const dropdownRefs = useRef<{ [key: string]: HTMLDivElement | null }>({});
 
   useEffect(() => {
@@ -115,6 +118,29 @@ export default function MyGamesPage() {
     const url = `${window.location.origin}/play/${shareCode}`;
     navigator.clipboard.writeText(url);
     alert(`Share URL copied to clipboard:\n${url}`);
+  };
+
+  const handleGoLive = async (gameId: string, participantLimit: number) => {
+    try {
+      const response = await fetch('/api/live/sessions/create', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ game_id: gameId, participant_limit: participantLimit })
+      });
+
+      const data = await response.json();
+
+      if (!response.ok) {
+        throw new Error(data.error || 'Failed to create live session');
+      }
+
+      // Navigate to host lobby
+      router.push(`/live/host/${data.session.id}/lobby`);
+    } catch (err) {
+      console.error('Error creating live session:', err);
+      alert(err instanceof Error ? err.message : 'Failed to create live session');
+      throw err;
+    }
   };
 
   if (authLoading || loading) {
@@ -249,6 +275,16 @@ export default function MyGamesPage() {
                           <div className="absolute right-0 top-8 z-10 w-40 bg-white dark:bg-gray-800 rounded-lg shadow-lg border border-gray-200 dark:border-gray-700 py-1">
                             <button
                               onClick={() => {
+                                setGoingLiveGame(game);
+                                setOpenDropdownId(null);
+                              }}
+                              className="w-full px-4 py-2 text-left text-sm text-purple-700 dark:text-purple-400 hover:bg-purple-50 dark:hover:bg-purple-900/20 flex items-center gap-2"
+                            >
+                              <PlayIcon className="w-4 h-4" />
+                              Go Live
+                            </button>
+                            <button
+                              onClick={() => {
                                 setEditingGame(game);
                                 setOpenDropdownId(null);
                               }}
@@ -371,6 +407,15 @@ export default function MyGamesPage() {
           game={editingGame}
           onClose={() => setEditingGame(null)}
           onSave={handleSaveGame}
+        />
+      )}
+
+      {/* Go Live Confirmation Modal */}
+      {goingLiveGame && (
+        <ConfirmGoLiveModal
+          gameTitle={goingLiveGame.title}
+          onClose={() => setGoingLiveGame(null)}
+          onConfirm={(participantLimit) => handleGoLive(goingLiveGame.id, participantLimit)}
         />
       )}
     </div>
