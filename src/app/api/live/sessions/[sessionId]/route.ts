@@ -2,8 +2,8 @@ import { NextRequest, NextResponse } from 'next/server';
 import { supabaseAdmin } from '@/lib/supabase';
 import { createServerClient, type CookieOptions } from '@supabase/ssr';
 import { cookies } from 'next/headers';
-import type { StartSessionResponse, SubmitAnswerRequest, SubmitAnswerResponse, NextQuestionResponse, EndSessionResponse } from '@/types/liveQuiz';
-import { broadcastSessionStarted, broadcastQuestionStarted, broadcastSessionEnded, broadcastAnswerSubmitted } from '@/lib/liveQuizService';
+import type { StartSessionResponse, SubmitAnswerRequest, SubmitAnswerResponse, NextQuestionResponse, EndSessionResponse, LeaderboardEntry } from '@/types/liveQuiz';
+import { broadcastSessionStarted, broadcastQuestionStarted, broadcastSessionEnded, broadcastAnswerSubmitted, broadcastQuestionEnded } from '@/lib/liveQuizService';
 import type { QuizGameConfig } from '@/types/game';
 
 // Helper type for accessing question answer fields
@@ -132,7 +132,6 @@ export async function POST(
 
       // Broadcast session started
       try {
-        console.log('[API] Broadcasting session_started for session:', sessionId);
         await broadcastSessionStarted(sessionId, startedAt);
       } catch (broadcastError) {
         console.error('Error broadcasting session started:', broadcastError);
@@ -141,21 +140,13 @@ export async function POST(
       // Don't broadcast first question immediately - let clients navigate first
       // Instead, broadcast after a delay to ensure clients are subscribed
       try {
-        console.log('[API] Scheduling first question_started broadcast (delayed 5 seconds for client navigation)');
-        
         // Broadcast in background after delay
         setTimeout(async () => {
           try {
             const gameConfig = session.games.config as QuizGameConfig;
             const firstQuestion = gameConfig.questions[0];
             const firstQuestionTimeLimit = firstQuestion.time_limit || gameConfig.settings.time_limit;
-            console.log('[API] Broadcasting first question_started (after delay):', {
-              index: 0,
-              timer: firstQuestionTimeLimit,
-              type: firstQuestion.question_type
-            });
             await broadcastQuestionStarted(sessionId, 0, firstQuestionTimeLimit);
-            console.log('[API] ✅ First question broadcasted');
           } catch (broadcastError) {
             console.error('[API] Error broadcasting first question (delayed):', broadcastError);
           }
@@ -241,13 +232,6 @@ export async function POST(
         );
       }
 
-      console.log('[API] Processing answer submission:', {
-        participant_id,
-        question_index,
-        answer: answer.substring(0, 50), // First 50 chars only
-        time_taken
-      });
-
       // Check if answer is correct
       const correctAnswer = (currentQuestion as QuestionWithAnswer).correct_answer || (currentQuestion as QuestionWithAnswer).correctAnswer;
       
@@ -260,19 +244,7 @@ export async function POST(
       const normalizedAnswer = extractLetter(answer);
       const normalizedCorrect = extractLetter(correctAnswer || '');
 
-      console.log('[API] Answer comparison:', {
-        submitted: answer,
-        normalized_submitted: normalizedAnswer,
-        correct_from_db: correctAnswer,
-        normalized_correct: normalizedCorrect
-      });
-
       const isCorrect = normalizedAnswer.toLowerCase() === normalizedCorrect.toLowerCase();
-
-      console.log('[API] Answer validation result:', {
-        is_correct: isCorrect,
-        participant_id
-      });
 
       // Calculate new streak
       const newStreak = isCorrect ? participant.current_streak + 1 : 0;
@@ -325,12 +297,51 @@ export async function POST(
 
       // Broadcast answer submitted event
       try {
-        console.log('[API] Broadcasting answer_submitted for participant:', participant_id);
         await broadcastAnswerSubmitted(sessionId, participant_id);
-        console.log('[API] ✅ answer_submitted broadcasted');
       } catch (broadcastError) {
         console.error('[API] Error broadcasting answer_submitted:', broadcastError);
         // Continue anyway - answer was saved successfully
+      }
+
+      // Check if all participants have answered
+      try {
+        // Fetch all active participants
+        const { data: allParticipants, error: participantsError } = await supabaseAdmin
+          .from('live_participants')
+          .select('id, nickname, avatar, score, correct_answers, max_streak, answers')
+          .eq('session_id', sessionId)
+          .eq('is_active', true)
+          .order('score', { ascending: false });
+
+        if (participantsError || !allParticipants || allParticipants.length === 0) {
+          // Don't broadcast if we can't fetch participants
+          console.error('Error fetching participants for all-answered check:', participantsError);
+        } else {
+          // Check if ALL participants have answered this specific question
+          const allAnswered = allParticipants.every(p => {
+            const answers = p.answers as Array<{question_index: number}>;
+            return answers.some(a => a.question_index === question_index);
+          });
+
+          if (allAnswered) {
+            // Build leaderboard
+            const leaderboard: LeaderboardEntry[] = allParticipants.map((p, index) => ({
+              participant_id: p.id,
+              nickname: p.nickname,
+              avatar: p.avatar,
+              score: p.score,
+              correct_answers: p.correct_answers,
+              max_streak: p.max_streak,
+              rank: index + 1
+            }));
+
+            // Broadcast question ended
+            await broadcastQuestionEnded(sessionId, question_index, leaderboard);
+          }
+        }
+      } catch (allAnsweredError) {
+        // Don't fail the request if broadcast fails
+        console.error('Error checking/broadcasting all answered:', allAnsweredError);
       }
 
       return NextResponse.json<SubmitAnswerResponse>({

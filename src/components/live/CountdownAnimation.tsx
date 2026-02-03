@@ -1,6 +1,7 @@
 'use client';
 
 import React, { useState, useEffect, useRef } from 'react';
+import { soundService } from '@/lib/soundService';
 
 interface CountdownAnimationProps {
   onComplete: () => void;
@@ -14,12 +15,10 @@ export default function CountdownAnimation({ onComplete }: CountdownAnimationPro
   useEffect(() => {
     // Prevent countdown from running multiple times due to Strict Mode
     if (hasStartedRef.current) {
-      console.log('[COUNTDOWN] Already started, skipping duplicate mount');
       return;
     }
     
     hasStartedRef.current = true;
-    console.log('[COUNTDOWN] Starting countdown animation (first mount only)');
     
     const countdown = [3, 2, 1, 'GO!'];
     let currentIndex = 0;
@@ -27,11 +26,13 @@ export default function CountdownAnimation({ onComplete }: CountdownAnimationPro
     const interval = setInterval(() => {
       if (currentIndex < countdown.length) {
         const value = countdown[currentIndex];
-        console.log('[COUNTDOWN]', value);
+        
+        // Play tick sound for each countdown
+        soundService.playTick();
+        
         setCount(value);
         currentIndex++;
       } else {
-        console.log('[COUNTDOWN] ✅ Complete, calling onComplete');
         setIsVisible(false);
         onComplete();
         clearInterval(interval);
@@ -39,7 +40,6 @@ export default function CountdownAnimation({ onComplete }: CountdownAnimationPro
     }, 1000);
 
     return () => {
-      console.log('[COUNTDOWN] Cleanup');
       clearInterval(interval);
       // Reset ref so countdown can restart if component remounts
       hasStartedRef.current = false;

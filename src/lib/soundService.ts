@@ -14,8 +14,12 @@ class SoundService {
   private isMuted: boolean = false;
   // Custom audio elements for instaku sounds
   private gameStartAudio: HTMLAudioElement | null = null;
-  private backgroundMusicAudio: HTMLAudioElement | null = null;
   private gameEndAudio: HTMLAudioElement | null = null;
+  // Layered audio elements for progressive music build-up
+  private layeredAudioElements: HTMLAudioElement[] = [];
+  private currentLayer: number = 0;
+  private layerInterval: NodeJS.Timeout | null = null;
+  private isLayeredMusicPlaying: boolean = false;
 
   constructor() {
     if (typeof window !== 'undefined') {
@@ -25,18 +29,38 @@ class SoundService {
       
       // Initialize custom audio elements
       this.gameStartAudio = new Audio('/sounds/game-start.wav');
-      this.gameStartAudio.loop = true;
-      this.backgroundMusicAudio = new Audio('/sounds/background-music.wav');
-      this.backgroundMusicAudio.loop = true;
-      this.backgroundMusicAudio.volume = 1.0; // Use full system volume
+      // Removed loop - this is a one-time event sound
       this.gameEndAudio = new Audio('/sounds/game-end.wav');
+      
+      // Initialize layered audio elements for progressive build-up
+      this.layeredAudioElements = [
+        new Audio('/sounds/first_sound.m4a'),   // Bass 1
+        new Audio('/sounds/second_sound.m4a'),  // Bass 2
+        new Audio('/sounds/third_sound.m4a')    // Drums 1
+      ];
+      
+      // Set all to loop and adjust volume for layering
+      this.layeredAudioElements.forEach(audio => {
+        audio.loop = true;
+        audio.volume = 0.5; // Lower volume for better blend
+      });
     }
   }
 
   setMuted(muted: boolean) {
     this.isMuted = muted;
-    if (this.backgroundMusicAudio) {
-      this.backgroundMusicAudio.muted = muted;
+    
+    // Mute/unmute all layered audio tracks
+    this.layeredAudioElements.forEach(audio => {
+      audio.muted = muted;
+    });
+    
+    // Mute/unmute game start and end sounds
+    if (this.gameStartAudio) {
+      this.gameStartAudio.muted = muted;
+    }
+    if (this.gameEndAudio) {
+      this.gameEndAudio.muted = muted;
     }
   }
 
@@ -254,30 +278,98 @@ class SoundService {
   }
 
   /**
-   * Start background music - custom instaku sound
+   * Start layered background music - progressive build-up
    */
   startBackgroundMusic() {
-    if (this.isMuted || !this.backgroundMusicAudio) return;
+    if (this.isMuted || this.isLayeredMusicPlaying) return;
     
-    // Stop any existing music before starting new one
-    if (!this.backgroundMusicAudio.paused) {
-      this.stopBackgroundMusic();
-    }
-
-    this.backgroundMusicAudio.currentTime = 0;
-    this.backgroundMusicAudio.play().catch(err => {
-      console.warn('Failed to play background music:', err);
+    this.isLayeredMusicPlaying = true;
+    this.currentLayer = 0;
+    
+    // Start first layer (Bass 1)
+    this.layeredAudioElements[0].play().catch(e => {
+      console.warn('Audio play failed:', e);
     });
+    
+    // Add new layer every 10 seconds
+    this.layerInterval = setInterval(() => {
+      this.currentLayer++;
+      if (this.currentLayer < this.layeredAudioElements.length) {
+        this.layeredAudioElements[this.currentLayer].play().catch(e => {
+          console.warn('Audio play failed:', e);
+        });
+      } else {
+        // All layers playing, stop adding more
+        if (this.layerInterval) {
+          clearInterval(this.layerInterval);
+          this.layerInterval = null;
+        }
+      }
+    }, 10000); // 10 seconds between layers
   }
 
   /**
-   * Stop background music
+   * Stop layered background music
    */
   stopBackgroundMusic() {
-    if (this.backgroundMusicAudio) {
-      this.backgroundMusicAudio.pause();
-      this.backgroundMusicAudio.currentTime = 0;
+    // Stop all layered audio tracks
+    this.layeredAudioElements.forEach(audio => {
+      audio.pause();
+      audio.currentTime = 0;
+    });
+    
+    // Clear interval
+    if (this.layerInterval) {
+      clearInterval(this.layerInterval);
+      this.layerInterval = null;
     }
+    
+    // Reset state
+    this.currentLayer = 0;
+    this.isLayeredMusicPlaying = false;
+  }
+
+  /**
+   * Play celebration sound for podium - plays twice
+   */
+  playCelebration() {
+    if (this.isMuted || !this.audioContext) return;
+
+    // Play first celebration
+    this.playPodiumCheer();
+    
+    // Play second celebration after 1 second
+    setTimeout(() => {
+      this.playPodiumCheer();
+    }, 1000);
+  }
+
+  /**
+   * Single podium cheer sound - ascending triumphant tones
+   */
+  private playPodiumCheer() {
+    if (this.isMuted || !this.audioContext) return;
+
+    const now = this.audioContext.currentTime;
+    
+    // Triumphant ascending chord progression
+    [523.25, 659.25, 783.99, 1046.50].forEach((freq, i) => {
+      const osc = this.audioContext!.createOscillator();
+      const gain = this.audioContext!.createGain();
+      
+      osc.type = 'sine';
+      osc.frequency.value = freq;
+      
+      gain.gain.setValueAtTime(0, now);
+      gain.gain.linearRampToValueAtTime(0.4, now + 0.05 + i * 0.1);
+      gain.gain.exponentialRampToValueAtTime(0.01, now + 0.8 + i * 0.1);
+      
+      osc.connect(gain);
+      gain.connect(this.audioContext!.destination);
+      
+      osc.start(now + i * 0.1);
+      osc.stop(now + 0.8 + i * 0.1);
+    });
   }
 }
 

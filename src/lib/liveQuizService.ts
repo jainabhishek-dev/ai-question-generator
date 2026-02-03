@@ -6,7 +6,7 @@ import type {
   RealtimeChannel, 
   RealtimeChannelSendResponse 
 } from '@supabase/supabase-js';
-import type { AnswerSubmittedPayload } from '@/types/liveQuiz';
+import type { AnswerSubmittedPayload, QuestionEndedPayload, LeaderboardEntry } from '@/types/liveQuiz';
 import type {
   RealtimeEvent,
   RealtimeEventType,
@@ -99,14 +99,13 @@ export class LiveQuizService {
 
     this.channel.subscribe((status) => {
       if (status === 'SUBSCRIBED') {
-        console.log(`✅ Subscribed to live quiz session: ${this.sessionId}`);
         this.isSubscribed = true;
       } else if (status === 'CHANNEL_ERROR') {
-        console.error(`❌ Channel error for session: ${this.sessionId}`);
+        console.error(`Channel error for session: ${this.sessionId}`);
       } else if (status === 'TIMED_OUT') {
-        console.error(`⏱️ Channel timed out for session: ${this.sessionId}`);
+        console.error(`Channel timed out for session: ${this.sessionId}`);
       } else if (status === 'CLOSED') {
-        console.log(`🔒 Channel closed for session: ${this.sessionId}`);
+        this.isSubscribed = false;
       }
     });
   }
@@ -376,6 +375,40 @@ export async function broadcastSessionEnded(
   });
   
   // Longer delay to ensure message propagates
+  await new Promise(resolve => setTimeout(resolve, 500));
+  
+  await service.leaveSession();
+}
+
+export async function broadcastQuestionEnded(
+  sessionId: string,
+  questionIndex: number,
+  leaderboard: LeaderboardEntry[]
+): Promise<void> {
+  const service = new LiveQuizService();
+  const channel = service.joinSession(sessionId);
+  
+  // Subscribe and wait for confirmation
+  await new Promise<void>((resolve, reject) => {
+    const timeout = setTimeout(() => reject(new Error('Subscription timeout')), 5000);
+    channel.subscribe((status) => {
+      if (status === 'SUBSCRIBED') {
+        clearTimeout(timeout);
+        resolve();
+      } else if (status === 'CHANNEL_ERROR') {
+        clearTimeout(timeout);
+        reject(new Error('Channel error'));
+      }
+    });
+  });
+  
+  // Broadcast the event
+  await service.broadcastEvent('question_ended', {
+    question_index: questionIndex,
+    leaderboard
+  } as QuestionEndedPayload);
+  
+  // Delay for propagation
   await new Promise(resolve => setTimeout(resolve, 500));
   
   await service.leaveSession();

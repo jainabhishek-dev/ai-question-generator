@@ -8,14 +8,23 @@ import type { LiveSession, LiveParticipant } from '@/types/liveQuiz';
 import LoadingSpinner from '@/components/LoadingSpinner';
 import CountdownAnimation from '@/components/live/CountdownAnimation';
 import ConfirmStartQuizModal from '@/components/live/ConfirmStartQuizModal';
+import AudioControl from '@/components/live/AudioControl';
+import { soundService } from '@/lib/soundService';
 import { Users, Copy, Check, AlertCircle } from 'lucide-react';
+
+// Extend LiveSession to include games relation
+type LiveSessionWithGame = LiveSession & {
+  games: {
+    title: string;
+  };
+};
 
 export default function HostLobbyPage() {
   const router = useRouter();
   const params = useParams();
   const sessionId = params?.sessionId as string;
 
-  const [session, setSession] = useState<LiveSession | null>(null);
+  const [session, setSession] = useState<LiveSessionWithGame | null>(null);
   const [participants, setParticipants] = useState<LiveParticipant[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
@@ -37,7 +46,7 @@ export default function HostLobbyPage() {
         // Fetch session
         const { data: sessionData, error: sessionError } = await supabase
           .from('live_sessions')
-          .select('*')
+          .select('*, games(title)')
           .eq('id', sessionId)
           .single();
 
@@ -45,7 +54,7 @@ export default function HostLobbyPage() {
           throw new Error('Session not found');
         }
 
-        setSession(sessionData);
+        setSession(sessionData as LiveSessionWithGame);
 
         // Fetch participants
         const { data: participantsData, error: participantsError } = await supabase
@@ -74,8 +83,10 @@ export default function HostLobbyPage() {
 
     // Set up ALL event listeners BEFORE subscribing
     // Subscribe to broadcast events for real-time participant joins
-    liveService.subscribeToEvents('participant_joined', (event) => {
-      console.log('Participant joined event received:', event);
+    liveService.subscribeToEvents('participant_joined', () => {
+      // Play participant join sound
+      soundService.playClick();
+      
       // Fetch updated participant list
       const fetchParticipants = async () => {
         const { data } = await supabase
@@ -94,7 +105,7 @@ export default function HostLobbyPage() {
 
     // Subscribe to session started event (same as participants)
     liveService.subscribeToEvents('session_started', () => {
-      console.log('Session started - showing countdown');
+      soundService.stopGameStart(); // Stop looping start sound
       countdownTriggeredRef.current = true;
       setShowCountdown(true);
       setStarting(false); // Reset loading immediately when broadcast arrives
@@ -104,6 +115,7 @@ export default function HostLobbyPage() {
     liveService.subscribe();
 
     return () => {
+      soundService.stopGameStart(); // Stop game start sound if still playing
       liveService.leaveSession();
     };
   }, [sessionId, router]);
@@ -126,6 +138,9 @@ export default function HostLobbyPage() {
   const handleStartQuiz = async () => {
     if (!session || starting) return;
 
+    // Play quiz start sound
+    soundService.playGameStart();
+    
     setStarting(true);
 
     try {
@@ -197,7 +212,7 @@ export default function HostLobbyPage() {
         {/* Header */}
         <div className="text-center mb-8">
           <h1 className="text-4xl md:text-5xl font-bold text-white mb-2">
-            Live Quiz Lobby
+            {session.games?.title || 'Live Quiz'}
           </h1>
           <p className="text-xl text-gray-300">
             Waiting for participants to join...
@@ -303,6 +318,9 @@ export default function HostLobbyPage() {
           onCancel={() => setShowConfirmModal(false)}
         />
       )}
+      
+      {/* Audio Control */}
+      <AudioControl />
     </div>
   );
 }

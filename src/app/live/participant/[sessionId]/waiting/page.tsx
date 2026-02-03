@@ -7,6 +7,7 @@ import { getLiveQuizService } from '@/lib/liveQuizService';
 import type { LiveSession } from '@/types/liveQuiz';
 import LoadingSpinner from '@/components/LoadingSpinner';
 import CountdownAnimation from '@/components/live/CountdownAnimation';
+import { soundService } from '@/lib/soundService';
 import { Users, Clock } from 'lucide-react';
 
 export default function ParticipantWaitingPage() {
@@ -64,7 +65,8 @@ export default function ParticipantWaitingPage() {
     // Set up ALL event listeners BEFORE subscribing
     // Subscribe to session started event
     liveService.subscribeToEvents('session_started', () => {
-      console.log('Session started event received');
+      // Play quiz start sound
+      soundService.playGameStart();
       setShowCountdown(true);
     });
 

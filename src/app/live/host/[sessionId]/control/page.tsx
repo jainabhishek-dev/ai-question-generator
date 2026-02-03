@@ -10,6 +10,8 @@ import LoadingSpinner from '@/components/LoadingSpinner';
 import LiveLeaderboard from '@/components/live/LiveLeaderboard';
 import Podium from '@/components/live/Podium';
 import ImageRenderer from '@/components/ImageRenderer';
+import AudioControl from '@/components/live/AudioControl';
+import { soundService } from '@/lib/soundService';
 import { Clock, Users, ChevronRight } from 'lucide-react';
 
 export default function HostControlPage() {
@@ -34,6 +36,15 @@ export default function HostControlPage() {
   useEffect(() => {
     gameConfigRef.current = gameConfig;
   }, [gameConfig]);
+
+  // Start layered background music on mount
+  useEffect(() => {
+    soundService.startBackgroundMusic();
+    
+    return () => {
+      soundService.stopBackgroundMusic();
+    };
+  }, []);
 
   useEffect(() => {
     if (!sessionId) return;
@@ -62,13 +73,7 @@ export default function HostControlPage() {
 
       // Set initial timer - will be overridden by broadcast if it arrives
       const questionTimeLimit = config.questions[sessionData.current_question_index]?.time_limit || config.settings.time_limit;
-      console.log('[HOST] Setting initial timer from database:', questionTimeLimit);
       setTimeRemaining(questionTimeLimit);
-
-      // If session is active and we have participants, timer should be running
-      if (sessionData.status === 'active') {
-        console.log('[HOST] Session is active, timer will start automatically');
-      }
 
       // Fetch participants
       const { data: participantsData } = await supabase
@@ -82,13 +87,6 @@ export default function HostControlPage() {
         setParticipants(participantsData);
       }
 
-      console.log('[HOST] Session loaded:', {
-        session_id: sessionData.id,
-        current_question_index: sessionData.current_question_index,
-        participant_count: participantsData?.length || 0,
-        config_loaded: !!config
-      });
-
       setLoading(false);
     };
 
@@ -100,17 +98,11 @@ export default function HostControlPage() {
     // Set up ALL event listeners BEFORE subscribing
     // Subscribe to broadcast events for participant answers
     liveService.subscribeToEvents('answer_submitted', (event) => {
-      console.log('[HOST] 📝 answer_submitted broadcast received:', event);
       const payload = event.payload as { participant_id: string };
       
       // Track this participant as answered
       setParticipantsAnswered(prev => {
         const updated = new Set(prev).add(payload.participant_id);
-        console.log('[HOST] Participant answered:', {
-          participant_id: payload.participant_id,
-          total_answered: updated.size,
-          total_participants: participants.length
-        });
         return updated;
       });
       
@@ -133,19 +125,13 @@ export default function HostControlPage() {
     // Subscribe to question started event for timer sync
     liveService.subscribeToEvents('question_started', (event) => {
       const payload = event.payload as { question_index: number; timer_duration: number };
-      console.log('[HOST] 🎯 question_started broadcast received:', payload);
       const config = gameConfigRef.current;
       
-      console.log('[HOST] gameConfig available:', !!config);
+      // Play question start sound
+      soundService.playClick();
       
       if (config) {
         const newQuestion = config.questions[payload.question_index];
-        console.log('[HOST] Loading question:', {
-          index: payload.question_index,
-          timer: payload.timer_duration,
-          question_type: newQuestion?.question_type,
-          has_options: !!(newQuestion?.options)
-        });
         
         // Update question index state (primitive, safe)
         setCurrentQuestionIndex(payload.question_index);
@@ -155,16 +141,39 @@ export default function HostControlPage() {
         setTimeRemaining(payload.timer_duration);
         setShowLeaderboard(false);
         setParticipantsAnswered(new Set()); // Reset for new question
-        
-        console.log('[HOST] ✅ Question loaded and timer set to:', payload.timer_duration);
       } else {
-        console.error('[HOST] ❌ gameConfig is null, cannot load question');
+        console.error('[HOST] gameConfig is null, cannot load question');
       }
     });
 
+    // Subscribe to question ended event (all participants answered)
+    liveService.subscribeToEvents('question_ended', async (event) => {
+      const payload = event.payload as { question_index: number; leaderboard: LeaderboardEntry[] };
+      
+      // Fetch latest participant data
+      const { data: updatedParticipants } = await supabase
+        .from('live_participants')
+        .select('*')
+        .eq('session_id', sessionId)
+        .eq('is_active', true)
+        .order('score', { ascending: false });
+
+      if (updatedParticipants) {
+        setParticipants(updatedParticipants);
+      }
+      
+      // Show leaderboard immediately
+      setShowLeaderboard(true);
+    });
+
     // Subscribe to session ended event
-    liveService.subscribeToEvents('session_ended', (event) => {
-      console.log('Session ended event received');
+    liveService.subscribeToEvents('session_ended', () => {
+      // Stop layered background music
+      soundService.stopBackgroundMusic();
+      
+      // Play celebration sound
+      soundService.playCelebration();
+      
       setShowPodium(true);
     });
 
@@ -178,42 +187,33 @@ export default function HostControlPage() {
 
   // Timer countdown
   useEffect(() => {
-    if (timeRemaining <= 0) {
-      console.log('[HOST] [TIMER] Timer stopped: timeRemaining is', timeRemaining);
+    if (timeRemaining <= 0 || showLeaderboard) {
       return;
     }
-    
-    if (showLeaderboard) {
-      console.log('[HOST] [TIMER] Timer stopped: showLeaderboard is', showLeaderboard);
-      return;
-    }
-
-    console.log('[HOST] [TIMER] Starting timer for question', currentQuestionIndex, 'at', timeRemaining, 'seconds');
 
     const timer = setInterval(() => {
       setTimeRemaining(prev => {
         if (prev <= 1) {
-          console.log('[HOST] [TIMER] ⏰ Timer expired, showing leaderboard');
+          // Play leaderboard sound
+          soundService.playPoints(100);
           setShowLeaderboard(true);
           return 0;
-        }
-        if (prev % 5 === 0) {
-          console.log('[HOST] [TIMER] Countdown:', prev - 1);
         }
         return prev - 1;
       });
     }, 1000);
 
     return () => {
-      console.log('[HOST] [TIMER] Cleaning up timer');
       clearInterval(timer);
     };
-  }, [currentQuestionIndex, showLeaderboard, timeRemaining]); // Restart when timer changes
+  }, [currentQuestionIndex, showLeaderboard, timeRemaining]);
 
   const handleNextQuestion = async () => {
     if (!session || !gameConfig) return;
 
-    console.log('[HOST] 🔄 Next question button clicked');
+    // Play button click sound
+    soundService.playClick();
+    
     setShowLeaderboard(false);
 
     try {
@@ -222,22 +222,18 @@ export default function HostControlPage() {
       });
 
       const data = await response.json();
-      console.log('[HOST] Next question API response:', data);
 
       if (!response.ok) {
         throw new Error(data.error || 'Failed to move to next question');
       }
 
       if (data.is_last_question) {
-        console.log('[HOST] 🏁 Last question completed, showing podium');
         setShowPodium(true);
-      } else {
-        console.log('[HOST] ⏳ Waiting for question_started broadcast...');
       }
       // DON'T update local state here - let the broadcast handler do it
       // The question_started broadcast will trigger the timer restart
     } catch (err) {
-      console.error('[HOST] ❌ Error moving to next question:', err);
+      console.error('[HOST] Error moving to next question:', err);
       alert(err instanceof Error ? err.message : 'Failed to move to next question');
     }
   };
@@ -383,6 +379,9 @@ export default function HostControlPage() {
           )}
         </div>
       </div>
+      
+      {/* Audio Control */}
+      <AudioControl />
     </div>
   );
 }

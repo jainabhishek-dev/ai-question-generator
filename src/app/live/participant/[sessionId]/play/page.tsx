@@ -10,6 +10,8 @@ import LoadingSpinner from '@/components/LoadingSpinner';
 import LiveLeaderboard from '@/components/live/LiveLeaderboard';
 import Podium from '@/components/live/Podium';
 import ImageRenderer from '@/components/ImageRenderer';
+import AudioControl from '@/components/live/AudioControl';
+import { soundService } from '@/lib/soundService';
 import { Clock, TrophyIcon, Loader2 } from 'lucide-react';
 
 export default function ParticipantQuizPage() {
@@ -40,6 +42,15 @@ export default function ParticipantQuizPage() {
   useEffect(() => {
     gameConfigRef.current = gameConfig;
   }, [gameConfig]);
+
+  // Start layered background music on mount
+  useEffect(() => {
+    soundService.startBackgroundMusic();
+    
+    return () => {
+      soundService.stopBackgroundMusic();
+    };
+  }, []);
 
   useEffect(() => {
     if (!sessionId) return;
@@ -77,13 +88,7 @@ export default function ParticipantQuizPage() {
 
       // Start timer for current question
       const questionTimeLimit = config.questions[sessionData.current_question_index]?.time_limit || config.settings.time_limit;
-      console.log('[PARTICIPANT] Setting initial timer from database:', questionTimeLimit);
       setTimeRemaining(questionTimeLimit);
-
-      // If session is active, timer should be running
-      if (sessionData.status === 'active') {
-        console.log('[PARTICIPANT] Session is active, timer will start automatically');
-      }
 
       // Fetch participant
       const { data: participantData } = await supabase
@@ -108,13 +113,6 @@ export default function ParticipantQuizPage() {
         setParticipants(participantsData);
       }
 
-      console.log('[PARTICIPANT] Session loaded:', {
-        session_id: sessionData.id,
-        participant_id: storedParticipantId,
-        current_question_index: sessionData.current_question_index,
-        config_loaded: !!config
-      });
-
       setLoading(false);
     };
 
@@ -127,18 +125,13 @@ export default function ParticipantQuizPage() {
     // Subscribe to question started events
     liveService.subscribeToEvents('question_started', (event) => {
       const payload = event.payload as { question_index: number; timer_duration: number };
-      console.log('[PARTICIPANT] 🎯 question_started broadcast received:', payload);
       const config = gameConfigRef.current;
       
-      console.log('[PARTICIPANT] gameConfig available:', !!config);
+      // Play question start sound
+      soundService.playClick();
       
       if (config) {
         const newQuestion = config.questions[payload.question_index];
-        console.log('[PARTICIPANT] Loading question:', {
-          index: payload.question_index,
-          timer: payload.timer_duration,
-          question_type: newQuestion?.question_type
-        });
         
         // Update question index state (primitive, safe)
         setCurrentQuestionIndex(payload.question_index);
@@ -150,16 +143,18 @@ export default function ParticipantQuizPage() {
         setSubmitting(false); // Reset submitting state for new question
         setShowLeaderboard(false);
         setWaitingForNext(false);
-        
-        console.log('[PARTICIPANT] ✅ Question loaded and timer set to:', payload.timer_duration);
       } else {
-        console.error('[PARTICIPANT] ❌ gameConfig is null, cannot load question');
+        console.error('[PARTICIPANT] gameConfig is null, cannot load question');
       }
     });
 
     // Subscribe to session ended events
     liveService.subscribeToEvents('session_ended', async () => {
-      console.log('[PARTICIPANT] Session ended, fetching final standings');
+      // Stop layered background music
+      soundService.stopBackgroundMusic();
+      
+      // Play celebration sound instead of game complete
+      soundService.playCelebration();
       
       // Fetch the latest participant data for accurate podium
       const { data: finalParticipants } = await supabase
@@ -171,10 +166,33 @@ export default function ParticipantQuizPage() {
       
       if (finalParticipants) {
         setParticipants(finalParticipants);
-        console.log('[PARTICIPANT] Final standings fetched:', finalParticipants.map(p => ({ name: p.nickname, score: p.score })));
       }
       
       setShowPodium(true);
+    });
+
+    // Subscribe to question ended event (all participants answered)
+    liveService.subscribeToEvents('question_ended', async (event) => {
+      const payload = event.payload as { question_index: number; leaderboard: LeaderboardEntry[] };
+      
+      // Play leaderboard sound
+      soundService.playPoints(100);
+      
+      // Fetch latest participant data for accurate display
+      const { data: updatedParticipants } = await supabase
+        .from('live_participants')
+        .select('*')
+        .eq('session_id', sessionId)
+        .eq('is_active', true)
+        .order('score', { ascending: false });
+
+      if (updatedParticipants) {
+        setParticipants(updatedParticipants);
+      }
+      
+      // Show leaderboard immediately
+      setShowLeaderboard(true);
+      setWaitingForNext(true);
     });
 
     // NOW subscribe the channel (only once)
@@ -187,49 +205,35 @@ export default function ParticipantQuizPage() {
 
   // Timer countdown
   useEffect(() => {
-    if (timeRemaining <= 0) {
-      console.log('[PARTICIPANT] [TIMER] Timer stopped: timeRemaining is', timeRemaining);
+    if (timeRemaining <= 0 || showLeaderboard) {
       return;
     }
-    
-    if (hasAnswered) {
-      console.log('[PARTICIPANT] [TIMER] Timer stopped: hasAnswered is', hasAnswered);
-      return;
-    }
-
-    console.log('[PARTICIPANT] [TIMER] Starting timer for question', currentQuestionIndex, 'at', timeRemaining, 'seconds');
 
     const timer = setInterval(() => {
       setTimeRemaining(prev => {
-        if (prev <= 1) {
-          if (!hasAnswered) {
-            console.log('[PARTICIPANT] [TIMER] ⏰ Timer expired, showing leaderboard');
-            setShowLeaderboard(true);
-            setWaitingForNext(true);
-          }
-          return 0;
+        // Timer warning at 5 seconds
+        if (prev === 5) {
+          soundService.playTick();
         }
-        if (prev % 5 === 0) {
-          console.log('[PARTICIPANT] [TIMER] Countdown:', prev - 1);
+        
+        if (prev <= 1) {
+          // Play leaderboard sound
+          soundService.playPoints(100);
+          setShowLeaderboard(true);
+          setWaitingForNext(true);
+          return 0;
         }
         return prev - 1;
       });
     }, 1000);
 
     return () => {
-      console.log('[PARTICIPANT] [TIMER] Cleaning up timer');
       clearInterval(timer);
     };
-  }, [currentQuestionIndex, hasAnswered, timeRemaining]); // Restart when timer changes
+  }, [currentQuestionIndex, showLeaderboard, timeRemaining]);
 
   const handleAnswerSelect = async (answer: string) => {
     if (hasAnswered || submitting || !participant || !currentQuestion || !session) return;
-
-    console.log('[PARTICIPANT] 📝 Answer selected:', {
-      answer,
-      question_index: currentQuestionIndex,
-      time_remaining: timeRemaining
-    });
 
     setSelectedAnswer(answer);
     setSubmitting(true);
@@ -237,13 +241,6 @@ export default function ParticipantQuizPage() {
     try {
       const questionTimeLimit = currentQuestion.time_limit || gameConfig!.settings.time_limit;
       const timeTaken = questionTimeLimit - timeRemaining;
-
-      console.log('[PARTICIPANT] Submitting answer:', {
-        participant_id: participant.id,
-        question_index: currentQuestionIndex,
-        time_taken: timeTaken,
-        question_time_limit: questionTimeLimit
-      });
 
       const response = await fetch(`/api/live/sessions/${sessionId}?action=answer`, {
         method: 'POST',
@@ -257,22 +254,21 @@ export default function ParticipantQuizPage() {
       });
 
       const data = await response.json();
-      console.log('[PARTICIPANT] Answer submission response:', {
-        success: data.success,
-        is_correct: data.is_correct,
-        points_earned: data.points_earned,
-        correct_answer: data.correct_answer
-      });
 
       if (!response.ok) {
         throw new Error(data.error || 'Failed to submit answer');
       }
 
+      // Play correct/incorrect sound
+      if (data.is_correct) {
+        soundService.playCorrect();
+      } else {
+        soundService.playIncorrect();
+      }
+
       setHasAnswered(true);
       setLastPointsEarned(data.points_earned || 0);
       setParticipant(data.participant);
-      
-      console.log('[PARTICIPANT] ✅ Answer processed successfully');
       
       // Fetch updated participants for leaderboard
       const { data: updatedParticipants } = await supabase
@@ -515,6 +511,9 @@ export default function ParticipantQuizPage() {
           )}
         </div>
       </div>
+      
+      {/* Audio Control */}
+      <AudioControl />
     </div>
   );
 }

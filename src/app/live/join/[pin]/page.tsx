@@ -5,6 +5,7 @@ import { useRouter, useParams } from 'next/navigation';
 import { Shuffle, User, AlertCircle } from 'lucide-react';
 import { getRandomAvatar, AVATAR_EMOJIS } from '@/types/liveQuiz';
 import SimpleSpinner from '@/components/SimpleSpinner';
+import { soundService } from '@/lib/soundService';
 
 export default function NicknameAvatarPage() {
   const router = useRouter();
@@ -51,6 +52,9 @@ export default function NicknameAvatarPage() {
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
+
+    // Play button click sound
+    soundService.playClick();
 
     const trimmedNickname = nickname.trim();
 
