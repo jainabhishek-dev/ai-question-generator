@@ -40,31 +40,36 @@ const questionTypeInstructions: Record<string, string[]> = {
   mcq: [
     "multiple-choice questions:",
     "- Provide exactly 4 options labeled A, B, C, D",
-    "- correctAnswer field must contain ONLY the letter (e.g., 'A')",
+    "- options must be an array like: ['A) Option text', 'B) Option text', 'C) Option text', 'D) Option text']",
+    "- correctAnswer field must be the option label only ('A', 'B', 'C', or 'D'), not the answer text",
     "- Make all distractors plausible but clearly incorrect",
-    "- Avoid 'All of the above' or 'None of the above' unless educationally valuable"
+    "- Avoid 'All of the above' or 'None of the above' unless educationally valuable",
+    "- Use command words like 'Which of the following...', 'What is the primary...', 'When does...'",
+    "- Options must be numerical values OR single words OR dates/years only. Each option should be limited to one or two words only."
   ],
   trueFalse: [
     "true-false questions:",
     "- correctAnswer must be exactly 'True' or 'False'",
-    "- Avoid statements that are partially true or depend on interpretation"
+    "- Use clear, factual statements that are definitively true or false",
+    "- All T/F have exactly 2 options [\'True\', \'False\'] and correctAnswer matches'"
   ],
   fillBlank: [
     "fill-in-the-blank questions:",
     "- Use clear blank: 'The capital of France is _______.'",
-    "-Use only 1 blank per question",
-    "- correctAnswer should be the exact word expected",
-    "- For multiple acceptable answers, provide the most common/standard answer"
+    "- Use only 1 blank per question",
+    "- correctAnswer should be the exact word expected"
   ],
   shortAnswer: [
     "short-answer questions:",
     "- Expect 1-3 sentence responses",
-    "- correctAnswer should be a model answer (2-3 sentences max)"
+    "- correctAnswer should be a model answer (2-3 sentences max)",
+    "- Use direct, specific question stems: 'Explain how...', 'Describe why...', 'What are the main...'"
   ],
   longAnswer: [
     "long-answer questions:",
     "- Expect paragraph-length responses",
-    "- correctAnswer should outline key points expected (bullet format acceptable)"
+    "- correctAnswer should outline key points expected (bullet format acceptable)",
+    "- Use direct, specific question stems: 'Explain how...', 'Describe why...', 'What are the main...'"    
   ]
 }
 
@@ -73,26 +78,61 @@ export const getImageInstructions = (enableImages: boolean): string => {
   if (!enableImages) return ""
   
   return `
-IMAGE GENERATION INSTRUCTIONS:
-When an image would significantly improve educational understanding, include image placeholders using this simple format:
-[IMG: detailed_description]
+IMAGE PLACEHOLDER FORMAT:
+When an image would significantly improve educational understanding, include placeholders using:
+[IMG: your_detailed_description]
 
-Place the placeholder exactly where the image should appear (in question text, explanation, or option).
+The text inside [IMG: ...] becomes the prompt for image generation. Write it as a standalone, descriptive paragraph—not just keywords. The system will add educational style modifiers automatically. Place the placeholder exactly where the image should appear (question, explanation, or option).
 
-Examples:
-- In question: "Count the apples in this picture: [IMG: Simple diagram showing exactly 4 red apples arranged in a row for counting exercise]"
-- In explanation: "The lungs work like pumps. [IMG: Simple educational illustration of a child taking a deep breath, with dotted arrows showing air entering and exiting the lungs]"
-- In option: "A) [IMG: Timeline showing major events from 1776-1800 with clear dates and labels]"
+CORE PRINCIPLES (for best image quality):
+- Describe the scene as a narrative, don't just list keywords. Use descriptive sentences.
+- Be hyper-specific: "exactly 5 red apples in a row" not "some apples"; "labeled axes from 0 to 10 with tick marks at each integer" not "a number line".
+- Include composition/style: "textbook diagram", "educational illustration", "simple line drawing", "clean black lines on white background".
+- Specify spatial relationships and layout: where elements are positioned, how they connect, what is labeled.
+- Leverage text rendering: Gemini 3 Pro Image can accurately render text in images.
 
-IMPORTANT IMAGE GUIDELINES:
-- Only add images when they significantly enhance comprehension
-- Use exact numbers and clear descriptions: "exactly 4 items" not "several items"  
-- Focus on educational accuracy and clarity
-- Keep image descriptions under 50 words each
-- Specify educational illustration style: "simple educational diagram", "textbook illustration"
-- Consider all subjects: math diagrams, science processes, historical timelines, geographic maps, literary illustrations
-- Images are optional - only include when truly beneficial
-- Place placeholder exactly where image should appear in the text
+SUBJECT-SPECIFIC GUIDELINES:
+
+Mathematics (number lines, charts, geometric figures, equations):
+- Describe layout: "horizontal number line from 0 to 10", "coordinate plane with x-axis from -5 to 5 and y-axis from 0 to 10".
+- Specify tick marks, grid lines, labels: "tick marks at each integer", "grid with 1-unit spacing", "labeled origin point".
+- Use exact values: "exactly 4 equal parts shaded", "triangle with angles 60°, 60°, and 60°".
+- Text rendering: "equation y = 2x + 3 displayed clearly", "labeled vertices A, B, C".
+- Style: "minimal textbook diagram", "clean geometric figure", "black lines on white background", "mathematical chart with clear axes".
+- Example: [IMG: Horizontal number line from 0 to 10 with tick marks at each integer and bold labels at 0, 5, and 10. Clean black lines on white background, minimal textbook diagram style for teaching place value.]
+
+Science (cells, molecules, processes, cycles, labeled diagrams):
+- Specify all text/labels to appear: "labels showing nucleus, mitochondria, cell membrane", "chemical formula H₂O", "arrows indicating flow direction".
+- Describe structure and connections: "cross-section showing three layers", "arrows connecting four stages in a cycle", "bonds between carbon and hydrogen atoms".
+- Layout: "centered cell with organelles labeled around the perimeter", "left-to-right process flow".
+- Text rendering: "clearly labeled parts with sans-serif text", "chemical equation with proper subscripts", "step labels: Step 1, Step 2, Step 3".
+- Style: "educational biology textbook illustration", "scientific diagram with clear labels", "chemistry textbook style with accurate molecular structure".
+- Example: [IMG: Labeled cross-section diagram of a plant cell showing cell wall (outer layer), large central vacuole, nucleus (center), chloroplasts (green ovals), and cell membrane. Labels in clear sans-serif font with arrows pointing to each organelle. White background, textbook illustration style for Grade 7 biology.]
+
+Other subjects (history, geography, social studies):
+- Timelines: "horizontal timeline from 1776 to 1865 with 5 major events labeled", "arrows showing sequence".
+- Maps: "simple map of India showing 5 neighboring countries with clear labels", "compass rose in corner".
+- Comparisons: "side-by-side comparison showing differences between X and Y with bullet points".
+- Use the same principles: narrative, specific, include style and text rendering details.
+
+EXAMPLES BY PLACEMENT:
+
+Question context:
+"Count the objects in this picture: [IMG: Simple illustration showing exactly 6 blue circles arranged in two rows of 3, high contrast, clean design for counting exercise, educational style suitable for Grade 2.]"
+
+Explanation context:
+"The water cycle repeats continuously. [IMG: Circular diagram showing the water cycle with 4 labeled stages: Evaporation (water rising from ocean), Condensation (clouds forming), Precipitation (rain falling), and Collection (water returning to ocean). Arrows connect each stage clockwise. Educational textbook style with clear labels and soft blue color palette.]"
+
+Option context:
+"Which graph shows exponential growth? A) [IMG: Line graph with labeled x-axis (Time: 0-10) and y-axis (Value: 0-100), showing exponential curve rising steeply, clean mathematical chart style with grid lines.]"
+
+IMPORTANT GUIDELINES:
+- Word limit: 100-150 words per image description
+- Use exact numbers and measurements, avoid vague terms like "several", "some", "a few"
+- Leverage text rendering: specify equations, labels, formulas as they should appear
+- Describe layout and spatial relationships clearly
+- Include style descriptors in every prompt
+- Images are optional - only include when they significantly enhance comprehension
 `
 }
 
@@ -113,12 +153,15 @@ export const createAdvancedPrompt = (inputs: Inputs) => {
     additionalNotes && `Teacher Notes: ${additionalNotes}`
   ].filter(Boolean).join("\n")
 
+  const distributionParts: string[] = []
+  if (numMCQ > 0) distributionParts.push(`- ${numMCQ} multiple-choice questions`)
+  if (numFillBlank > 0) distributionParts.push(`- ${numFillBlank} fill-in-the-blank questions`)
+  if (numShortAnswer > 0) distributionParts.push(`- ${numShortAnswer} short-answer questions`)
+  if (numLongAnswer > 0) distributionParts.push(`- ${numLongAnswer} long-answer questions`)
+  if (numTrueFalse > 0) distributionParts.push(`- ${numTrueFalse} true-false questions`)
+  
   const distributionInfo = `Generate exactly:
-- ${numMCQ} multiple-choice questions
-- ${numFillBlank} fill-in-the-blank questions
-- ${numShortAnswer} short-answer questions
-- ${numLongAnswer} long-answer questions
-- ${numTrueFalse} true-false questions
+${distributionParts.join('\n')}
   Total questions must equal ${totalQuestions}.`
 
   // Only include the specific grade context for the selected grade
@@ -148,63 +191,57 @@ export const createAdvancedPrompt = (inputs: Inputs) => {
 
   // Only add question type section if there are specific instructions
   const questionTypeSection = qTypeSections.length > 0 
-    ? ["Question Type Specific Instructions:", ...qTypeSections].join("\n")
+    ? ["Question Type Requirements:", ...qTypeSections].join("\n")
     : ""
 
   const formattingRequirements = [
-  // Output Structure & Format
+  "Output Structure & Format:",
   "Return ONLY valid JSON. No additional text before or after the JSON array.",
   "Return the result as a JSON array of question objects, even if there is only one question.",
   "Each question object must contain exactly these keys: type, question, options, correctAnswer, explanation.",
-  
-  // MCQ-specific formatting (only if MCQ requested)
-  ...(numMCQ > 0 ? [
-    "For multiple-choice questions:",
-    "- options must be an array like: ['A) Option text', 'B) Option text', 'C) Option text', 'D) Option text']",
-    "- correctAnswer field must be the option label only ('A', 'B', 'C', or 'D'), not the answer text"
-  ] : []),
-
-  // Content Quality Standards
-  "Question Quality Requirements:",
-  "- Each question must be clear, unambiguous, and age-appropriate for the specified grade level",
-  "- Avoid trick questions, double negatives, or confusing wording", 
-  "- Ensure questions test understanding, not memorization (unless specifically requested)",
-  "- AVOID vague question starters like 'Imagine...', 'Picture this...', 'Think about...', 'Consider...'",
-  
-  // Question stems (conditional based on question types requested)
-  ...(numMCQ > 0 ? [
-    "- For MCQ: Use stems like 'Which of the following...', 'What is the primary...', 'How does...', 'Why is...', 'When does...'"
-  ] : []),
-  ...(numTrueFalse > 0 ? [
-    "- For True/False: Use clear, factual statements that are definitively true or false"
-  ] : []),
-  ...(numFillBlank > 0 ? [
-    "- For Fill-in-blank: Use direct statements with clear blanks: 'The _______ is...'"
-  ] : []),
-  ...(numShortAnswer > 0 || numLongAnswer > 0 ? [
-    "- For Answer questions: Use direct, specific question stems: 'Explain how...', 'Describe why...', 'What are the main...'"
-  ] : []),
-  
-  "- Questions should be concrete and factual rather than hypothetical scenarios",
 
   // Mathematical & Currency Formatting - CRITICAL RULES
-  "Mathematical Expressions & Currency Symbols:",
+  "Mathematical Expressions & Currency Formatting:",
   "- For mathematical expressions: Use single dollar signs ONLY for math: $x^2 + y^2 = z^2$, $18 + x = 45$, $\\frac{a}{b} = c$",
   "- For LaTeX fractions: Use proper escaping: $\\frac{3}{4}$, not $\frac{3}{4}$ or $3/4$ in text",
   "- For decimal numbers in math context: Use plain decimals WITHOUT any symbols: 0.75, 2.4, 3.14159",
   "- For variable references in text: Use math delimiters: the variable $x$ represents...",
-  "- Never use \\text{} command for currency inside math expressions. Keep currency symbols outside of $...$ delimiters.",
   "",
-  "CURRENCY SYMBOL RULE (CRITICAL - READ CAREFULLY):",
-  "✅ For ALL currency amounts: Use ₹ (rupee symbol) - NEVER use $ for currency",
-
-  "Using $ for currency creates parsing conflicts. Always use ₹ for money.",
+  "Currency Formatting (CRITICAL):",
+  "- For ALL currency amounts: Use ₹ (rupee symbol) - NEVER use $ for currency",
+  "- Keep currency symbols OUTSIDE of math delimiters: The item costs ₹50 (not $₹50$ or $\\text{₹}50$)",
+  "- Never use \\text{} command for currency inside math expressions",
+  "- Other currency symbols when appropriate: €, £, ¥",
   "",
-  "- Use Unicode symbols when appropriate: ₹, €, £, ¥, %, °C, π, ∞",
+  "- Use Unicode symbols when appropriate: %, °C, π, ∞",
   "- Format large numbers with commas: 1,000,000 not 1000000",
+  
+  // Explanation Requirements  
+  "Explanation Standards:",
+  "- Keep explanations concise but complete (2-4 sentences ideal)",
+  "- When subject is Mathematics, show step-by step solution like a student is expected to solve in exam.",
+  ...(numMCQ > 0 ? ["- For MCQ: briefly explain why incorrect options are wrong when helpful"] : []),
+  "- Use grade-appropriate vocabulary in explanations",
 
-  // Markdown Formatting Guide
-  "MARKDOWN FORMATTING GUIDE:",
+  // Content Accuracy & Consistency
+  "Accuracy Requirements:",
+  "- All factual information must be current and accurate",
+  "- Cross-reference dates, names, formulas, and statistics",
+  "- Ensure consistency in terminology throughout all questions",
+  "- Questions should be concrete and factual rather than hypothetical scenarios",
+
+  // Validation Rules
+  "Final Validation Rules:",
+  "- All questions must be unique and plagiarism-free.",
+  "- Each question must align with the specified Bloom's taxonomy level",
+  "- Verify that difficulty matches the grade level appropriately", 
+  "- Ensure no duplicate questions or similar questions. All questions should be different and unique",
+  "- Check that the total question count matches the requested distribution exactly"
+].join("\n")
+
+  // Markdown Formatting Reference (separate section)
+  const markdownReference = [
+  "FORMATTING REFERENCE - Markdown Guide:",
   "Tables:",
   "  | Header 1 | Header 2 | Header 3 |",
   "  |----------|----------|----------|",
@@ -222,35 +259,8 @@ export const createAdvancedPrompt = (inputs: Inputs) => {
   "  - Use triple backticks (```) for code blocks",
   "  - Specify language: ```python or ```javascript",
   "Horizontal rules:",
-  "  - Use '---' or '***' on separate line for dividers",
-  "",
-  
-  // Explanation Requirements  
-  "Explanation Standards:",
-  "- Keep explanations concise but complete (2-4 sentences ideal)",
-  "- When subject is Mathematics, show step-by step solution like a student is expected to solve in exam.",
-  ...(numMCQ > 0 ? ["- For MCQ: briefly explain why incorrect options are wrong when helpful"] : []),
-  "- Use grade-appropriate vocabulary in explanations",
-
-  // Content Accuracy & Consistency
-  "Accuracy Requirements:",
-  "- All factual information must be current and accurate",
-  "- Cross-reference dates, names, formulas, and statistics",
-  "- Ensure consistency in terminology throughout all questions",
-
-  // Validation Rules
-  "Quality Checks:",
-  "- Each question must align with the specified Bloom's taxonomy level",
-  "- Verify that difficulty matches the grade level appropriately", 
-  "- Ensure no duplicate questions or similar questions. All questions should be different and unique",
-  "- Check that the total question count matches the requested distribution exactly"
+  "  - Use '---' or '***' on separate line for dividers"
 ].join("\n")
-  
-  const validationInstructions = `
-  VALIDATION CHECKLIST - Verify before responding:
-  ${numMCQ > 0 ? '□ All MCQ have exactly 4 options (A, B, C, D) and correctAnswer is a single letter' : ''}
-  ${numTrueFalse > 0 ? '□ All T/F have exactly 2 options [\'True\', \'False\'] and correctAnswer matches' : ''}
-  `.split('\n').filter(line => line.trim() !== '').join('\n')
 
   return [
     "You are an expert assessment designer with deep knowledge of pedagogy and learning sciences.",
@@ -269,9 +279,10 @@ export const createAdvancedPrompt = (inputs: Inputs) => {
     
     formattingRequirements,
     
+    markdownReference, // Markdown formatting reference moved here as separate section
+    
     questionTypeSection, // Only included if there are specific question type instructions
     
-    validationInstructions
   ].filter(Boolean).join("\n\n")
 }
 
@@ -298,7 +309,6 @@ export const generateQuestions = async (inputs: Inputs, pdfFileUri?: string) => 
   // Otherwise, generate without PDF
   const res = await model.generateContent(prompt)
   const rawOutput = res.response?.text() ?? ""
-  console.log('🤖 RAW AI OUTPUT (generateQuestions):', rawOutput)
   return rawOutput
 }
 
@@ -319,14 +329,12 @@ export const generateNCERTQuestions = async (inputs: Inputs, pdfFileUri?: string
     ]
     const res = await model.generateContent(parts)
     const rawOutput = res.response?.text() ?? ""
-    console.log('🤖 RAW AI OUTPUT (generateNCERTQuestions with PDF):', rawOutput)
     return rawOutput
   }
   
   // Otherwise, generate without PDF
   const res = await model.generateContent(prompt)
   const rawOutput = res.response?.text() ?? ""
-  console.log('🤖 RAW AI OUTPUT (generateNCERTQuestions):', rawOutput)
   return rawOutput
 }
 
@@ -348,9 +356,6 @@ export const extractLearningObjectives = async (
   
   const prompt = createObjectiveExtractionPrompt(subject, grade)
   
-  console.log("🔍 Processing PDF directly with Gemini for objective extraction")
-  console.log("📄 PDF file size:", pdfFile.size, "bytes")
-  
   const res = await model.generateContent([
     prompt,
     {
@@ -362,8 +367,6 @@ export const extractLearningObjectives = async (
   ])
   
   const result = res.response?.text() ?? ""
-  console.log("🤖 AI Objectives Response:", result)
-  console.log("📊 Objectives Response length:", result.length)
   return result
 }
 
@@ -384,7 +387,6 @@ export const generateLessonPlan = async (
 ): Promise<string> => {
   const model = genAI.getGenerativeModel({ model: "gemini-2.5-flash" })
   const prompt = createLessonPlanPrompt(formData, selectedObjective, learnerLevel, duration)
-  console.log("🏗️ Generating lesson plan with direct PDF processing")
   
   let res;
   
@@ -392,8 +394,6 @@ export const generateLessonPlan = async (
   if (formData.pdfFile) {
     const arrayBuffer = await formData.pdfFile.arrayBuffer()
     const base64Data = Buffer.from(arrayBuffer).toString('base64')
-    
-    console.log("📄 Including PDF file in lesson plan generation:", formData.pdfFile.name)
     
     res = await model.generateContent([
       prompt,
@@ -410,8 +410,6 @@ export const generateLessonPlan = async (
   }
   
   const result = res.response?.text() ?? ""
-  console.log("🤖 AI Raw Response:", result)
-  console.log("📊 Response length:", result.length)
   return result
 }
 
@@ -577,15 +575,9 @@ CRITICAL JSON RULES:
 - settings must be an object with time_limit, lives, hints_enabled, show_explanations
 
 Generate the quiz game now:`
-
-  console.log("🎮 Generating quiz game configuration:", { 
-    topic, subject, grade, difficulty, numberOfQuestions,
-    distribution: dist
-  })
   
   const res = await model.generateContent(prompt)
   const result = res.response?.text() ?? ""
   
-  console.log("🤖 Quiz Game AI Response length:", result.length)
   return result
 }

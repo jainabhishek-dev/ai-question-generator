@@ -343,7 +343,13 @@ export default function ComprehensiveImageModal({
             promptToUse,
             questionId,
             promptId, // Use real prompt ID
-            user.accessToken
+            user.accessToken,
+            {
+              numberOfImages: 1,
+              aspectRatio: '1:1',
+              imageSize: '2K',  // 2K resolution for better quality with text rendering
+              personGeneration: 'dont_allow'
+            }
           )
           
           if (result.success && result.imageUrl) {
@@ -416,8 +422,6 @@ export default function ComprehensiveImageModal({
       
       // If any images were generated successfully, refresh the gallery
       if (successCount > 0) {
-        console.log(`✅ Generated ${successCount} images, refreshing gallery...`)
-        
         // Refresh gallery by fetching updated images
         await refreshGalleryImages()
         
@@ -469,7 +473,6 @@ export default function ComprehensiveImageModal({
     if (!questionId || !useNewSchema || !user?.accessToken) return
     
     try {
-      console.log('🔄 Refreshing gallery images...')
       const response = await fetch(`/api/questions/${questionId}/images`, {
         headers: {
           'Authorization': `Bearer ${user.accessToken}`,
@@ -481,7 +484,6 @@ export default function ComprehensiveImageModal({
         const result = await response.json()
         if (result.success && result.data) {
           setNewSchemaImages(result.data)
-          console.log('✅ Gallery refreshed with', result.data.length, 'images')
         }
       } else {
         console.error('Failed to refresh gallery:', response.status)
@@ -534,7 +536,6 @@ export default function ComprehensiveImageModal({
                 ...prev,
                 [placeholder]: true
               }))
-              console.log('✅ Prompt saved with ID:', result.data.id)
             }
           } else {
             console.error('❌ Failed to save prompt:', response.status)

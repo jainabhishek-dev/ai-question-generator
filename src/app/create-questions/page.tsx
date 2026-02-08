@@ -237,7 +237,6 @@ export default function CreateQuestionsPage() {
 
   const loadQuestionImages = async (questionId: number, index: number) => {
     if (!user?.accessToken) {
-      console.log('⏭️ Skipping image loading - user not authenticated')
       return
     }
 
@@ -252,21 +251,29 @@ export default function CreateQuestionsPage() {
       
       if (response.ok) {
         const result = await response.json()
+        
         if (result.success && result.data) {
-          setQuestionImages(prev => ({
-            ...prev,
-            [index]: result.data
-          }))
+          setQuestionImages(prev => {
+            const updated = {
+              ...prev,
+              [index]: result.data
+            }
+            return updated
+          })
+        } else {
+          console.warn(`⚠️ API returned success but no data for question ${questionId}`)
         }
+      } else {
+        console.error(`❌ Failed to load images - status ${response.status}`)
       }
     } catch (error) {
-      console.error('Failed to load question images:', error)
+      console.error('❌ loadQuestionImages error:', error)
     }
   }
 
   const handleImagesGenerated = (images: GeneratedImage[]) => {
-    if (selectedQuestionForImages) {
-      const questionIndex = questions.findIndex(q => q === selectedQuestionForImages)
+    if (selectedQuestionForImages?.id) {
+      const questionIndex = questions.findIndex(q => q.id === selectedQuestionForImages.id)
       if (questionIndex !== -1) {
         setQuestionImages(prev => ({
           ...prev,
@@ -274,7 +281,18 @@ export default function CreateQuestionsPage() {
         }))
       }
     }
-    console.log('✅ Images generated and saved to state')
+  }
+
+  const handleManagementImagesGenerated = (images: GeneratedImage[]) => {
+    if (selectedQuestionForManagement?.id) {
+      const questionIndex = questions.findIndex(q => q.id === selectedQuestionForManagement.id)
+      if (questionIndex !== -1) {
+        setQuestionImages(prev => ({
+          ...prev,
+          [questionIndex]: images
+        }))
+      }
+    }
   }
 
   const handleImageModalClose = () => {
@@ -297,9 +315,7 @@ export default function CreateQuestionsPage() {
           ...question,
           imagePrompts: extractedPrompts
         };
-        console.log('🔍 Extracted image prompts for management:', extractedPrompts);
       } else {
-        console.log('⚠️ No image prompts found in question for management');
         setSelectedQuestionForManagement(question)
         setShowImageManagementModal(true)
         return;
@@ -307,8 +323,6 @@ export default function CreateQuestionsPage() {
     }
 
     if (questionWithPrompts.imagePrompts && questionWithPrompts.imagePrompts.length > 0) {
-      console.log('🔄 Saving image prompts to database before opening modal...')
-      
       try {
         const promptsWithIds = []
         
@@ -365,8 +379,6 @@ export default function CreateQuestionsPage() {
   }
 
   const handleImageManagementSelect = async (imageId: string, placeholder: string, isSelected: boolean) => {
-    console.log('🖼️ Image management selection:', { imageId, placeholder, isSelected })
-    
     if (selectedQuestionForManagement?.id) {
       const questionIndex = questions.findIndex(q => q.id === selectedQuestionForManagement.id)
       if (questionIndex !== -1) {
@@ -378,9 +390,17 @@ export default function CreateQuestionsPage() {
   const handleRefreshImages = async () => {
     if (selectedQuestionForManagement?.id) {
       const questionIndex = questions.findIndex(q => q.id === selectedQuestionForManagement.id)
+      
       if (questionIndex !== -1) {
         await loadQuestionImages(selectedQuestionForManagement.id, questionIndex)
+      } else {
+        console.error('❌ Could not find question in questions array', {
+          searchingForId: selectedQuestionForManagement.id,
+          availableIds: questions.map(q => q.id)
+        })
       }
+    } else {
+      console.error('❌ No question ID available in handleRefreshImages')
     }
   }
 
@@ -477,9 +497,12 @@ export default function CreateQuestionsPage() {
             isOpen={showImageManagementModal}
             onClose={handleImageManagementClose}
             question={selectedQuestionForManagement}
-            images={questionImages[questions.findIndex(q => q === selectedQuestionForManagement)] || []}
+            images={selectedQuestionForManagement?.id 
+              ? (questionImages[questions.findIndex(q => q.id === selectedQuestionForManagement.id)] || [])
+              : []}
             onImageSelect={handleImageManagementSelect}
             onRefreshImages={handleRefreshImages}
+            onImagesGenerated={handleManagementImagesGenerated}
             questionId={selectedQuestionForManagement.id}
             useNewSchema={true}
           />

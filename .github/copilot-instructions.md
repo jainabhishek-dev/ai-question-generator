@@ -15,7 +15,7 @@ Educational platform for AI-powered question generation, lesson planning, and ga
 - **Frontend**: Next.js 15 (App Router, Turbopack), React 19, TypeScript, Tailwind CSS 4
 - **Backend**: Next.js API routes (App Router & Pages Router hybrid)
 - **Database**: Supabase (PostgreSQL) with RLS policies
-- **AI**: Google Gemini (`@google/generative-ai`), Imagen (`@google/genai`)
+- **AI**: Google Gemini (`@google/generative-ai`), Gemini 3 Pro Image (`@google/genai`)
 - **Auth**: Supabase Auth with anonymous user support
 
 ## Critical Conventions
@@ -148,7 +148,7 @@ remotePatterns: [
 
 2. **PDF Export 500 Errors**: Ensure `src/pages/api/export-pdf.ts` exists (not in App Router). Check Chromium binary permissions on Vercel.
 
-3. **Image Generation Limits**: Imagen has 480-token prompt limit. Prompts >400 chars trigger console warnings in `imagenService.ts`.
+3. **Image Generation Limits**: Gemini 3 Pro Image supports 65K tokens (essentially unlimited for educational content). Prompts >1500 chars trigger warnings but are supported. Use detailed, narrative descriptions with specific layout, labels, and text rendering instructions.
 
 4. **Question Type Mismatches**: `correctAnswer` format varies:
    - MCQ: Letter only (`'A'`, `'B'`, etc.)
@@ -160,6 +160,6 @@ remotePatterns: [
 ## Key Files Reference
 - **AI Prompts**: `src/lib/gemini.ts`, `src/lib/ncertPrompt.ts`, `src/lib/lessonPlanPrompt.ts`
 - **Data Access**: `src/lib/database.ts` (questions), `src/lib/gameDatabase.ts` (games), `src/lib/lessonPlanDatabase.ts` (lesson plans)
-- **Image Pipeline**: `src/lib/imagenService.ts`, `src/lib/imageStorage.ts`, `src/lib/imagePromptTemplates.ts`
+- **Image Pipeline**: `src/lib/imagenClient.ts` (primary, client-side), `src/lib/imagenService.ts` (server-side), `src/lib/imageStorage.ts`, `src/lib/imagePromptTemplates.ts`
 - **Main Page**: `src/app/page.tsx` (question generator UI)
 - **Auth Context**: `src/contexts/AuthContext.tsx` (user state management)

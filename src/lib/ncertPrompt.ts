@@ -29,30 +29,36 @@ const questionTypeInstructions: Record<string, string[]> = {
   mcq: [
     "multiple-choice questions:",
     "- Provide exactly 4 options labeled A, B, C, D",
-    "- correctAnswer field must contain ONLY the letter (e.g., 'A')",
+    "- options must be an array like: ['A) Option text', 'B) Option text', 'C) Option text', 'D) Option text']",
+    "- correctAnswer field must be the option label only ('A', 'B', 'C', or 'D'), not the answer text",
     "- Make all distractors plausible but clearly incorrect",
-    "- Avoid 'All of the above' or 'None of the above' unless educationally valuable"
+    "- Avoid 'All of the above' or 'None of the above' unless educationally valuable",
+    "- Use command words like 'Which of the following...', 'What is the primary...', 'When does...'",
+    "- Options must be numerical values OR single words OR dates/years only. Each option should be limited to one or two words only."
   ],
   trueFalse: [
     "true-false questions:",
     "- correctAnswer must be exactly 'True' or 'False'",
-    "- Avoid statements that are partially true or depend on interpretation"
+    "- Use clear, factual statements that are definitively true or false",
+    "- All T/F have exactly 2 options [\'True\', \'False\'] and correctAnswer matches'"
   ],
   fillBlank: [
     "fill-in-the-blank questions:",
-    "- Use clear blanks: 'The capital of France is _______.'",
-    "- correctAnswer should be the exact word(s) expected",
-    "- For multiple acceptable answers, provide the most common/standard answer"
+    "- Use clear blank: 'The capital of France is _______.'",
+    "- Use only 1 blank per question",
+    "- correctAnswer should be the exact word expected"
   ],
   shortAnswer: [
     "short-answer questions:",
     "- Expect 1-3 sentence responses",
-    "- correctAnswer should be a model answer (2-3 sentences max)"
+    "- correctAnswer should be a model answer (2-3 sentences max)",
+    "- Use direct, specific question stems: 'Explain how...', 'Describe why...', 'What are the main...'"
   ],
   longAnswer: [
     "long-answer questions:",
     "- Expect paragraph-length responses",
-    "- correctAnswer should outline key points expected (bullet format acceptable)"
+    "- correctAnswer should outline key points expected (bullet format acceptable)",
+    "- Use direct, specific question stems: 'Explain how...', 'Describe why...', 'What are the main...'"    
   ]
 }
 
@@ -77,13 +83,16 @@ export function createNCERTPrompt(inputs: Inputs) {
     additionalNotes && `Teacher Notes: ${additionalNotes}`
   ].filter(Boolean).join("\n")
 
+  const distributionParts: string[] = []
+  if (numMCQ > 0) distributionParts.push(`- ${numMCQ} multiple-choice questions`)
+  if (numFillBlank > 0) distributionParts.push(`- ${numFillBlank} fill-in-the-blank questions`)
+  if (numShortAnswer > 0) distributionParts.push(`- ${numShortAnswer} short-answer questions`)
+  if (numLongAnswer > 0) distributionParts.push(`- ${numLongAnswer} long-answer questions`)
+  if (numTrueFalse > 0) distributionParts.push(`- ${numTrueFalse} true-false questions`)
+  
   const distributionInfo = `Generate exactly:
-    - ${numMCQ} multiple-choice questions
-    - ${numFillBlank} fill-in-the-blank questions
-    - ${numShortAnswer} short-answer questions
-    - ${numLongAnswer} long-answer questions
-    - ${numTrueFalse} true-false questions
-    Total questions must equal ${totalQuestions}.`
+${distributionParts.join('\n')}
+  Total questions must equal ${totalQuestions}.`
 
   // Only include the specific grade context for the selected grade
   const gradeContext = gradeContexts[grade] 
@@ -104,66 +113,35 @@ export function createNCERTPrompt(inputs: Inputs) {
 
   // Only add question type section if there are specific instructions
   const questionTypeSection = qTypeSections.length > 0 
-    ? ["Question Type Specific Instructions:", ...qTypeSections].join("\n")
+    ? ["Question Type Requirements:", ...qTypeSections].join("\n")
     : ""
 
   const formattingRequirements = [
-  // Output Structure & Format
+  "Output Structure & Format:",
   "Return ONLY valid JSON. No additional text before or after the JSON array.",
   "Return the result as a JSON array of question objects, even if there is only one question.",
   "Each question object must contain exactly these keys: type, question, options, correctAnswer, explanation.",
-  
-  // MCQ-specific formatting (only if MCQ requested)
-  ...(numMCQ > 0 ? [
-    "For multiple-choice questions:",
-    "- options must be an array like: ['A) Option text', 'B) Option text', 'C) Option text', 'D) Option text']",
-    "- correctAnswer field must be the option label only ('A', 'B', 'C', or 'D'), not the answer text"
-  ] : []),
-
-  // Content Quality Standards
-  "Question Quality Requirements:",
-  "- Each question must be clear, unambiguous, and age-appropriate for the specified grade level",
-  "- Avoid trick questions, double negatives, or confusing wording", 
-  "- Ensure questions test understanding, not memorization (unless specifically requested)",
-  "- AVOID vague question starters like 'Imagine...', 'Picture this...', 'Think about...', 'Consider...'",
-  
-  // Question stems (conditional based on question types requested)
-  ...(numMCQ > 0 ? [
-    "- For MCQ: Use stems like 'Which of the following...', 'What is the primary...', 'How does...', 'Why is...', 'When does...'"
-  ] : []),
-  ...(numTrueFalse > 0 ? [
-    "- For True/False: Use clear, factual statements that are definitively true or false"
-  ] : []),
-  ...(numFillBlank > 0 ? [
-    "- For Fill-in-blank: Use direct statements with clear blanks: 'The _______ is...'"
-  ] : []),
-  ...(numShortAnswer > 0 || numLongAnswer > 0 ? [
-    "- For Answer questions: Use direct, specific question stems: 'Explain how...', 'Describe why...', 'What are the main...'"
-  ] : []),
-  
-  "- Questions should be concrete and factual rather than hypothetical scenarios",
 
   // Mathematical & Currency Formatting - CRITICAL RULES
-  "Mathematical Expressions & Currency Symbols:",
-  "- For mathematical expressions: Use single dollar signs: $x^2 + y^2 = z^2$, $18 + x = 45$, $\\frac{a}{b} = c$",
-  "- For currency amounts: ALWAYS use escaped dollars: \\$45, \\$12.00, \\$0.75 (never use plain $ for money)",
+  "Mathematical Expressions & Currency Formatting:",
+  "- For mathematical expressions: Use single dollar signs ONLY for math: $x^2 + y^2 = z^2$, $18 + x = 45$, $\\frac{a}{b} = c$",
+  "- For LaTeX fractions: Use proper escaping: $\\frac{3}{4}$, not $\frac{3}{4}$ or $3/4$ in text",
+  "- For decimal numbers in math context: Use plain decimals WITHOUT any symbols: 0.75, 2.4, 3.14159",
   "- For variable references in text: Use math delimiters: the variable $x$ represents...",
   "",
-  "CURRENCY FORMATTING EXAMPLES:",
-  "✅ CORRECT: 'costs \\$45', 'saved \\$18', 'total of \\$15.00'", 
-  "❌ WRONG: 'costs $45', 'saved $18' (creates math interpretation conflicts)",
+  "Currency Formatting (CRITICAL):",
+  "- For ALL currency amounts: Use ₹ (rupee symbol) - NEVER use $ for currency",
+  "- Keep currency symbols OUTSIDE of math delimiters: The item costs ₹50 (not $₹50$ or $\\text{₹}50$)",
+  "- Never use \\text{} command for currency inside math expressions",
+  "- Other currency symbols when appropriate: €, £, ¥",
   "",
-  "MIXED CURRENCY & MATH EXAMPLES:",
-  "✅ CORRECT: 'Jamie saved \\$18. The equation $18 + x = 45$ represents his situation.'",
-  "❌ WRONG: 'Jamie saved $18. The equation $18 + x = 45$ represents his situation.'",
-  "",
-  "- Use Unicode symbols when appropriate: ₹, €, £, %, °C, π, ∞",
+  "- Use Unicode symbols when appropriate: %, °C, π, ∞",
   "- Format large numbers with commas: 1,000,000 not 1000000",
-
+  
   // Explanation Requirements  
   "Explanation Standards:",
   "- Keep explanations concise but complete (2-4 sentences ideal)",
-  "- Explain WHY the correct answer is right, not just WHAT it is",
+  "- When subject is Mathematics, show step-by step solution like a student is expected to solve in exam.",
   ...(numMCQ > 0 ? ["- For MCQ: briefly explain why incorrect options are wrong when helpful"] : []),
   "- Use grade-appropriate vocabulary in explanations",
 
@@ -172,21 +150,39 @@ export function createNCERTPrompt(inputs: Inputs) {
   "- All factual information must be current and accurate",
   "- Cross-reference dates, names, formulas, and statistics",
   "- Ensure consistency in terminology throughout all questions",
-  "- Round numerical answers appropriately for the grade level",
+  "- Questions should be concrete and factual rather than hypothetical scenarios",
 
   // Validation Rules
-  "Quality Checks:",
+  "Final Validation Rules:",
+  "- All questions must be unique and plagiarism-free.",
   "- Each question must align with the specified Bloom's taxonomy level",
   "- Verify that difficulty matches the grade level appropriately", 
-  "- Ensure no duplicate questions or overly similar questions",
+  "- Ensure no duplicate questions or similar questions. All questions should be different and unique",
   "- Check that the total question count matches the requested distribution exactly"
 ].join("\n")
 
-  const validationInstructions = `
-    VALIDATION CHECKLIST - Verify before responding:
-    ${numMCQ > 0 ? '□ All MCQ have exactly 4 options (A, B, C, D) and correctAnswer is a single letter' : ''}
-    ${numTrueFalse > 0 ? '□ All T/F have exactly 2 options [\'True\', \'False\'] and correctAnswer matches' : ''}
-    `.split('\n').filter(line => line.trim() !== '').join('\n')
+  // Markdown Formatting Reference (separate section)
+  const markdownReference = [
+  "FORMATTING REFERENCE - Markdown Guide:",
+  "Tables:",
+  "  | Header 1 | Header 2 | Header 3 |",
+  "  |----------|----------|----------|",
+  "  | Data 1   | Data 2   | Data 3   |",
+  "  - Can include math ($x^2$) in cells",
+  "  - Leave blank line after tables for proper rendering",
+  "Lists:",
+  "  - Bullet points: Use '-' or '*' for unordered lists",
+  "  - Numbered lists: Use '1.', '2.', '3.' for ordered lists",
+  "  - Nested lists: Indent with 2-4 spaces",
+  "Multi-paragraph:",
+  "  - Use double newlines (\\n\\n) for paragraph breaks",
+  "  - Single newlines (\\n) for line breaks within paragraphs",
+  "Code blocks:",
+  "  - Use triple backticks (```) for code blocks",
+  "  - Specify language: ```python or ```javascript",
+  "Horizontal rules:",
+  "  - Use '---' or '***' on separate line for dividers"
+].join("\n")
 
   // Add image instructions for NCERT content
   const imageInstructions = getImageInstructions(enableImages || false)
@@ -199,7 +195,7 @@ export function createNCERTPrompt(inputs: Inputs) {
     imageInstructions, // Add NCERT-specific image instructions
     `QUESTION DISTRIBUTION REQUIREMENTS:\n${distributionInfo}`,
     formattingRequirements,
-    questionTypeSection, // Only included if there are specific question type instructions
-    validationInstructions
+    markdownReference,
+    questionTypeSection // Only included if there are specific question type instructions
   ].filter(Boolean).join("\n\n")
 }

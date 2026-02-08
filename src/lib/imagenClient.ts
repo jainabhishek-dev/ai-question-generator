@@ -1,13 +1,14 @@
 /**
- * Client-Side Google Imagen API Integration for Educational Image Generation
+ * Client-Side Gemini 3 Pro Image API Integration for Educational Image Generation
  * Uses the same approach as question generation (client-side execution)
- * Uses imagen-4.0-fast-generate-001 model for educational content
+ * Uses gemini-3-pro-image-preview model for educational content
+ * Supports longer prompts (65K tokens), better text rendering, and 1K/2K resolution
  */
 
 import { GoogleGenAI, PersonGeneration } from "@google/genai"
 import type { ImageGenerationConfig } from '@/types/question'
 
-// Initialize Imagen with the same pattern as question generation
+// Initialize Gemini with the same pattern as question generation
 const genAI = new GoogleGenAI({
   apiKey: process.env.NEXT_PUBLIC_GEMINI_API_KEY!
 })
@@ -15,13 +16,13 @@ const genAI = new GoogleGenAI({
 // Default configuration for educational images
 const DEFAULT_IMAGE_CONFIG: ImageGenerationConfig = {
   numberOfImages: 1,        // Generate one image for cost efficiency
-  imageSize: '1K',          // 1K resolution sufficient for educational use
+  imageSize: '2K',          // 2K resolution for better quality with text rendering
   aspectRatio: '1:1',       // Square format for versatility
   personGeneration: 'dont_allow' // Safety for educational content
 }
 
 /**
- * Generate educational image using Imagen API (CLIENT-SIDE)
+ * Generate educational image using Gemini 3 Pro Image API (CLIENT-SIDE)
  * This runs in the browser, just like question generation
  */
 export const generateEducationalImageClient = async (
@@ -40,9 +41,9 @@ export const generateEducationalImageClient = async (
   error?: string
 }> => {
   try {
-    // Validate prompt length (Imagen has 480 token limit)
-    if (prompt.length > 400) {
-      console.warn('⚠️ Prompt may be too long for Imagen API:', prompt.length, 'characters')
+    // Validate prompt length (Gemini 3 Pro Image supports 65K tokens - much more flexible)
+    if (prompt.length > 1500) {
+      console.warn('⚠️ Prompt is very long:', prompt.length, 'characters (consider keeping under 1500 for optimal results)')
     }
 
     // Merge config with defaults
@@ -51,39 +52,39 @@ export const generateEducationalImageClient = async (
       ...config
     }
 
-    console.log('🎨 Generating educational image with Imagen (CLIENT-SIDE)')
-    console.log('📝 Prompt:', prompt)
-    console.log('⚙️ Config:', finalConfig)
-
-    // Generate image using the correct Imagen API (runs in browser)
-    const response = await genAI.models.generateImages({
-      model: 'imagen-4.0-fast-generate-001',
-      prompt: prompt,
+    // Generate image using Gemini 3 Pro Image API with multimodal support
+    const response = await genAI.models.generateContent({
+      model: 'gemini-3-pro-image-preview',
+      contents: prompt,
       config: {
-        numberOfImages: finalConfig.numberOfImages,
-        aspectRatio: finalConfig.aspectRatio,
-        personGeneration: PersonGeneration.DONT_ALLOW
-        // imageSize is not supported for Fast model
+        responseModalities: ['TEXT', 'IMAGE'],
+        imageConfig: {
+          aspectRatio: finalConfig.aspectRatio,
+          imageSize: finalConfig.imageSize || '2K'  // Default to 2K for better text rendering
+        }
       }
     })
     
-    console.log('🖼️ Image generation response received (CLIENT-SIDE)')
-    
-    if (!response.generatedImages || response.generatedImages.length === 0) {
-      throw new Error('No images were generated')
+    if (!response.candidates || response.candidates.length === 0) {
+      throw new Error('No response candidates generated')
     }
     
-    // Get the first generated image
-    const generatedImage = response.generatedImages[0]
-    
-    // Convert base64 image bytes to data URL and blob
-    if (!generatedImage.image) {
-      throw new Error('Generated image data is missing')
+    const candidate = response.candidates[0]
+    if (!candidate?.content?.parts) {
+      throw new Error('Response candidate missing content or parts')
     }
     
-    const imageBytes = generatedImage.image.imageBytes
+    // Find image part in multimodal response
+    let imageBytes = null
+    for (const part of candidate.content.parts) {
+      if (part.inlineData && part.inlineData.mimeType?.includes('image')) {
+        imageBytes = part.inlineData.data  // base64
+        break
+      }
+    }
+    
     if (!imageBytes) {
-      throw new Error('Image bytes are missing from generated image')
+      throw new Error('No image data found in response - model may not have generated an image')
     }
     
     const imageUrl = `data:image/png;base64,${imageBytes}`
@@ -103,7 +104,7 @@ export const generateEducationalImageClient = async (
       imageBlob,
       metadata: {
         prompt,
-        model: 'imagen-4.0-fast-generate-001',
+        model: 'gemini-3-pro-image-preview',
         config: finalConfig,
         generatedAt: new Date().toISOString()
       }
@@ -112,23 +113,25 @@ export const generateEducationalImageClient = async (
   } catch (error) {
     console.error('❌ Error generating educational image (CLIENT-SIDE):', error)
     
-    // Handle specific Imagen API errors
+    // Handle specific Gemini API errors
     let errorMessage = 'Unknown error occurred during image generation'
     
     if (error instanceof Error) {
       errorMessage = error.message
       
-      // Handle common Imagen errors
+      // Handle common Gemini API errors
       if (errorMessage.includes('quota')) {
         errorMessage = 'Image generation quota exceeded. Please try again later.'
-      } else if (errorMessage.includes('content policy')) {
+      } else if (errorMessage.includes('content policy') || errorMessage.includes('safety')) {
         errorMessage = 'Image prompt violates content policy. Please modify your request.'
       } else if (errorMessage.includes('rate limit')) {
         errorMessage = 'Too many requests. Please wait a moment and try again.'
-      } else if (errorMessage.includes('not found')) {
-        errorMessage = 'Imagen model not available. Please check your API access.'
-      } else if (errorMessage.includes('403')) {
-        errorMessage = 'API access denied. Please check your API key configuration.'
+      } else if (errorMessage.includes('not found') || errorMessage.includes('404')) {
+        errorMessage = 'Gemini 3 Pro Image model not available. Please check your API access.'
+      } else if (errorMessage.includes('403') || errorMessage.includes('permission')) {
+        errorMessage = 'API access denied. Please check your API key configuration and model access.'
+      } else if (errorMessage.includes('No image data found')) {
+        errorMessage = 'Model did not generate an image. Try rephrasing your prompt or simplifying the description.'
       }
     }
 
@@ -154,8 +157,6 @@ export const uploadGeneratedImage = async (
   error?: string
 }> => {
   try {
-    console.log('📁 Uploading generated image to storage (CLIENT-SIDE)')
-    
     // Create form data for upload
     const formData = new FormData()
     formData.append('image', imageBlob, filename)
@@ -181,7 +182,6 @@ export const uploadGeneratedImage = async (
       throw new Error(result.error || 'Upload failed')
     }
     
-    console.log('✅ Image uploaded successfully (CLIENT-SIDE)')
     return {
       success: true,
       url: result.url
@@ -212,8 +212,6 @@ export const generateAndSaveImage = async (
   error?: string
 }> => {
   try {
-    console.log('🚀 Starting complete image generation workflow (CLIENT-SIDE)')
-    
     // Step 1: Generate image
     const generationResult = await generateEducationalImageClient(prompt, config)
     
@@ -258,7 +256,6 @@ export const generateAndSaveImage = async (
       }
     }
     
-    console.log('🎉 Complete image generation workflow successful (CLIENT-SIDE)')
     return {
       success: true,
       imageUrl: uploadResult.url,
@@ -332,9 +329,10 @@ export const validateImagePrompt = (prompt: string): {
   const issues: string[] = []
   let optimizedPrompt = prompt
 
-  // Check prompt length (Imagen limit: 480 tokens ≈ 350-400 characters)
-  if (prompt.length > 400) {
-    issues.push('Prompt too long (over 400 characters)')
+  // Check prompt length (Gemini 3 Pro Image supports 65K tokens - very flexible)
+  // Warn only if extremely long (over 1500 characters)
+  if (prompt.length > 1500) {
+    issues.push('Prompt is very long (over 1500 characters) - consider simplifying for optimal results')
   }
 
   // Check for inappropriate content for educational use
@@ -389,8 +387,6 @@ export const retryImageGeneration = async (
   accessToken: string,
   config?: Partial<ImageGenerationConfig>
 ) => {
-  console.log('🔄 Retrying image generation with improved prompt (CLIENT-SIDE)')
-  
   // Improve prompt based on previous error
   let improvedPrompt = originalPrompt
 
@@ -405,8 +401,6 @@ export const retryImageGeneration = async (
   } else {
     improvedPrompt = `Educational illustration: ${originalPrompt}, clear and simple`
   }
-
-  console.log('📝 Improved prompt:', improvedPrompt)
   
   return await generateAndSaveImage(improvedPrompt, questionId, promptId, accessToken, config)
 }

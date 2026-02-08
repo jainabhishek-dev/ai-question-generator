@@ -153,8 +153,6 @@ export default function ImageGenerationModal({
       const promptData = await promptResponse.json()
       
       // CLIENT-SIDE IMAGE GENERATION (New Approach)
-      console.log('🎨 Starting CLIENT-SIDE image generation for:', placeholder)
-      
       const finalPrompt = editingPrompts[placeholder] || prompt.prompt
       const enhancedPrompt = `${finalPrompt}. Educational illustration, textbook style, ${prompt.style || 'educational_diagram'}, accurate and clear for students`
       
@@ -166,6 +164,7 @@ export default function ImageGenerationModal({
         {
           numberOfImages: 1,
           aspectRatio: '1:1',
+          imageSize: '2K',  // 2K resolution for better quality with text rendering
           personGeneration: 'dont_allow'
         }
       )
@@ -266,8 +265,6 @@ export default function ImageGenerationModal({
           const promptId = promptData.data.id
           
           // CLIENT-SIDE IMAGE GENERATION (New Approach)
-          console.log('🎨 Starting CLIENT-SIDE batch generation for:', prompt.placeholder)
-          
           const finalPrompt = editingPrompts[prompt.placeholder] || prompt.prompt
           const enhancedPrompt = `${finalPrompt}. Educational illustration, textbook style, ${prompt.style || 'educational_diagram'}, accurate and clear for students`
           
@@ -279,6 +276,7 @@ export default function ImageGenerationModal({
             {
               numberOfImages: 1,
               aspectRatio: '1:1',
+              imageSize: '2K',  // 2K resolution for better quality with text rendering
               personGeneration: 'dont_allow'
             }
           )
@@ -392,8 +390,6 @@ export default function ImageGenerationModal({
       const promptData = await promptResponse.json()
       
       // CLIENT-SIDE RETRY GENERATION (New Approach)
-      console.log('🔄 Starting CLIENT-SIDE retry generation for:', placeholder)
-      
       const result = await imagenClientService.retryImageGeneration(
         prompt.prompt,
         previousError,
@@ -403,6 +399,7 @@ export default function ImageGenerationModal({
         {
           numberOfImages: 1,
           aspectRatio: '1:1',
+          imageSize: '2K',  // 2K resolution for better quality with text rendering
           personGeneration: 'dont_allow'
         }
       )
