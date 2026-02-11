@@ -403,8 +403,8 @@ export function processQuestions(parsedQuestions: RawQuestionData[]): Question[]
     .filter(q => q && (q.question || q.prompt || q.correctAnswer || q.answer))
     .map(q => {
       let options: string[] = [];
-      // Only normalize options for multiple-choice
-      if (q.type === "multiple-choice") {
+      // Only normalize options for multiple-choice (handle variations like "multiple-choice questions")
+      if (q.type && q.type.toLowerCase().includes("multiple-choice")) {
         let rawOptions = q.options || q.choices || [];
         if (rawOptions && typeof rawOptions === "object" && !Array.isArray(rawOptions)) {
           rawOptions = Object.keys(rawOptions)

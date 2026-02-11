@@ -37,7 +37,7 @@ const EditQuestionModal: React.FC<EditQuestionModalProps> = ({
   )
   // For MCQ, store only the letter (A, B, C, D, ...)
   const [correctAnswer, setCorrectAnswer] = useState(() => {
-    if (question.question_type === "multiple-choice" && question.options) {
+    if (question.question_type && question.question_type.toLowerCase().includes("multiple-choice") && question.options) {
       const idx = question.options.findIndex(
         (opt, i) =>
           question.correct_answer === opt ||
