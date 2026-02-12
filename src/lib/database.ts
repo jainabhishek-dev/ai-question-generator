@@ -49,6 +49,46 @@ const getErrorMessage = (error: unknown): string => {
   return 'Unknown error occurred'
 }
 
+/**
+ * Normalizes question type for database storage
+ * Ensures consistent type values in database regardless of AI variations
+ * @param type - The question type from AI or processing
+ * @returns Normalized type string
+ */
+const normalizeQuestionTypeForDB = (type: string): string => {
+  if (!type) return 'unknown';
+  
+  const lowerType = type.toLowerCase().trim();
+  
+  // Multiple choice variations → standardize to 'multiple-choice'
+  if (lowerType.includes('multiple-choice') || lowerType.includes('multiple choice') || lowerType.includes('mcq')) {
+    return 'multiple-choice';
+  }
+  
+  // True/False variations → standardize to 'true-false'
+  if (lowerType.includes('true-false') || lowerType.includes('true/false') || lowerType.includes('true false')) {
+    return 'true-false';
+  }
+  
+  // Fill in the blank variations → standardize to 'fill-in-the-blank'
+  if (lowerType.includes('fill-in') || lowerType.includes('fill in') || lowerType.includes('fill blank')) {
+    return 'fill-in-the-blank';
+  }
+  
+  // Short answer variations → standardize to 'short-answer'
+  if (lowerType.includes('short-answer') || lowerType.includes('short answer')) {
+    return 'short-answer';
+  }
+  
+  // Long answer variations → standardize to 'long-answer'
+  if (lowerType.includes('long-answer') || lowerType.includes('long answer') || lowerType.includes('essay')) {
+    return 'long-answer';
+  }
+  
+  // Return original if no match
+  return type;
+}
+
 // FIXED: Use proper Supabase JavaScript client pattern
 // FIXED: Use conditional query execution instead of variable reassignment
 export const saveQuestions = async (
@@ -57,31 +97,44 @@ export const saveQuestions = async (
   userId?: string | null
 ): Promise<{ success: boolean; data?: QuestionRecord[]; error?: string }> => {
   try {
-    const questionsToInsert = generatedQuestions.map(q => ({
-      question: q.question,
-      question_type: q.type,
-      options: q.options || null,
-      correct_answer: q.correctAnswer,
-      explanation: q.explanation || null,
-      subject: inputs.subject,
-      sub_subject: inputs.subSubject || null,
-      topic: inputs.topic,
-      sub_topic: inputs.subTopic || null,
-      grade: inputs.grade,
-      difficulty: inputs.difficulty,
-      blooms_level: inputs.bloomsLevel,
-      pdf_content: inputs.pdfContent || null,
-      additional_notes: inputs.additionalNotes || null,
-      chapter_number: inputs.chapterNumber || null,
-      chapter_name: inputs.chapterName || null,
-      learning_outcome: inputs.learningOutcome || null,
-      question_source: inputs.question_source || 'general', // <-- add this line
-      user_id: userId || null,
-      is_public: !userId,        // true if no userId (anonymous), false if logged in
-      is_shared: false,          // always false on creation
-      shared_with: null          // always null on creation      
+    const questionsToInsert = generatedQuestions.map((q, index) => {
+      // Normalize question type for consistent database storage
+      const normalizedType = normalizeQuestionTypeForDB(q.type);
       
-    }))
+      // Validate MCQ has options
+      const isMultipleChoice = normalizedType === 'multiple-choice';
+      const options = q.options || null;
+      
+      // Log warning if MCQ has no options (data quality check)
+      if (isMultipleChoice && (!options || options.length === 0)) {
+        console.warn(`⚠️ Saving MCQ question ${index + 1} with empty options. Type: "${q.type}"`);
+      }
+      
+      return {
+        question: q.question,
+        question_type: normalizedType,  // Use normalized type
+        options: options,
+        correct_answer: q.correctAnswer,
+        explanation: q.explanation || null,
+        subject: inputs.subject,
+        sub_subject: inputs.subSubject || null,
+        topic: inputs.topic,
+        sub_topic: inputs.subTopic || null,
+        grade: inputs.grade,
+        difficulty: inputs.difficulty,
+        blooms_level: inputs.bloomsLevel,
+        pdf_content: inputs.pdfContent || null,
+        additional_notes: inputs.additionalNotes || null,
+        chapter_number: inputs.chapterNumber || null,
+        chapter_name: inputs.chapterName || null,
+        learning_outcome: inputs.learningOutcome || null,
+        question_source: inputs.question_source || 'general',
+        user_id: userId || null,
+        is_public: !userId,        // true if no userId (anonymous), false if logged in
+        is_shared: false,          // always false on creation
+        shared_with: null          // always null on creation      
+      };
+    })
 
     console.log('💾 SAVING TO DATABASE (first question):', JSON.stringify(questionsToInsert[0], null, 2))
 

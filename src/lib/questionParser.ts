@@ -2,6 +2,48 @@ import { cleanJsonText } from './jsonCleaner';
 import { escapeCurrencyDollarsSmart } from './textCleaner';
 
 /**
+ * Normalizes question type strings to standard format
+ * Handles variations like "multiple-choice questions", "Multiple Choice", etc.
+ * @param type - The question type string from AI or user input
+ * @returns Normalized type string in standard format
+ */
+export function normalizeQuestionType(type: string | undefined | null): string {
+  if (!type || typeof type !== 'string') {
+    return 'unknown';
+  }
+  
+  const lowerType = type.toLowerCase().trim();
+  
+  // Multiple choice variations
+  if (lowerType.includes('multiple-choice') || lowerType.includes('multiple choice') || lowerType.includes('mcq')) {
+    return 'multiple-choice';
+  }
+  
+  // True/False variations
+  if (lowerType.includes('true-false') || lowerType.includes('true/false') || lowerType.includes('true false')) {
+    return 'true-false';
+  }
+  
+  // Fill in the blank variations
+  if (lowerType.includes('fill-in') || lowerType.includes('fill in') || lowerType.includes('fill blank')) {
+    return 'fill-in-the-blank';
+  }
+  
+  // Short answer variations
+  if (lowerType.includes('short-answer') || lowerType.includes('short answer')) {
+    return 'short-answer';
+  }
+  
+  // Long answer variations
+  if (lowerType.includes('long-answer') || lowerType.includes('long answer') || lowerType.includes('essay')) {
+    return 'long-answer';
+  }
+  
+  // Return original if no match (preserve unknown types)
+  return type;
+}
+
+/**
  * Cleans up double-backslashed LaTeX commands from legacy data
  * Fixes issues where LaTeX like \\left becomes \left for proper KaTeX rendering
  * @param text - Text content that may contain over-escaped LaTeX
@@ -401,7 +443,7 @@ export function validateImagePrompts(question: Question): {
 export function processQuestions(parsedQuestions: RawQuestionData[]): Question[] {
   return parsedQuestions
     .filter(q => q && (q.question || q.prompt || q.correctAnswer || q.answer))
-    .map(q => {
+    .map((q, index) => {
       let options: string[] = [];
       // Only normalize options for multiple-choice (handle variations like "multiple-choice questions")
       if (q.type && q.type.toLowerCase().includes("multiple-choice")) {
@@ -421,6 +463,11 @@ export function processQuestions(parsedQuestions: RawQuestionData[]): Question[]
             // Otherwise, try JSON.stringify as last resort
             return typeof opt !== "undefined" ? JSON.stringify(opt) : "";
           });
+        }
+        
+        // Log warning if MCQ has no options after processing (helps diagnose issues)
+        if (options.length === 0 && rawOptions && Array.isArray(rawOptions) && rawOptions.length > 0) {
+          console.warn(`⚠️ Question ${index + 1}: MCQ options processing resulted in empty array. Raw options:`, rawOptions);
         }
       }
 
