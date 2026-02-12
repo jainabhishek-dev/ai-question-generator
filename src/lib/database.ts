@@ -29,6 +29,7 @@ export interface QuestionRecord {
   is_shared: boolean
   shared_with: string[] | null
   question_source?: string
+  ai_prompt?: string | null  // NEW: Store the AI prompt used to generate this question
 }
 
 export interface GeneratedQuestion {
@@ -94,7 +95,8 @@ const normalizeQuestionTypeForDB = (type: string): string => {
 export const saveQuestions = async (
   inputs: Inputs, 
   generatedQuestions: GeneratedQuestion[],
-  userId?: string | null
+  userId?: string | null,
+  aiPrompt?: string  // NEW: Optional AI prompt to save with questions
 ): Promise<{ success: boolean; data?: QuestionRecord[]; error?: string }> => {
   try {
     const questionsToInsert = generatedQuestions.map((q, index) => {
@@ -132,7 +134,8 @@ export const saveQuestions = async (
         user_id: userId || null,
         is_public: !userId,        // true if no userId (anonymous), false if logged in
         is_shared: false,          // always false on creation
-        shared_with: null          // always null on creation      
+        shared_with: null,         // always null on creation
+        ai_prompt: aiPrompt || null  // NEW: Save AI prompt used for generation
       };
     })
 

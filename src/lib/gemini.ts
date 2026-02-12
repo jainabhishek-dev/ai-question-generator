@@ -3,6 +3,12 @@ import { Inputs } from "@/components/AdvancedQuestionForm"
 import { createNCERTPrompt } from "@/lib/ncertPrompt"
 import { createObjectiveExtractionPrompt, createLessonPlanPrompt } from "@/lib/lessonPlanPrompt"
 
+// NEW: Interface for AI generation result with prompt tracking
+export interface GenerationResult {
+  text: string
+  prompt: string
+}
+
 // Use server-side API key (no referrer restrictions) or fall back to public key
 const genAI = new GoogleGenerativeAI(
   process.env.GEMINI_API_KEY_SERVER || process.env.NEXT_PUBLIC_GEMINI_API_KEY!
@@ -287,7 +293,7 @@ ${distributionParts.join('\n')}
 }
 
 /* ---------- AI CALL ---------- */
-export const generateQuestions = async (inputs: Inputs, pdfFileUri?: string) => {
+export const generateQuestions = async (inputs: Inputs, pdfFileUri?: string): Promise<GenerationResult> => {
   const model = genAI.getGenerativeModel({ model: "gemini-2.5-flash" })
   const prompt = createAdvancedPrompt(inputs)
   
@@ -303,16 +309,17 @@ export const generateQuestions = async (inputs: Inputs, pdfFileUri?: string) => 
       }
     ]
     const res = await model.generateContent(parts)
-    return res.response?.text() ?? ""
+    const text = res.response?.text() ?? ""
+    return { text, prompt }  // NEW: Return both text and prompt
   }
   
   // Otherwise, generate without PDF
   const res = await model.generateContent(prompt)
-  const rawOutput = res.response?.text() ?? ""
-  return rawOutput
+  const text = res.response?.text() ?? ""
+  return { text, prompt }  // NEW: Return both text and prompt
 }
 
-export const generateNCERTQuestions = async (inputs: Inputs, pdfFileUri?: string) => {
+export const generateNCERTQuestions = async (inputs: Inputs, pdfFileUri?: string): Promise<GenerationResult> => {
   const model = genAI.getGenerativeModel({ model: "gemini-2.5-flash" })
   const prompt = createNCERTPrompt(inputs)
   
@@ -328,14 +335,14 @@ export const generateNCERTQuestions = async (inputs: Inputs, pdfFileUri?: string
       }
     ]
     const res = await model.generateContent(parts)
-    const rawOutput = res.response?.text() ?? ""
-    return rawOutput
+    const text = res.response?.text() ?? ""
+    return { text, prompt }  // NEW: Return both text and prompt
   }
   
   // Otherwise, generate without PDF
   const res = await model.generateContent(prompt)
-  const rawOutput = res.response?.text() ?? ""
-  return rawOutput
+  const text = res.response?.text() ?? ""
+  return { text, prompt }  // NEW: Return both text and prompt
 }
 
 /* ---------- LESSON PLAN AI FUNCTIONS ---------- */

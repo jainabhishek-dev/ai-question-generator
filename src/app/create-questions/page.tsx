@@ -123,10 +123,10 @@ export default function CreateQuestionsPage() {
     }, 100);
 
     try {
-      const text = await generateQuestions(inputs, inputs.pdfFileUri);
-      setOutput(text);
+      const result = await generateQuestions(inputs, inputs.pdfFileUri);
+      setOutput(result.text);
 
-      const parsedQuestions = parseQuestions(text);
+      const parsedQuestions = parseQuestions(result.text);
       const processedQuestions = processQuestions(parsedQuestions);
 
       setQuestions(processedQuestions);
@@ -134,7 +134,7 @@ export default function CreateQuestionsPage() {
       if (processedQuestions.length > 0) {
         setSaveStatus('saving');
         try {
-          const saveResult = await saveQuestions(inputs, processedQuestions, user?.id || null);
+          const saveResult = await saveQuestions(inputs, processedQuestions, user?.id || null, result.prompt);
           if (saveResult.success && Array.isArray(saveResult.data)) {
             const questionsWithId = saveResult.data.map(q => ({
               id: q.id,
@@ -185,10 +185,10 @@ export default function CreateQuestionsPage() {
   }, 100)
 
   try {
-    const text = await generateNCERTQuestions(inputs, inputs.pdfFileUri)
-    setOutput(text)
+    const result = await generateNCERTQuestions(inputs, inputs.pdfFileUri)
+    setOutput(result.text)
 
-    const parsedQuestions = parseQuestions(text)
+    const parsedQuestions = parseQuestions(result.text)
     const processedQuestions = processQuestions(parsedQuestions);
 
     setQuestions(processedQuestions);
@@ -196,7 +196,7 @@ export default function CreateQuestionsPage() {
     if (processedQuestions.length > 0) {
       setSaveStatus('saving')
       try {
-        const saveResult = await saveQuestions(inputs, processedQuestions, user?.id || null)
+        const saveResult = await saveQuestions(inputs, processedQuestions, user?.id || null, result.prompt)
         if (saveResult.success && Array.isArray(saveResult.data)) {
           const questionsWithId = saveResult.data.map(q => ({
             id: q.id,
