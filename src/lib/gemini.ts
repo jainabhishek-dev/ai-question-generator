@@ -1,7 +1,8 @@
-import { GoogleGenerativeAI } from "@google/generative-ai"
+import { GoogleGenAI } from "@google/genai"
 import { Inputs } from "@/components/AdvancedQuestionForm"
 import { createNCERTPrompt } from "@/lib/ncertPrompt"
 import { createObjectiveExtractionPrompt, createLessonPlanPrompt } from "@/lib/lessonPlanPrompt"
+import { questionArrayJsonSchema, quizGameJsonSchema } from "@/lib/questionSchema"
 
 // NEW: Interface for AI generation result with prompt tracking
 export interface GenerationResult {
@@ -10,9 +11,9 @@ export interface GenerationResult {
 }
 
 // Use server-side API key (no referrer restrictions) or fall back to public key
-const genAI = new GoogleGenerativeAI(
-  process.env.GEMINI_API_KEY_SERVER || process.env.NEXT_PUBLIC_GEMINI_API_KEY!
-)
+const genAI = new GoogleGenAI({
+  apiKey: process.env.GEMINI_API_KEY_SERVER || process.env.NEXT_PUBLIC_GEMINI_API_KEY!
+})
 
 /* ---------- STATIC MAPS ---------- */
 const gradeContexts: Record<string,string> = {
@@ -294,55 +295,53 @@ ${distributionParts.join('\n')}
 
 /* ---------- AI CALL ---------- */
 export const generateQuestions = async (inputs: Inputs, pdfFileUri?: string): Promise<GenerationResult> => {
-  const model = genAI.getGenerativeModel({ model: "gemini-2.5-flash" })
   const prompt = createAdvancedPrompt(inputs)
-  
-  // If PDF file reference is provided, include it in the request
-  if (pdfFileUri) {
-    const parts = [
-      prompt,
-      {
-        fileData: {
-          fileUri: pdfFileUri,
-          mimeType: 'application/pdf'
-        }
-      }
-    ]
-    const res = await model.generateContent(parts)
-    const text = res.response?.text() ?? ""
-    return { text, prompt }  // NEW: Return both text and prompt
+  const config = {
+    responseMimeType: "application/json",
+    responseSchema: questionArrayJsonSchema,
   }
-  
-  // Otherwise, generate without PDF
-  const res = await model.generateContent(prompt)
-  const text = res.response?.text() ?? ""
-  return { text, prompt }  // NEW: Return both text and prompt
+
+  const response = pdfFileUri
+    ? await genAI.models.generateContent({
+        model: "gemini-2.5-flash",
+        contents: [{ role: "user", parts: [
+          { text: prompt },
+          { fileData: { fileUri: pdfFileUri, mimeType: "application/pdf" } }
+        ]}],
+        config,
+      })
+    : await genAI.models.generateContent({
+        model: "gemini-2.5-flash",
+        contents: prompt,
+        config,
+      })
+
+  return { text: response.text ?? "", prompt }
 }
 
 export const generateNCERTQuestions = async (inputs: Inputs, pdfFileUri?: string): Promise<GenerationResult> => {
-  const model = genAI.getGenerativeModel({ model: "gemini-2.5-flash" })
   const prompt = createNCERTPrompt(inputs)
-  
-  // If PDF file reference is provided, include it in the request
-  if (pdfFileUri) {
-    const parts = [
-      prompt,
-      {
-        fileData: {
-          fileUri: pdfFileUri,
-          mimeType: 'application/pdf'
-        }
-      }
-    ]
-    const res = await model.generateContent(parts)
-    const text = res.response?.text() ?? ""
-    return { text, prompt }  // NEW: Return both text and prompt
+  const config = {
+    responseMimeType: "application/json",
+    responseSchema: questionArrayJsonSchema,
   }
-  
-  // Otherwise, generate without PDF
-  const res = await model.generateContent(prompt)
-  const text = res.response?.text() ?? ""
-  return { text, prompt }  // NEW: Return both text and prompt
+
+  const response = pdfFileUri
+    ? await genAI.models.generateContent({
+        model: "gemini-2.5-flash",
+        contents: [{ role: "user", parts: [
+          { text: prompt },
+          { fileData: { fileUri: pdfFileUri, mimeType: "application/pdf" } }
+        ]}],
+        config,
+      })
+    : await genAI.models.generateContent({
+        model: "gemini-2.5-flash",
+        contents: prompt,
+        config,
+      })
+
+  return { text: response.text ?? "", prompt }
 }
 
 /* ---------- LESSON PLAN AI FUNCTIONS ---------- */
@@ -355,26 +354,21 @@ export const extractLearningObjectives = async (
   subject: string,
   grade: string
 ): Promise<string> => {
-  const model = genAI.getGenerativeModel({ model: "gemini-2.5-flash" })
-  
   // Convert PDF file to base64 for Gemini
   const arrayBuffer = await pdfFile.arrayBuffer()
   const base64Data = Buffer.from(arrayBuffer).toString('base64')
-  
+
   const prompt = createObjectiveExtractionPrompt(subject, grade)
-  
-  const res = await model.generateContent([
-    prompt,
-    {
-      inlineData: {
-        data: base64Data,
-        mimeType: pdfFile.type
-      }
-    }
-  ])
-  
-  const result = res.response?.text() ?? ""
-  return result
+
+  const response = await genAI.models.generateContent({
+    model: "gemini-2.5-flash",
+    contents: [{ role: "user", parts: [
+      { text: prompt },
+      { inlineData: { data: base64Data, mimeType: pdfFile.type } }
+    ]}],
+  })
+
+  return response.text ?? ""
 }
 
 /**
@@ -392,32 +386,26 @@ export const generateLessonPlan = async (
   learnerLevel: 'beginner' | 'intermediate' | 'advanced',
   duration: 30 | 45 | 60
 ): Promise<string> => {
-  const model = genAI.getGenerativeModel({ model: "gemini-2.5-flash" })
   const prompt = createLessonPlanPrompt(formData, selectedObjective, learnerLevel, duration)
-  
-  let res;
-  
-  // Add PDF file directly to request if available
-  if (formData.pdfFile) {
-    const arrayBuffer = await formData.pdfFile.arrayBuffer()
-    const base64Data = Buffer.from(arrayBuffer).toString('base64')
-    
-    res = await model.generateContent([
-      prompt,
-      {
-        inlineData: {
-          data: base64Data,
-          mimeType: formData.pdfFile.type
-        }
-      }
-    ])
-  } else {
-    // Fallback to text-only prompt if no PDF
-    res = await model.generateContent(prompt)
-  }
-  
-  const result = res.response?.text() ?? ""
-  return result
+
+  const response = formData.pdfFile
+    ? await (async () => {
+        const arrayBuffer = await formData.pdfFile!.arrayBuffer()
+        const base64Data = Buffer.from(arrayBuffer).toString('base64')
+        return genAI.models.generateContent({
+          model: "gemini-2.5-flash",
+          contents: [{ role: "user", parts: [
+            { text: prompt },
+            { inlineData: { data: base64Data, mimeType: formData.pdfFile!.type } }
+          ]}],
+        })
+      })()
+    : await genAI.models.generateContent({
+        model: "gemini-2.5-flash",
+        contents: prompt,
+      })
+
+  return response.text ?? ""
 }
 
 /**
@@ -433,8 +421,6 @@ export const generateQuizGame = async (
   enableImages: boolean = false,
   distribution?: { mcq: number; trueFalse: number; fib: number }
 ): Promise<string> => {
-  const model = genAI.getGenerativeModel({ model: "gemini-2.5-flash" })
-  
   const gradeContext = grade && gradeContexts[grade] 
     ? `\nGrade-Specific Context (${grade}): ${gradeContexts[grade]}`
     : ""
@@ -445,14 +431,14 @@ export const generateQuizGame = async (
   const dist = distribution || { mcq: numberOfQuestions, trueFalse: 0, fib: 0 };
   
   // Build question type instructions dynamically
-  let questionTypeInstructions = '';
+  let questionTypeInstructionsText = '';
   let questionTypeList = '';
   const examples: string[] = [];
   
   // Only include instructions for requested types
   if (dist.mcq > 0) {
     questionTypeList += `- ${dist.mcq} Multiple Choice (MCQ) questions with 4 options\n`;
-    questionTypeInstructions += `
+    questionTypeInstructionsText += `
 Each MCQ question MUST have:
 - Clear, educational question text
 - Exactly 4 options (A, B, C, D)
@@ -476,7 +462,7 @@ Each MCQ question MUST have:
   
   if (dist.trueFalse > 0) {
     questionTypeList += `- ${dist.trueFalse} True/False questions\n`;
-    questionTypeInstructions += `
+    questionTypeInstructionsText += `
 Each True/False question MUST have:
 - Clear statement to evaluate as true or false
 - 2 options: ["True", "False"]
@@ -499,7 +485,7 @@ Each True/False question MUST have:
   
   if (dist.fib > 0) {
     questionTypeList += `- ${dist.fib} Fill in the Blank (FIB) questions\n`;
-    questionTypeInstructions += `
+    questionTypeInstructionsText += `
 Each FIB question MUST have:
 - Question with EXACTLY ONE blank (use "______" to indicate the blank)
 - NO options field (completely omit the "options" key)
@@ -533,7 +519,7 @@ Total Questions: ${numberOfQuestions}${timeLimit ? `\nTime Limit: ${timeLimit} s
 QUIZ GAME REQUIREMENTS:
 Generate EXACTLY ${numberOfQuestions} questions about "${topic}" with the following distribution:
 ${questionTypeList}
-${questionTypeInstructions}
+${questionTypeInstructionsText}
 
 Question Quality Standards:
 - Questions should test understanding, not just memorization
@@ -560,7 +546,6 @@ Return ONLY valid JSON matching this exact structure (no additional text before 
   ],
   "settings": {
     "time_limit": ${timeLimit || 300},
-    "lives": 3,
     "hints_enabled": true,
     "show_explanations": true
   }
@@ -579,12 +564,18 @@ CRITICAL JSON RULES:
 - points should be 100 for all questions
 - hint must be provided for EVERY question (1 sentence, helpful guidance without revealing the answer)
 - Ensure valid JSON syntax (no trailing commas, proper escaping)
-- settings must be an object with time_limit, lives, hints_enabled, show_explanations
+- settings must be an object with time_limit, hints_enabled, show_explanations
 
 Generate the quiz game now:`
-  
-  const res = await model.generateContent(prompt)
-  const result = res.response?.text() ?? ""
-  
-  return result
+
+  const response = await genAI.models.generateContent({
+    model: "gemini-2.5-flash",
+    contents: prompt,
+    config: {
+      responseMimeType: "application/json",
+      responseSchema: quizGameJsonSchema,
+    },
+  })
+
+  return response.text ?? ""
 }

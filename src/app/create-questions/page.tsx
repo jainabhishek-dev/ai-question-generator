@@ -20,6 +20,7 @@ import QuestionModeToggle from "@/components/QuestionModeToggle"
 import NCERTQuestionForm from "@/components/NCERTQuestionForm"
 import { generateNCERTQuestions } from "@/lib/gemini"
 import { parseQuestions, processQuestions, Question, extractImagePromptsFromQuestion } from "@/lib/questionParser"
+import { questionArraySchema } from "@/lib/questionSchema"
 import ImageGenerationModal from "@/components/ImageGenerationModal"
 import ComprehensiveImageModal from "@/components/ComprehensiveImageModal"
 import type { GeneratedImage } from "@/types/question"
@@ -126,8 +127,15 @@ export default function CreateQuestionsPage() {
       const result = await generateQuestions(inputs, inputs.pdfFileUri);
       setOutput(result.text);
 
-      const parsedQuestions = parseQuestions(result.text);
-      const processedQuestions = processQuestions(parsedQuestions);
+      let processedQuestions: Question[]
+      try {
+        const parsed = JSON.parse(result.text)
+        const validated = questionArraySchema.parse(parsed)
+        processedQuestions = processQuestions(validated as Question[])
+      } catch {
+        const parsedQuestions = parseQuestions(result.text)
+        processedQuestions = processQuestions(parsedQuestions)
+      }
 
       setQuestions(processedQuestions);
 
@@ -188,8 +196,15 @@ export default function CreateQuestionsPage() {
     const result = await generateNCERTQuestions(inputs, inputs.pdfFileUri)
     setOutput(result.text)
 
-    const parsedQuestions = parseQuestions(result.text)
-    const processedQuestions = processQuestions(parsedQuestions);
+    let processedQuestions: Question[]
+    try {
+      const parsed = JSON.parse(result.text)
+      const validated = questionArraySchema.parse(parsed)
+      processedQuestions = processQuestions(validated as Question[])
+    } catch {
+      const parsedQuestions = parseQuestions(result.text)
+      processedQuestions = processQuestions(parsedQuestions)
+    }
 
     setQuestions(processedQuestions);
 

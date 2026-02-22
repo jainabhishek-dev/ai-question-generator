@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from 'next/server';
 import { generateQuizGame } from '@/lib/gemini';
 import { createGame } from '@/lib/gameDatabase';
 import { cleanJsonText } from '@/lib/jsonCleaner';
+import { quizGameSchema } from '@/lib/questionSchema';
 import { QuizGameConfig, QuizQuestion, Difficulty } from '@/types/game';
 import { createServerClient, type CookieOptions } from '@supabase/ssr';
 import { cookies } from 'next/headers';
@@ -120,7 +121,8 @@ export async function POST(req: NextRequest) {
     const cleanedJson = cleanJsonText(aiResponse);
     let parsedConfig;
     try {
-      parsedConfig = JSON.parse(cleanedJson);
+      const raw = JSON.parse(cleanedJson);
+      parsedConfig = quizGameSchema.parse(raw);
     } catch (error) {
       console.error('Failed to parse AI response:', cleanedJson.substring(0, 500));
       console.error('Parse error:', error);

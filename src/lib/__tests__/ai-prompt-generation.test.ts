@@ -1,11 +1,14 @@
 /**
  * Test: AI Prompt Generation and Structure
- * 
+ *
  * This test verifies that GenerationResult structure is correct
  * and the data flow from generation to save works properly.
+ * Includes tests for the structured output path (JSON.parse → Zod → processQuestions)
+ * and the legacy fallback path (parseQuestions → processQuestions).
  */
 
-import { processQuestions } from '../questionParser';
+import { processQuestions, parseQuestions } from '../questionParser';
+import { questionArraySchema, quizGameSchema } from '../questionSchema';
 import type { Inputs } from '@/components/AdvancedQuestionForm';
 
 // Define GenerationResult locally for testing (mirrors gemini.ts)
@@ -299,5 +302,130 @@ describe('Complete Data Flow Simulation', () => {
     console.log('   2. Parsed JSON ✓');
     console.log('   3. Processed questions ✓');
     console.log('   4. Prepared for save with prompt ✓');
+  });
+});
+
+// ─────────────────────────────────────────────────────────────────────────────
+// STRUCTURED OUTPUT PATH TESTS
+// Verifies: JSON.parse → questionArraySchema.parse → processQuestions
+// ─────────────────────────────────────────────────────────────────────────────
+
+describe('Structured Output Path', () => {
+  const cleanJsonFromApi = JSON.stringify([
+    {
+      type: "multiple-choice",
+      question: "What is the powerhouse of the cell?",
+      options: ["A) Nucleus", "B) Mitochondria", "C) Ribosome", "D) Golgi apparatus"],
+      correctAnswer: "B",
+      explanation: "The mitochondria produces ATP through cellular respiration, earning it the nickname 'powerhouse of the cell'."
+    },
+    {
+      type: "true-false",
+      question: "Photosynthesis occurs in the mitochondria.",
+      options: ["True", "False"],
+      correctAnswer: "False",
+      explanation: "Photosynthesis occurs in the chloroplasts, not the mitochondria."
+    },
+    {
+      type: "fill-in-the-blank",
+      question: "The process by which plants make food using sunlight is called _______.",
+      correctAnswer: "photosynthesis",
+      explanation: "Photosynthesis is the process where plants convert sunlight, water, and CO2 into glucose and oxygen."
+    }
+  ]);
+
+  test('structured output: JSON.parse produces a valid array', () => {
+    const parsed = JSON.parse(cleanJsonFromApi);
+    expect(Array.isArray(parsed)).toBe(true);
+    expect(parsed).toHaveLength(3);
+    console.log('✅ JSON.parse on structured output produces valid array');
+  });
+
+  test('structured output: questionArraySchema.parse validates all question types', () => {
+    const parsed = JSON.parse(cleanJsonFromApi);
+    const validated = questionArraySchema.parse(parsed);
+    expect(validated).toHaveLength(3);
+    expect(validated[0].type).toBe('multiple-choice');
+    expect(validated[1].type).toBe('true-false');
+    expect(validated[2].type).toBe('fill-in-the-blank');
+    console.log('✅ Zod schema validation passed for all question types');
+  });
+
+  test('structured output: processQuestions produces render-ready Question[]', () => {
+    const parsed = JSON.parse(cleanJsonFromApi);
+    const validated = questionArraySchema.parse(parsed);
+    const processed = processQuestions(validated as Parameters<typeof processQuestions>[0]);
+
+    expect(processed).toHaveLength(3);
+
+    const mcq = processed[0];
+    expect(mcq.type).toBe('multiple-choice');
+    expect(mcq.options).toHaveLength(4);
+    expect(mcq.correctAnswer).toBe('B');
+    expect(mcq.correctAnswerLetter).toBe('B');
+
+    const tf = processed[1];
+    expect(tf.type).toBe('true-false');
+    expect(tf.correctAnswer).toBe('False');
+
+    const fib = processed[2];
+    expect(fib.type).toBe('fill-in-the-blank');
+    expect(fib.correctAnswer).toBe('photosynthesis');
+
+    console.log('✅ processQuestions produces render-ready Question[] from structured output');
+  });
+
+  test('structured output: falls back to parseQuestions on Zod validation failure', () => {
+    // Simulate a response with a type outside the enum (e.g. AI used a variation)
+    const nonEnumTypeJson = JSON.stringify([{
+      type: "multiple choice questions",
+      question: "What is 2 + 2?",
+      options: ["A) 3", "B) 4", "C) 5", "D) 6"],
+      correctAnswer: "B",
+      explanation: "Basic arithmetic."
+    }]);
+
+    let processedQuestions;
+    try {
+      const parsed = JSON.parse(nonEnumTypeJson);
+      const validated = questionArraySchema.parse(parsed); // will throw — type not in enum
+      processedQuestions = processQuestions(validated as Parameters<typeof processQuestions>[0]);
+    } catch {
+      // Fallback path
+      const parsedQuestions = parseQuestions(nonEnumTypeJson);
+      processedQuestions = processQuestions(parsedQuestions);
+    }
+
+    expect(processedQuestions).toHaveLength(1);
+    expect(processedQuestions[0].question).toBe('What is 2 + 2?');
+    console.log('✅ Fallback path correctly handles non-enum type values');
+  });
+
+  test('structured output: quizGameSchema validates quiz structure', () => {
+    const quizJson = {
+      questions: [
+        {
+          question: "What is the capital of India?",
+          question_type: "MCQ",
+          options: ["A) Mumbai", "B) Delhi", "C) Chennai", "D) Kolkata"],
+          correct_answer: "B",
+          explanation: "New Delhi is the capital of India.",
+          difficulty: "easy",
+          points: 100,
+          hint: "It is located in northern India."
+        }
+      ],
+      settings: {
+        time_limit: 30,
+        hints_enabled: true,
+        show_explanations: true
+      }
+    };
+
+    const validated = quizGameSchema.parse(quizJson);
+    expect(validated.questions).toHaveLength(1);
+    expect(validated.questions[0].question_type).toBe('MCQ');
+    expect(validated.settings.hints_enabled).toBe(true);
+    console.log('✅ quizGameSchema validates quiz structure correctly');
   });
 });

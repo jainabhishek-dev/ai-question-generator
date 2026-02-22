@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server'
-import { GoogleAIFileManager } from '@google/generative-ai/server'
+import { GoogleGenAI } from '@google/genai'
 import { writeFile, unlink } from 'fs/promises'
 import { join } from 'path'
 import { tmpdir } from 'os'
@@ -47,10 +47,10 @@ export async function POST(request: NextRequest) {
       throw new Error('GEMINI_API_KEY not configured')
     }
 
-    const fileManager = new GoogleAIFileManager(apiKey)
-    const uploadResult = await fileManager.uploadFile(tempPath, {
-      mimeType: 'application/pdf',
-      displayName: file.name
+    const ai = new GoogleGenAI({ apiKey })
+    const uploadedFile = await ai.files.upload({
+      file: tempPath,
+      config: { mimeType: 'application/pdf', displayName: file.name }
     })
 
     // Cleanup temp file
@@ -59,7 +59,7 @@ export async function POST(request: NextRequest) {
 
     return NextResponse.json({
       success: true,
-      fileUri: uploadResult.file.uri,
+      fileUri: uploadedFile.uri,
       fileName: file.name,
       mimeType: 'application/pdf'
     })
