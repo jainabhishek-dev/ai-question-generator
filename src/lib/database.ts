@@ -377,6 +377,37 @@ export const softDeleteUserQuestion = async (
   }
 }
 
+// NEW: Bulk soft delete function
+export const bulkSoftDeleteUserQuestions = async (
+  questionIds: number[],
+  userId: string
+): Promise<{ success: boolean; error?: string }> => {
+  try {
+    if (!questionIds.length) return { success: true }
+
+    const { error } = await supabase
+      .from('questions')
+      .update({ deleted_at: new Date().toISOString() })
+      .in('id', questionIds)
+      .eq('user_id', userId)
+
+    if (error) {
+      console.error('Error bulk soft deleting questions:', error)
+      return { success: false, error: getErrorMessage(error) }
+    }
+
+    console.log(`✅ ${questionIds.length} Questions soft deleted for user ${userId}`)
+    return { success: true }
+
+  } catch (err) {
+    console.error('Unexpected error bulk soft deleting questions:', err)
+    return { 
+      success: false, 
+      error: getErrorMessage(err)
+    }
+  }
+}
+
 // NEW: Restore soft-deleted question
 export const restoreUserQuestion = async (
   questionId: number,

@@ -6,13 +6,15 @@ interface DeleteModalProps {
   onClose: () => void
   onDelete: () => void
   deleting: boolean
+  count?: number
 }
 
 const DeleteModal: React.FC<DeleteModalProps> = ({
   show,
   onClose,
   onDelete,
-  deleting
+  deleting,
+  count
 }) => {
   if (!show) return null
   return (
@@ -23,10 +25,13 @@ const DeleteModal: React.FC<DeleteModalProps> = ({
           <ExclamationTriangleIcon className="w-7 h-7 sm:w-8 sm:h-8 text-red-600 dark:text-red-300" />
         </div>
 
-        <h3 className="text-lg sm:text-xl font-bold text-center text-gray-900 dark:text-gray-100 mb-3 sm:mb-4">Delete Question?</h3>
+        <h3 className="text-lg sm:text-xl font-bold text-center text-gray-900 dark:text-gray-100 mb-3 sm:mb-4">
+          {count && count > 1 ? "Delete Questions?" : "Delete Question?"}
+        </h3>
         <p className="text-gray-600 dark:text-gray-300 text-center mb-6 sm:mb-8 leading-relaxed text-sm sm:text-base">
-          Are you sure you want to delete this question? This action cannot be undone for your account,
-          but the question will remain in the database.
+          {count && count > 1 
+            ? `Are you sure you want to delete these ${count} questions? This action cannot be undone for your account, but the questions will remain in the database.`
+            : `Are you sure you want to delete this question? This action cannot be undone for your account, but the question will remain in the database.`}
         </p>
 
         <div className="flex space-x-3 sm:space-x-4">

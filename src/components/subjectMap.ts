@@ -1,6 +1,8 @@
 export const subjectMap: Record<string, string[]> = {
   Mathematics: [
-    "Arithmetic", "Algebra", "Geometry", "Trigonometry", "Calculus", "Statistics", "Probability", "Discrete Mathematics"
+    "Arithmetic", "Algebra", "Geometry", "Trigonometry", "Calculus", "Statistics", "Probability", "Discrete Mathematics",
+    "Analysis", "Differential Equations", "Numerical Analysis", "Linear Algebra", "Descriptive Statistics",
+    "Statistical Inference", "Sample Surveys", "Design of Experiments", "Applied Statistics", "Multivariate Analysis"
   ],
   Science: [
     "Physics", "Chemistry", "Biology", "Earth & Environmental Science", "Astronomy", "General Science"

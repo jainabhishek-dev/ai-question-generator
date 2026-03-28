@@ -8,9 +8,9 @@ import 'katex/dist/katex.min.css'
 import Link from 'next/link'
 import { ExclamationCircleIcon, SparklesIcon, MagnifyingGlassIcon, ArrowLeftIcon } from "@heroicons/react/24/outline";
 import { QuestionRecord, GeneratedImage } from '@/types/question'
-import { getUserQuestions, softDeleteUserQuestion } from '@/lib/database'
+import { getUserQuestions, softDeleteUserQuestion, bulkSoftDeleteUserQuestions } from '@/lib/database'
 import FilterPanel from './FilterPanel'
-import ExportPanel from './ExportPanel'
+import ActionPanel from './ActionPanel'
 import QuestionCard from './QuestionCard'
 import Pagination from './Pagination'
 import DeleteModal from './DeleteModal'
@@ -53,6 +53,9 @@ function MyQuestionsPage() {
   const [deletingId, setDeletingId] = useState<number | null>(null)
   const [showDeleteModal, setShowDeleteModal] = useState(false)
   const [pendingDeleteId, setPendingDeleteId] = useState<number | null>(null)
+  
+  const [showBulkDeleteModal, setShowBulkDeleteModal] = useState(false)
+  const [bulkDeleting, setBulkDeleting] = useState(false)
   
   const [editingQuestion, setEditingQuestion] = useState<QuestionRecord | null>(null)
 
@@ -146,6 +149,30 @@ function MyQuestionsPage() {
       setError(`Failed to delete question: ${errorMessage || 'Unknown error'}`)
     } finally {
       setDeletingId(null)
+    }
+  }
+
+  async function handleBulkDelete() {
+    if (!user || selectedIds.length === 0) return
+    setBulkDeleting(true)
+    setError(null)
+    try {
+      const res = await bulkSoftDeleteUserQuestions(selectedIds, user.id)
+      if (!res.success) {
+        setError(res.error || 'Failed to bulk delete questions.')
+      } else {
+        await mutateQuestions()
+        setSelectedIds([])
+        setShowBulkDeleteModal(false)
+      }
+    } catch (err: unknown) {
+      const errorMessage =
+        typeof err === 'object' && err !== null && 'message' in err
+          ? (err as { message?: string }).message
+          : undefined
+      setError(`Failed to bulk delete questions: ${errorMessage || 'Unknown error'}`)
+    } finally {
+      setBulkDeleting(false)
     }
   }
   
@@ -489,9 +516,10 @@ function MyQuestionsPage() {
           paginatedQuestionsCount={paginatedQuestions.length}
         />
 
-        <ExportPanel
+        <ActionPanel
           selectedCount={selectedIds.length}
           onCsvExport={handleCsvExport}
+          onBulkDelete={() => setShowBulkDeleteModal(true)}
         />
 
         {/* Content */}
@@ -585,6 +613,17 @@ function MyQuestionsPage() {
           }}
           onDelete={() => pendingDeleteId && handleDelete(pendingDeleteId)}
           deleting={deletingId === pendingDeleteId}
+        />
+        )}
+
+        {/* Bulk Delete Modal */}
+        {showBulkDeleteModal && (
+        <DeleteModal
+          show={showBulkDeleteModal}
+          onClose={() => setShowBulkDeleteModal(false)}
+          onDelete={handleBulkDelete}
+          deleting={bulkDeleting}
+          count={selectedIds.length}
         />
         )}
       </div>
