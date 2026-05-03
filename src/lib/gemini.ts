@@ -294,8 +294,8 @@ ${distributionParts.join('\n')}
 }
 
 /* ---------- AI CALL ---------- */
-export const generateQuestions = async (inputs: Inputs, pdfFileUri?: string): Promise<GenerationResult> => {
-  const prompt = createAdvancedPrompt(inputs)
+export const generateQuestions = async (inputs: Inputs, pdfFileUri?: string, promptOverride?: string): Promise<GenerationResult> => {
+  const prompt = promptOverride ?? createAdvancedPrompt(inputs)
   const config = {
     responseMimeType: "application/json",
     responseSchema: questionArrayJsonSchema,

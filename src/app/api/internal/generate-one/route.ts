@@ -164,7 +164,8 @@ export async function POST(request: NextRequest) {
     // Use pdfFileUri from inputs if present (uploaded PDF context)
     const result = await generateQuestions(
       { ...singleInputs },
-      inputs.pdfFileUri
+      inputs.pdfFileUri,
+      finalPrompt
     )
 
     const rawText = result.text
