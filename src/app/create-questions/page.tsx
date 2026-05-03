@@ -143,7 +143,7 @@ export default function CreateQuestionsPage() {
 
       // Apply events to slots
       setSlots(prev => {
-        let updated = [...prev]
+        const updated = [...prev]
         for (const event of data.events) {
           if (event.question_index !== null && event.question_index !== undefined) {
             const idx = event.question_index
