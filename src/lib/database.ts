@@ -294,14 +294,16 @@ export const getQuestions = async (filters?: {
   }
 }
 
-// UPDATE: Filter out soft-deleted questions in getUserQuestions
+// My Questions page: returns only review-passed, user-visible, non-deleted questions.
+// The is_user_visible filter ensures questions that failed the review loop
+// (or were discarded) never appear in the user's personal library.
 export const getUserQuestions = async (
   userId: string,
   filters?: {
     subject?: string
     grade?: string
     limit?: number
-    includeDeleted?: boolean  // NEW: Option to include soft-deleted items
+    includeDeleted?: boolean
   }
 ): Promise<{ success: boolean; data?: QuestionRecord[]; error?: string }> => {
   try {
@@ -309,14 +311,13 @@ export const getUserQuestions = async (
       .from('questions')
       .select('*')
       .eq('user_id', userId)
+      .eq('is_user_visible', true)   // Only review-passed questions
       .order('created_at', { ascending: false })
 
-    // NEW: Filter out soft-deleted questions unless specifically requested
     if (!filters?.includeDeleted) {
       query = query.is('deleted_at', null)
     }
 
-    // Apply additional filters if provided
     if (filters?.subject) {
       query = query.eq('subject', filters.subject)
     }
@@ -334,15 +335,15 @@ export const getUserQuestions = async (
       return { success: false, error: getErrorMessage(error) }
     }
 
-    return { 
-      success: true, 
-      data: data ? (data as QuestionRecord[]) : [] 
+    return {
+      success: true,
+      data: data ? (data as QuestionRecord[]) : []
     }
 
   } catch (err) {
     console.error('Unexpected error fetching user questions:', err)
-    return { 
-      success: false, 
+    return {
+      success: false,
       error: getErrorMessage(err)
     }
   }
@@ -977,6 +978,192 @@ export const getQuestionWithImages = async (
   }
 }
 
+// ─────────────────────────────────────────────────────────────────────────────
+// REVIEW LIFECYCLE — Types
+// ─────────────────────────────────────────────────────────────────────────────
+
+/** One row in generation_jobs — represents a single form submission */
+export interface GenerationJob {
+  id: string
+  user_id: string | null
+  inputs: object
+  mode: 'general' | 'ncert'
+  status: 'pending' | 'running' | 'completed' | 'failed'
+  total_questions: number
+  questions_passed: number
+  questions_discarded: number
+  error_message?: string | null
+  created_at: string
+  completed_at?: string | null
+}
+
+/** Event types written by n8n, polled by the status endpoint */
+export type JobEventType =
+  | 'generating'
+  | 'parse_error'
+  | 'reviewing'
+  | 'passed'
+  | 'failed'
+  | 'rewriting'
+  | 'discarded'
+  | 'complete'
+
+/** One row in generation_job_events */
+export interface GenerationJobEvent {
+  id: number
+  job_id: string
+  question_index: number | null
+  event_type: JobEventType
+  payload: Record<string, unknown> | null
+  question_id: number | null
+  created_at: string
+}
+
+/** Shape of parameter results used in saveReviewAttempt */
+export interface ParameterResult {
+  pass: boolean
+  feedback: string
+}
+
+export interface ReviewAttemptData {
+  p1: ParameterResult
+  p2: ParameterResult
+  p3: ParameterResult
+  p4: ParameterResult
+  p5: ParameterResult
+  p6: ParameterResult
+  p7: ParameterResult
+  p8: ParameterResult
+  p9: ParameterResult
+  p10: ParameterResult
+  overall_passed: boolean
+  parameters_passed: number
+  rewrite_instructions: string
+}
+
+// ─────────────────────────────────────────────────────────────────────────────
+// REVIEW LIFECYCLE — Functions
+// Used by the /api/generate/start route (Vercel) only.
+// n8n uses the Supabase service role key directly.
+// ─────────────────────────────────────────────────────────────────────────────
+
+/**
+ * Creates a generation_jobs row when the user submits the form.
+ * Called by /api/generate/start before sending the webhook to n8n.
+ * Returns the new job's UUID so the browser can poll for status.
+ */
+export const createGenerationJob = async (
+  userId: string | null,
+  inputs: object,
+  mode: 'general' | 'ncert',
+  totalQuestions: number
+): Promise<{ success: boolean; jobId?: string; error?: string }> => {
+  try {
+    const { data, error } = await supabase
+      .from('generation_jobs')
+      .insert({
+        user_id: userId,
+        inputs,
+        mode,
+        status: 'pending',
+        total_questions: totalQuestions,
+        questions_passed: 0,
+        questions_discarded: 0,
+      })
+      .select('id')
+      .single()
+
+    if (error) {
+      console.error('Error creating generation job:', error)
+      return { success: false, error: getErrorMessage(error) }
+    }
+
+    return { success: true, jobId: data.id }
+  } catch (err) {
+    console.error('Unexpected error creating generation job:', err)
+    return { success: false, error: getErrorMessage(err) }
+  }
+}
+
+/**
+ * Fetches new events for a job since a given timestamp.
+ * Called by GET /api/generate/[jobId]/status every 2 seconds.
+ * Returns both the new events and the current job status.
+ */
+export const getJobEventsSince = async (
+  jobId: string,
+  since: string  // ISO timestamp — only events after this are returned
+): Promise<{
+  success: boolean
+  events?: GenerationJobEvent[]
+  jobStatus?: GenerationJob['status']
+  error?: string
+}> => {
+  try {
+    // Fetch new events in one query
+    const { data: events, error: eventsError } = await supabase
+      .from('generation_job_events')
+      .select('*')
+      .eq('job_id', jobId)
+      .gt('created_at', since)
+      .order('created_at', { ascending: true })
+
+    if (eventsError) {
+      console.error('Error fetching job events:', eventsError)
+      return { success: false, error: getErrorMessage(eventsError) }
+    }
+
+    // Fetch current job status in a second query
+    const { data: job, error: jobError } = await supabase
+      .from('generation_jobs')
+      .select('status')
+      .eq('id', jobId)
+      .single()
+
+    if (jobError) {
+      console.error('Error fetching job status:', jobError)
+      return { success: false, error: getErrorMessage(jobError) }
+    }
+
+    return {
+      success: true,
+      events: (events ?? []) as GenerationJobEvent[],
+      jobStatus: job.status as GenerationJob['status'],
+    }
+  } catch (err) {
+    console.error('Unexpected error fetching job events:', err)
+    return { success: false, error: getErrorMessage(err) }
+  }
+}
+
+/**
+ * Returns the count of review-passed, user-visible questions for a user.
+ * Used for quota enforcement on the form.
+ * Only counts is_user_visible=true to match what getUserQuestions returns.
+ */
+export const getUserVisibleQuestionCount = async (
+  userId: string
+): Promise<{ success: boolean; count?: number; error?: string }> => {
+  try {
+    const { count, error } = await supabase
+      .from('questions')
+      .select('*', { count: 'exact', head: true })
+      .eq('user_id', userId)
+      .eq('is_user_visible', true)
+      .is('deleted_at', null)
+
+    if (error) {
+      console.error('Error counting user visible questions:', error)
+      return { success: false, error: getErrorMessage(error) }
+    }
+
+    return { success: true, count: count ?? 0 }
+  } catch (err) {
+    console.error('Unexpected error counting user visible questions:', err)
+    return { success: false, error: getErrorMessage(err) }
+  }
+}
+
 /* ========== EXPORTS ========== */
 
 const databaseApi = {
@@ -985,8 +1172,12 @@ const databaseApi = {
   getPublicQuestions,
   deleteUserQuestion,
   getUserQuestions,
+  getUserVisibleQuestionCount,
   softDeleteUserQuestion,
   restoreUserQuestion,
+  // Review lifecycle functions
+  createGenerationJob,
+  getJobEventsSince,
   // Image-related functions
   saveImagePrompts,
   getImagePrompts,

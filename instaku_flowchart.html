@@ -1,0 +1,297 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Instaku – Question Quality Loop</title>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600;700;800&display=swap" rel="stylesheet" />
+  <style>
+    * { margin: 0; padding: 0; box-sizing: border-box; }
+
+    body {
+      font-family: 'Inter', sans-serif;
+      background: #0f172a;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      min-height: 100vh;
+      padding: 40px 20px;
+    }
+
+    .chart {
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      gap: 0;
+      position: relative;
+      width: 460px;
+    }
+
+    /* ── Nodes ── */
+    .node {
+      width: 340px;
+      padding: 18px 28px;
+      border-radius: 16px;
+      font-size: 17px;
+      font-weight: 700;
+      color: #fff;
+      text-align: center;
+      position: relative;
+      z-index: 2;
+      letter-spacing: 0.01em;
+      line-height: 1.4;
+    }
+
+    .node-create   { background: #1d4ed8; box-shadow: 0 0 28px #3b82f655; }
+    .node-review   { background: #7c3aed; box-shadow: 0 0 28px #8b5cf655; }
+    .node-fail     { background: #dc2626; box-shadow: 0 0 28px #ef444455; }
+    .node-rewrite  { background: #c2410c; box-shadow: 0 0 28px #f9731655; }
+    .node-save     { background: #16a34a; box-shadow: 0 0 28px #22c55e55; }
+
+    /* ── Diamond decision ── */
+    .diamond-wrap {
+      position: relative;
+      width: 340px;
+      display: flex;
+      justify-content: center;
+      margin: 0;
+      z-index: 2;
+    }
+
+    .diamond {
+      width: 140px;
+      height: 70px;
+      background: #334155;
+      box-shadow: 0 0 20px #94a3b830;
+      transform: rotate(0deg);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      clip-path: polygon(50% 0%, 100% 50%, 50% 100%, 0% 50%);
+      font-size: 14px;
+      font-weight: 700;
+      color: #e2e8f0;
+      letter-spacing: 0.02em;
+    }
+
+    /* ── Straight arrows ── */
+    .arrow-down {
+      width: 3px;
+      height: 36px;
+      background: #475569;
+      position: relative;
+      z-index: 1;
+    }
+    .arrow-down::after {
+      content: '';
+      position: absolute;
+      bottom: -7px;
+      left: 50%;
+      transform: translateX(-50%);
+      border-left: 7px solid transparent;
+      border-right: 7px solid transparent;
+      border-top: 10px solid #475569;
+    }
+
+    .arrow-down-green {
+      width: 3px;
+      height: 36px;
+      background: #16a34a;
+      position: relative;
+      z-index: 1;
+    }
+    .arrow-down-green::after {
+      content: '';
+      position: absolute;
+      bottom: -7px;
+      left: 50%;
+      transform: translateX(-50%);
+      border-left: 7px solid transparent;
+      border-right: 7px solid transparent;
+      border-top: 10px solid #16a34a;
+    }
+
+    /* ── Pass label on green arrow ── */
+    .pass-label {
+      font-size: 13px;
+      font-weight: 700;
+      color: #4ade80;
+      background: #052e16;
+      border: 1px solid #16a34a44;
+      border-radius: 8px;
+      padding: 5px 12px;
+      margin: 4px 0;
+      z-index: 2;
+      letter-spacing: 0.02em;
+    }
+
+    /* ── Left branch (fail loop) ── */
+    .fail-branch {
+      display: flex;
+      flex-direction: column;
+      align-items: flex-end;
+      position: absolute;
+      left: -108px;
+      top: 0;
+      z-index: 3;
+    }
+
+    /* The horizontal arm going left from diamond */
+    .h-arrow-left {
+      display: flex;
+      align-items: center;
+      gap: 0;
+    }
+
+    /* ── Outer layout: main column + side branch ── */
+    .outer {
+      display: flex;
+      flex-direction: row;
+      align-items: stretch;
+      position: relative;
+      width: 560px;
+      justify-content: center;
+    }
+
+    .main-col {
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      width: 340px;
+      flex-shrink: 0;
+    }
+
+    /* ── Left loop sidebar ── */
+    .loop-sidebar {
+      position: absolute;
+      left: 20px;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      gap: 0;
+    }
+
+    /* ── SVG loop ── */
+    .loop-svg-wrap {
+      position: absolute;
+      left: 0;
+      top: 0;
+      width: 100%;
+      height: 100%;
+      pointer-events: none;
+      z-index: 1;
+    }
+
+    /* ── Watermark ── */
+    .watermark {
+      margin-top: 32px;
+      color: #334155;
+      font-size: 13px;
+      font-weight: 600;
+      letter-spacing: 0.08em;
+      text-transform: uppercase;
+    }
+  </style>
+</head>
+<body>
+  <div style="display:flex; flex-direction:column; align-items:center;">
+
+    <svg width="560" height="680" viewBox="0 0 560 680" xmlns="http://www.w3.org/2000/svg" style="font-family:'Inter',sans-serif;">
+
+      <!-- Background -->
+      <rect width="560" height="680" fill="#0f172a" rx="24"/>
+
+      <!-- ═══════════════ NODES ═══════════════ -->
+
+      <!-- 1. CREATE -->
+      <rect x="150" y="30" width="260" height="60" rx="14" fill="#1d4ed8" filter="url(#glow-blue)"/>
+      <text x="280" y="67" text-anchor="middle" fill="white" font-size="17" font-weight="700">📝 Create</text>
+
+      <!-- Arrow: Create → Review -->
+      <line x1="280" y1="90" x2="280" y2="126" stroke="#475569" stroke-width="3"/>
+      <polygon points="273,124 287,124 280,136" fill="#475569"/>
+
+      <!-- 2. REVIEW -->
+      <rect x="150" y="136" width="260" height="60" rx="14" fill="#7c3aed" filter="url(#glow-purple)"/>
+      <text x="280" y="171" text-anchor="middle" fill="white" font-size="15" font-weight="700">🔍 Review on 10 parameters</text>
+
+      <!-- Arrow: Review → Diamond -->
+      <line x1="280" y1="196" x2="280" y2="232" stroke="#475569" stroke-width="3"/>
+      <polygon points="273,230 287,230 280,242" fill="#475569"/>
+
+      <!-- 3. DIAMOND: Pass all 10? -->
+      <polygon points="280,242 350,278 280,314 210,278" fill="#1e293b" stroke="#475569" stroke-width="2"/>
+      <text x="280" y="283" text-anchor="middle" fill="#e2e8f0" font-size="13" font-weight="700">Pass all 10?</text>
+
+      <!-- ── FAIL branch (LEFT) ── -->
+      <!-- Horizontal arrow left from diamond -->
+      <line x1="210" y1="278" x2="156" y2="278" stroke="#dc2626" stroke-width="3"/>
+      <polygon points="158,271 158,285 146,278" fill="#dc2626"/>
+
+      <!-- 4. FAIL node -->
+      <rect x="30" y="250" width="116" height="56" rx="12" fill="#dc2626" filter="url(#glow-red)"/>
+      <text x="88" y="277" text-anchor="middle" fill="white" font-size="12" font-weight="700">❌ Fail any one</text>
+
+      <!-- Arrow: Fail → Rewrite -->
+      <line x1="88" y1="306" x2="88" y2="352" stroke="#c2410c" stroke-width="3"/>
+      <polygon points="81,350 95,350 88,362" fill="#c2410c"/>
+
+      <!-- 5. REWRITE node -->
+      <rect x="20" y="362" width="136" height="56" rx="12" fill="#c2410c" filter="url(#glow-orange)"/>
+      <text x="88" y="384" text-anchor="middle" fill="white" font-size="11.5" font-weight="700">🔄 Rewrite using</text>
+      <text x="88" y="401" text-anchor="middle" fill="white" font-size="11.5" font-weight="700">feedback</text>
+
+      <!-- Loop arrow: Rewrite → back to Review (dashed curved) -->
+      <path d="M 88 362 C 88 200, 88 200, 150 166" stroke="#7c3aed" stroke-width="2.5" stroke-dasharray="8,5" fill="none" marker-end="url(#arrowhead-purple)"/>
+
+      <!-- ── PASS branch (DOWN from diamond) ── -->
+      <!-- Arrow: diamond → pass label -->
+      <line x1="280" y1="314" x2="280" y2="354" stroke="#16a34a" stroke-width="3"/>
+
+      <!-- PASS label box -->
+      <rect x="160" y="354" width="240" height="38" rx="9" fill="#052e16" stroke="#16a34a" stroke-width="1.5"/>
+      <text x="280" y="378" text-anchor="middle" fill="#4ade80" font-size="12.5" font-weight="700">✅ Pass all 10 parameters</text>
+
+      <!-- Arrow: pass label → Save -->
+      <line x1="280" y1="392" x2="280" y2="430" stroke="#16a34a" stroke-width="3"/>
+      <polygon points="273,428 287,428 280,440" fill="#16a34a"/>
+
+      <!-- 6. SAVE -->
+      <rect x="150" y="440" width="260" height="60" rx="14" fill="#16a34a" filter="url(#glow-green)"/>
+      <text x="280" y="476" text-anchor="middle" fill="white" font-size="15" font-weight="700">💾 Go ahead and Save</text>
+
+      <!-- Watermark -->
+      <text x="280" y="540" text-anchor="middle" fill="#334155" font-size="12" font-weight="600" letter-spacing="2">INSTAKU.COM</text>
+
+      <!-- ═══════════════ FILTERS / MARKERS ═══════════════ -->
+      <defs>
+        <filter id="glow-blue" x="-30%" y="-30%" width="160%" height="160%">
+          <feGaussianBlur stdDeviation="6" result="blur"/>
+          <feMerge><feMergeNode in="blur"/><feMergeNode in="SourceGraphic"/></feMerge>
+        </filter>
+        <filter id="glow-purple" x="-30%" y="-30%" width="160%" height="160%">
+          <feGaussianBlur stdDeviation="6" result="blur"/>
+          <feMerge><feMergeNode in="blur"/><feMergeNode in="SourceGraphic"/></feMerge>
+        </filter>
+        <filter id="glow-red" x="-30%" y="-30%" width="160%" height="160%">
+          <feGaussianBlur stdDeviation="5" result="blur"/>
+          <feMerge><feMergeNode in="blur"/><feMergeNode in="SourceGraphic"/></feMerge>
+        </filter>
+        <filter id="glow-orange" x="-30%" y="-30%" width="160%" height="160%">
+          <feGaussianBlur stdDeviation="5" result="blur"/>
+          <feMerge><feMergeNode in="blur"/><feMergeNode in="SourceGraphic"/></feMerge>
+        </filter>
+        <filter id="glow-green" x="-30%" y="-30%" width="160%" height="160%">
+          <feGaussianBlur stdDeviation="6" result="blur"/>
+          <feMerge><feMergeNode in="blur"/><feMergeNode in="SourceGraphic"/></feMerge>
+        </filter>
+        <marker id="arrowhead-purple" markerWidth="8" markerHeight="8" refX="4" refY="4" orient="auto">
+          <polygon points="0,0 8,4 0,8" fill="#7c3aed"/>
+        </marker>
+      </defs>
+    </svg>
+
+    <p style="color:#334155; font-size:12px; margin-top:12px; font-family:'Inter',sans-serif;">Open in browser → Right-click the SVG → Save as image, or screenshot</p>
+  </div>
+</body>
+</html>
