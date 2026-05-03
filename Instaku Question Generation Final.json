@@ -1,0 +1,927 @@
+{
+  "name": "Instaku Question Generation",
+  "nodes": [
+    {
+      "parameters": {
+        "httpMethod": "POST",
+        "path": "instaku-generate",
+        "options": {}
+      },
+      "id": "9899a96c-7be1-4e32-a76a-a67e09ebc5dc",
+      "name": "Webhook Trigger",
+      "type": "n8n-nodes-base.webhook",
+      "typeVersion": 2.1,
+      "position": [
+        -1744,
+        1408
+      ],
+      "webhookId": "6e861f45-26bc-4df0-9072-7e23a7b1903f"
+    },
+    {
+      "parameters": {
+        "jsCode": "const item = $('Webhook Trigger').first();\nconst { jobId, userId, inputs, mode } = item.json.body;\n\nconst questionSlots = [];\n\nconst types = [\n  { type: 'multiple-choice', count: inputs.numMCQ || 0 },\n  { type: 'true-false', count: inputs.numTrueFalse || 0 },\n  { type: 'fill-in-the-blank', count: inputs.numFillBlank || 0 },\n  { type: 'short-answer', count: inputs.numShortAnswer || 0 },\n  { type: 'long-answer', count: inputs.numLongAnswer || 0 }\n];\n\nlet questionIndex = 0;\nfor (const { type, count } of types) {\n  for (let i = 0; i < count; i++) {\n    questionSlots.push({\n      jobId,\n      userId,\n      inputs,\n      mode,\n      questionType: type,\n      questionIndex: questionIndex++\n    });\n  }\n}\n\nreturn questionSlots;"
+      },
+      "id": "b818a9e5-0e38-4d1e-abac-e218716e45e6",
+      "name": "Validate & Build Question Slots",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        -1296,
+        1408
+      ]
+    },
+    {
+      "parameters": {
+        "method": "PATCH",
+        "url": "=https://ydwmcthdjvhmiewwnpfo.supabase.co/rest/v1/generation_jobs?id=eq.{{ $(\"Webhook Trigger\").item.json.body.jobId }}",
+        "sendHeaders": true,
+        "headerParameters": {
+          "parameters": [
+            {
+              "name": "apikey",
+              "value": "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Inlkd21jdGhkanZobWlld3ducGZvIiwicm9sZSI6InNlcnZpY2Vfcm9sZSIsImlhdCI6MTc1MzYyMDM2MiwiZXhwIjoyMDY5MTk2MzYyfQ.CmRE4CItRDUged-TKgkNvyCGW4cP7rKzNjigJYJEYZ4"
+            },
+            {
+              "name": "Authorization",
+              "value": "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Inlkd21jdGhkanZobWlld3ducGZvIiwicm9sZSI6InNlcnZpY2Vfcm9sZSIsImlhdCI6MTc1MzYyMDM2MiwiZXhwIjoyMDY5MTk2MzYyfQ.CmRE4CItRDUged-TKgkNvyCGW4cP7rKzNjigJYJEYZ4"
+            },
+            {
+              "name": "Content-Type",
+              "value": "application/json"
+            }
+          ]
+        },
+        "sendBody": true,
+        "specifyBody": "json",
+        "jsonBody": "{ \"status\": \"running\" }",
+        "options": {}
+      },
+      "id": "7f5139cd-d913-4475-9a5f-de08e8eacc4f",
+      "name": "Update Job Status to Running",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.4,
+      "position": [
+        -1520,
+        1408
+      ]
+    },
+    {
+      "parameters": {
+        "method": "PATCH",
+        "url": "=https://ydwmcthdjvhmiewwnpfo.supabase.co/rest/v1/generation_jobs?id=eq.{{ $(\"Initialize Variables\").item.json.jobId }}",
+        "sendHeaders": true,
+        "headerParameters": {
+          "parameters": [
+            {
+              "name": "apikey",
+              "value": "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Inlkd21jdGhkanZobWlld3ducGZvIiwicm9sZSI6InNlcnZpY2Vfcm9sZSIsImlhdCI6MTc1MzYyMDM2MiwiZXhwIjoyMDY5MTk2MzYyfQ.CmRE4CItRDUged-TKgkNvyCGW4cP7rKzNjigJYJEYZ4"
+            },
+            {
+              "name": "Authorization",
+              "value": "Bearer eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Inlkd21jdGhkanZobWlld3ducGZvIiwicm9sZSI6InNlcnZpY2Vfcm9sZSIsImlhdCI6MTc1MzYyMDM2MiwiZXhwIjoyMDY5MTk2MzYyfQ.CmRE4CItRDUged-TKgkNvyCGW4cP7rKzNjigJYJEYZ4"
+            }
+          ]
+        },
+        "sendBody": true,
+        "specifyBody": "json",
+        "jsonBody": "{ \"status\": \"completed\" }",
+        "options": {}
+      },
+      "id": "56c02c46-97b7-4f5a-9e3e-4c29697e9190",
+      "name": "Update Job Completed",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.4,
+      "position": [
+        -848,
+        1408
+      ]
+    },
+    {
+      "parameters": {
+        "method": "POST",
+        "url": "https://ydwmcthdjvhmiewwnpfo.supabase.co/rest/v1/generation_job_events",
+        "sendHeaders": true,
+        "headerParameters": {
+          "parameters": [
+            {
+              "name": "apikey",
+              "value": "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Inlkd21jdGhkanZobWlld3ducGZvIiwicm9sZSI6InNlcnZpY2Vfcm9sZSIsImlhdCI6MTc1MzYyMDM2MiwiZXhwIjoyMDY5MTk2MzYyfQ.CmRE4CItRDUged-TKgkNvyCGW4cP7rKzNjigJYJEYZ4"
+            },
+            {
+              "name": "Authorization",
+              "value": "Bearer eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Inlkd21jdGhkanZobWlld3ducGZvIiwicm9sZSI6InNlcnZpY2Vfcm9sZSIsImlhdCI6MTc1MzYyMDM2MiwiZXhwIjoyMDY5MTk2MzYyfQ.CmRE4CItRDUged-TKgkNvyCGW4cP7rKzNjigJYJEYZ4"
+            }
+          ]
+        },
+        "sendBody": true,
+        "specifyBody": "json",
+        "jsonBody": "={{\n  {\n    \"job_id\": $('Webhook Trigger').item.json.body.jobId,\n    \"event_type\": \"complete\",\n    \"payload\": {}\n  }\n}}",
+        "options": {}
+      },
+      "id": "0ede4af4-de78-48c9-b23e-90dfd14956a3",
+      "name": "Log Complete Event",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.4,
+      "position": [
+        -624,
+        1408
+      ]
+    },
+    {
+      "parameters": {
+        "assignments": {
+          "assignments": [
+            {
+              "id": "1",
+              "name": "attempt",
+              "value": 1,
+              "type": "number"
+            },
+            {
+              "id": "2",
+              "name": "rewriteInstructions",
+              "value": "",
+              "type": "string"
+            },
+            {
+              "id": "3",
+              "name": "previousReviewResult",
+              "value": null,
+              "type": "object"
+            },
+            {
+              "id": "4",
+              "name": "parseAttempts",
+              "value": 0,
+              "type": "number"
+            }
+          ]
+        },
+        "includeOtherFields": true,
+        "options": {}
+      },
+      "id": "a447142c-6541-4c7f-a7db-0a6e4600022e",
+      "name": "Initialize Variables",
+      "type": "n8n-nodes-base.set",
+      "typeVersion": 3.4,
+      "position": [
+        -848,
+        928
+      ]
+    },
+    {
+      "parameters": {
+        "method": "POST",
+        "url": "https://instaku.com/api/internal/generate-one",
+        "sendHeaders": true,
+        "headerParameters": {
+          "parameters": [
+            {
+              "name": "x-internal-secret",
+              "value": "628e8ebafa73d1574d3c660c6ba80e63c838003e47c7051f02733e58d84f8096"
+            }
+          ]
+        },
+        "sendBody": true,
+        "specifyBody": "json",
+        "jsonBody": "={{\n  {\n    \"jobId\": $('Initialize Variables').item.json.jobId,\n    \"userId\": $('Initialize Variables').item.json.userId,\n    \"questionIndex\": $('Initialize Variables').item.json.questionIndex,\n    \"questionType\": $('Initialize Variables').item.json.questionType,\n    \"attemptNumber\": $('Initialize Variables').item.json.attempt,\n    \"rewriteInstructions\": $('Initialize Variables').item.json.rewriteInstructions,\n    \"previousReviewResult\": $('Initialize Variables').item.json.previousReviewResult\n  }\n}}",
+        "options": {}
+      },
+      "id": "1b9c0640-244d-423f-9fa9-7c580b60e403",
+      "name": "Generate Question",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.4,
+      "position": [
+        -624,
+        928
+      ]
+    },
+    {
+      "parameters": {
+        "conditions": {
+          "combinator": "and",
+          "options": {
+            "caseSensitive": true,
+            "leftValue": "",
+            "typeValidation": "strict",
+            "version": 1
+          },
+          "conditions": [
+            {
+              "id": "1",
+              "leftValue": "={{ $json.parseError }}",
+              "rightValue": true,
+              "operator": {
+                "type": "boolean",
+                "operation": "true"
+              }
+            }
+          ]
+        },
+        "options": {}
+      },
+      "id": "0931dc54-234f-4dea-b8ef-047ed43765c4",
+      "name": "Check Parse Error",
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 2.3,
+      "position": [
+        -400,
+        592
+      ]
+    },
+    {
+      "parameters": {
+        "method": "POST",
+        "url": "https://ydwmcthdjvhmiewwnpfo.supabase.co/rest/v1/generation_job_events",
+        "sendHeaders": true,
+        "headerParameters": {
+          "parameters": [
+            {
+              "name": "apikey",
+              "value": "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Inlkd21jdGhkanZobWlld3ducGZvIiwicm9sZSI6InNlcnZpY2Vfcm9sZSIsImlhdCI6MTc1MzYyMDM2MiwiZXhwIjoyMDY5MTk2MzYyfQ.CmRE4CItRDUged-TKgkNvyCGW4cP7rKzNjigJYJEYZ4"
+            },
+            {
+              "name": "Authorization",
+              "value": "Bearer eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Inlkd21jdGhkanZobWlld3ducGZvIiwicm9sZSI6InNlcnZpY2Vfcm9sZSIsImlhdCI6MTc1MzYyMDM2MiwiZXhwIjoyMDY5MTk2MzYyfQ.CmRE4CItRDUged-TKgkNvyCGW4cP7rKzNjigJYJEYZ4"
+            }
+          ]
+        },
+        "sendBody": true,
+        "specifyBody": "json",
+        "jsonBody": "={{\n  {\n    \"job_id\": $('Initialize Variables').item.json.jobId,\n    \"question_index\": $('Initialize Variables').item.json.questionIndex,\n    \"event_type\": \"parse_error\",\n    \"payload\": {\n      \"attempt\": $('Initialize Variables').item.json.attempt,\n      \"reason\": $('Generate Question').item.json.parseErrorReason\n    }\n  }\n}}",
+        "options": {}
+      },
+      "id": "0c617021-62ee-425e-a9fd-55a779f00ad4",
+      "name": "Log Parse Error Event",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.4,
+      "position": [
+        -176,
+        592
+      ]
+    },
+    {
+      "parameters": {
+        "conditions": {
+          "combinator": "and",
+          "options": {
+            "caseSensitive": true,
+            "leftValue": "",
+            "typeValidation": "strict",
+            "version": 1
+          },
+          "conditions": [
+            {
+              "id": "1",
+              "leftValue": "={{ $(\"Initialize Variables\").item.json.attempt }}",
+              "rightValue": 3,
+              "operator": {
+                "type": "number",
+                "operation": "lt"
+              }
+            }
+          ]
+        },
+        "options": {}
+      },
+      "id": "e4dc85bf-294b-43ea-96ca-6fa0cf0556dc",
+      "name": "Check Retry Parse",
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 2.3,
+      "position": [
+        48,
+        592
+      ]
+    },
+    {
+      "parameters": {
+        "assignments": {
+          "assignments": [
+            {
+              "id": "1",
+              "name": "attempt",
+              "value": "={{ $(\"Initialize Variables\").item.json.attempt + 1 }}",
+              "type": "number"
+            }
+          ]
+        },
+        "includeOtherFields": true,
+        "options": {}
+      },
+      "id": "b9c6e614-d46b-4121-b0d8-9b70d50ff7be",
+      "name": "Increment Parse Attempt",
+      "type": "n8n-nodes-base.set",
+      "typeVersion": 3.4,
+      "position": [
+        272,
+        592
+      ]
+    },
+    {
+      "parameters": {
+        "options": {}
+      },
+      "id": "2a46bc16-e066-42d1-9e80-b1edb7668a4e",
+      "name": "Loop Over Questions",
+      "type": "n8n-nodes-base.splitInBatches",
+      "typeVersion": 3,
+      "position": [
+        -1072,
+        1408
+      ]
+    },
+    {
+      "parameters": {
+        "assignments": {
+          "assignments": [
+            {
+              "id": "1",
+              "name": "status",
+              "value": "discarded_parse_error",
+              "type": "string"
+            }
+          ]
+        },
+        "includeOtherFields": true,
+        "options": {}
+      },
+      "id": "a24f9980-0fde-49a0-945b-42c105d60b27",
+      "name": "Mark Discarded (Parse)",
+      "type": "n8n-nodes-base.set",
+      "typeVersion": 3.4,
+      "position": [
+        272,
+        784
+      ]
+    },
+    {
+      "parameters": {
+        "method": "POST",
+        "url": "https://instaku.com/api/internal/review-one",
+        "sendHeaders": true,
+        "headerParameters": {
+          "parameters": [
+            {
+              "name": "x-internal-secret",
+              "value": "628e8ebafa73d1574d3c660c6ba80e63c838003e47c7051f02733e58d84f8096"
+            }
+          ]
+        },
+        "sendBody": true,
+        "specifyBody": "json",
+        "jsonBody": "={{\n  {\n    \"jobId\": $('Initialize Variables').item.json.jobId,\n    \"userId\": $('Initialize Variables').item.json.userId,\n    \"questionIndex\": $('Initialize Variables').item.json.questionIndex,\n    \"attemptNumber\": $('Initialize Variables').item.json.attempt,\n    \"question\": $('Generate Question').item.json.question\n  }\n}}",
+        "options": {}
+      },
+      "id": "f1a2cd58-2af6-40f1-a3c5-c6dbf6d20998",
+      "name": "Review Question",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.4,
+      "position": [
+        -176,
+        976
+      ]
+    },
+    {
+      "parameters": {
+        "method": "POST",
+        "url": "https://ydwmcthdjvhmiewwnpfo.supabase.co/rest/v1/questions",
+        "sendHeaders": true,
+        "headerParameters": {
+          "parameters": [
+            {
+              "name": "apikey",
+              "value": "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Inlkd21jdGhkanZobWlld3ducGZvIiwicm9sZSI6InNlcnZpY2Vfcm9sZSIsImlhdCI6MTc1MzYyMDM2MiwiZXhwIjoyMDY5MTk2MzYyfQ.CmRE4CItRDUged-TKgkNvyCGW4cP7rKzNjigJYJEYZ4"
+            },
+            {
+              "name": "Authorization",
+              "value": "Bearer eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Inlkd21jdGhkanZobWlld3ducGZvIiwicm9sZSI6InNlcnZpY2Vfcm9sZSIsImlhdCI6MTc1MzYyMDM2MiwiZXhwIjoyMDY5MTk2MzYyfQ.CmRE4CItRDUged-TKgkNvyCGW4cP7rKzNjigJYJEYZ4"
+            },
+            {
+              "name": "Prefer",
+              "value": "return=representation"
+            },
+            {
+              "name": "Content-Type",
+              "value": "application/json"
+            }
+          ]
+        },
+        "sendBody": true,
+        "specifyBody": "json",
+        "jsonBody": "={{\n  {\n    \"question\": $json.question.question,\n    \"question_type\": $json.question.type,\n    \"options\": $json.question.options || [],\n    \"correct_answer\": $json.question.correctAnswer,\n    \"explanation\": $json.question.explanation || null,\n    \"subject\": $('Initialize Variables').item.json.inputs.subject,\n    \"topic\": $('Initialize Variables').item.json.inputs.topic,\n    \"grade\": $('Initialize Variables').item.json.inputs.grade,\n    \"difficulty\": $('Initialize Variables').item.json.inputs.difficulty,\n    \"blooms_level\": $('Initialize Variables').item.json.inputs.bloomsLevel,\n    \"user_id\": $('Webhook Trigger').first().json.body.userId || null,\n    \"is_public\": false,\n    \"is_shared\": false,\n    \"shared_with\": null,\n    \"review_status\": \"pending\",\n    \"is_user_visible\": false,\n    \"review_attempts\": $json.attemptNumber,\n    \"parse_attempts\": $('Initialize Variables').item.json.parseAttempts,\n    \"question_source\": $('Initialize Variables').item.json.inputs.question_source || \"general\"\n  }\n}}",
+        "options": {}
+      },
+      "id": "209baafb-a32b-497b-bc5e-5d4c38ff79c4",
+      "name": "Insert Question to DB",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.4,
+      "position": [
+        48,
+        976
+      ]
+    },
+    {
+      "parameters": {
+        "method": "POST",
+        "url": "https://ydwmcthdjvhmiewwnpfo.supabase.co/rest/v1/generation_job_events",
+        "sendHeaders": true,
+        "headerParameters": {
+          "parameters": [
+            {
+              "name": "apikey",
+              "value": "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Inlkd21jdGhkanZobWlld3ducGZvIiwicm9sZSI6InNlcnZpY2Vfcm9sZSIsImlhdCI6MTc1MzYyMDM2MiwiZXhwIjoyMDY5MTk2MzYyfQ.CmRE4CItRDUged-TKgkNvyCGW4cP7rKzNjigJYJEYZ4"
+            },
+            {
+              "name": "Authorization",
+              "value": "Bearer eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Inlkd21jdGhkanZobWlld3ducGZvIiwicm9sZSI6InNlcnZpY2Vfcm9sZSIsImlhdCI6MTc1MzYyMDM2MiwiZXhwIjoyMDY5MTk2MzYyfQ.CmRE4CItRDUged-TKgkNvyCGW4cP7rKzNjigJYJEYZ4"
+            }
+          ]
+        },
+        "sendBody": true,
+        "specifyBody": "json",
+        "jsonBody": "={{\n  {\n    \"job_id\": $('Initialize Variables').item.json.jobId,\n    \"question_index\": $('Initialize Variables').item.json.questionIndex,\n    \"event_type\": \"reviewing\",\n    \"payload\": {\n      \"attempt\": $('Initialize Variables').item.json.attempt\n    }\n  }\n}}",
+        "options": {}
+      },
+      "id": "6fd4dbea-127c-4215-bb56-6c9871ee65bb",
+      "name": "Log Reviewing Event",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.4,
+      "position": [
+        272,
+        976
+      ]
+    },
+    {
+      "parameters": {
+        "conditions": {
+          "combinator": "and",
+          "options": {
+            "caseSensitive": true,
+            "leftValue": "",
+            "typeValidation": "strict",
+            "version": 1
+          },
+          "conditions": [
+            {
+              "id": "1",
+              "leftValue": "={{ $(\"Review Question\").item.json.reviewResult.overall_passed }}",
+              "rightValue": true,
+              "operator": {
+                "type": "boolean",
+                "operation": "true"
+              }
+            }
+          ]
+        },
+        "options": {}
+      },
+      "id": "2fbdfe08-3cbd-498a-9f29-af21cebdf428",
+      "name": "Check Review Passed",
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 2.3,
+      "position": [
+        496,
+        976
+      ]
+    },
+    {
+      "parameters": {
+        "method": "PATCH",
+        "url": "=https://ydwmcthdjvhmiewwnpfo.supabase.co/rest/v1/questions?id=eq.{{ $(\"Insert Question to DB\").item.json[0].id }}",
+        "sendHeaders": true,
+        "headerParameters": {
+          "parameters": [
+            {
+              "name": "apikey",
+              "value": "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Inlkd21jdGhkanZobWlld3ducGZvIiwicm9sZSI6InNlcnZpY2Vfcm9sZSIsImlhdCI6MTc1MzYyMDM2MiwiZXhwIjoyMDY5MTk2MzYyfQ.CmRE4CItRDUged-TKgkNvyCGW4cP7rKzNjigJYJEYZ4"
+            },
+            {
+              "name": "Authorization",
+              "value": "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Inlkd21jdGhkanZobWlld3ducGZvIiwicm9sZSI6InNlcnZpY2Vfcm9sZSIsImlhdCI6MTc1MzYyMDM2MiwiZXhwIjoyMDY5MTk2MzYyfQ.CmRE4CItRDUged-TKgkNvyCGW4cP7rKzNjigJYJEYZ4"
+            },
+            {
+              "name": "Content-Type",
+              "value": "application/json"
+            }
+          ]
+        },
+        "sendBody": true,
+        "specifyBody": "json",
+        "jsonBody": "={{\n  {\n    \"review_status\": \"passed\",\n    \"is_user_visible\": !!$('Webhook Trigger').first().json.body.userId,\n    \"review_attempts\": $('Initialize Variables').item.json.attempt\n  }\n}}",
+        "options": {}
+      },
+      "id": "b4b74fe9-8928-4fb3-af56-8222d990d6a6",
+      "name": "Update Question Passed",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.4,
+      "position": [
+        720,
+        912
+      ]
+    },
+    {
+      "parameters": {
+        "method": "POST",
+        "url": "https://ydwmcthdjvhmiewwnpfo.supabase.co/rest/v1/generation_job_events",
+        "sendHeaders": true,
+        "headerParameters": {
+          "parameters": [
+            {
+              "name": "apikey",
+              "value": "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Inlkd21jdGhkanZobWlld3ducGZvIiwicm9sZSI6InNlcnZpY2Vfcm9sZSIsImlhdCI6MTc1MzYyMDM2MiwiZXhwIjoyMDY5MTk2MzYyfQ.CmRE4CItRDUged-TKgkNvyCGW4cP7rKzNjigJYJEYZ4"
+            },
+            {
+              "name": "Authorization",
+              "value": "Bearer eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Inlkd21jdGhkanZobWlld3ducGZvIiwicm9sZSI6InNlcnZpY2Vfcm9sZSIsImlhdCI6MTc1MzYyMDM2MiwiZXhwIjoyMDY5MTk2MzYyfQ.CmRE4CItRDUged-TKgkNvyCGW4cP7rKzNjigJYJEYZ4"
+            }
+          ]
+        },
+        "sendBody": true,
+        "specifyBody": "json",
+        "jsonBody": "={{\n  {\n    \"job_id\": $('Initialize Variables').item.json.jobId,\n    \"question_index\": $('Initialize Variables').item.json.questionIndex,\n    \"event_type\": \"passed\",\n    \"payload\": {\n      \"attempt\": $('Initialize Variables').item.json.attempt,\n      \"question\": $('Generate Question').item.json.question,\n      \"review\": $('Review Question').item.json.reviewResult\n    }\n  }\n}}",
+        "options": {}
+      },
+      "id": "3dc7c41a-b9ec-4376-a24f-197604fddb38",
+      "name": "Log Passed Event",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.4,
+      "position": [
+        944,
+        976
+      ]
+    },
+    {
+      "parameters": {
+        "conditions": {
+          "combinator": "and",
+          "options": {
+            "caseSensitive": true,
+            "leftValue": "",
+            "typeValidation": "strict",
+            "version": 1
+          },
+          "conditions": [
+            {
+              "id": "1",
+              "leftValue": "={{ $(\"Initialize Variables\").item.json.attempt }}",
+              "rightValue": 3,
+              "operator": {
+                "type": "number",
+                "operation": "lt"
+              }
+            }
+          ]
+        },
+        "options": {}
+      },
+      "id": "3d1ada3a-91be-4c5d-8f3c-94dbe38bb5a2",
+      "name": "Check Retry Review",
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 2.3,
+      "position": [
+        720,
+        1104
+      ]
+    },
+    {
+      "parameters": {
+        "assignments": {
+          "assignments": [
+            {
+              "id": "1",
+              "name": "attempt",
+              "value": "={{ $(\"Initialize Variables\").item.json.attempt + 1 }}",
+              "type": "number"
+            },
+            {
+              "id": "2",
+              "name": "rewriteInstructions",
+              "value": "={{ $(\"Review Question\").item.json.reviewResult.feedback }}",
+              "type": "string"
+            },
+            {
+              "id": "3",
+              "name": "previousReviewResult",
+              "value": "={{ $(\"Review Question\").item.json.reviewResult }}",
+              "type": "object"
+            }
+          ]
+        },
+        "includeOtherFields": true,
+        "options": {}
+      },
+      "id": "e0712b52-c8d9-4555-bc69-282a5635aa63",
+      "name": "Set Rewrite & Increment",
+      "type": "n8n-nodes-base.set",
+      "typeVersion": 3.4,
+      "position": [
+        944,
+        1200
+      ]
+    },
+    {
+      "parameters": {
+        "assignments": {
+          "assignments": [
+            {
+              "id": "1",
+              "name": "status",
+              "value": "discarded_review_failed",
+              "type": "string"
+            }
+          ]
+        },
+        "includeOtherFields": true,
+        "options": {}
+      },
+      "id": "e18fd21d-9cf3-4305-9e24-541981704e6b",
+      "name": "Mark Discarded (Review)",
+      "type": "n8n-nodes-base.set",
+      "typeVersion": 3.4,
+      "position": [
+        944,
+        1552
+      ]
+    }
+  ],
+  "pinData": {},
+  "connections": {
+    "Webhook Trigger": {
+      "main": [
+        [
+          {
+            "node": "Update Job Status to Running",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Validate & Build Question Slots": {
+      "main": [
+        [
+          {
+            "node": "Loop Over Questions",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Update Job Status to Running": {
+      "main": [
+        [
+          {
+            "node": "Validate & Build Question Slots",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Update Job Completed": {
+      "main": [
+        [
+          {
+            "node": "Log Complete Event",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Initialize Variables": {
+      "main": [
+        [
+          {
+            "node": "Generate Question",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Generate Question": {
+      "main": [
+        [
+          {
+            "node": "Check Parse Error",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Check Parse Error": {
+      "main": [
+        [
+          {
+            "node": "Log Parse Error Event",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Review Question",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Log Parse Error Event": {
+      "main": [
+        [
+          {
+            "node": "Check Retry Parse",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Check Retry Parse": {
+      "main": [
+        [
+          {
+            "node": "Increment Parse Attempt",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Mark Discarded (Parse)",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Increment Parse Attempt": {
+      "main": [
+        [
+          {
+            "node": "Generate Question",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Loop Over Questions": {
+      "main": [
+        [
+          {
+            "node": "Initialize Variables",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Update Job Completed",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Mark Discarded (Parse)": {
+      "main": [
+        [
+          {
+            "node": "Loop Over Questions",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Review Question": {
+      "main": [
+        [
+          {
+            "node": "Insert Question to DB",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Insert Question to DB": {
+      "main": [
+        [
+          {
+            "node": "Log Reviewing Event",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Log Reviewing Event": {
+      "main": [
+        [
+          {
+            "node": "Check Review Passed",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Check Review Passed": {
+      "main": [
+        [
+          {
+            "node": "Update Question Passed",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Check Retry Review",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Update Question Passed": {
+      "main": [
+        [
+          {
+            "node": "Log Passed Event",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Log Passed Event": {
+      "main": [
+        [
+          {
+            "node": "Loop Over Questions",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Check Retry Review": {
+      "main": [
+        [
+          {
+            "node": "Set Rewrite & Increment",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Mark Discarded (Review)",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Set Rewrite & Increment": {
+      "main": [
+        [
+          {
+            "node": "Generate Question",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Mark Discarded (Review)": {
+      "main": [
+        [
+          {
+            "node": "Loop Over Questions",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    }
+  },
+  "active": true,
+  "settings": {
+    "executionOrder": "v1",
+    "binaryMode": "separate"
+  },
+  "versionId": "3aa30739-4212-4cf0-ab6a-f309a8792303",
+  "meta": {
+    "instanceId": "1482cea4612b4d3f29e4faf9cbab72284fef73801e906bf8716b82cb8fdbad47"
+  },
+  "id": "S4z4ijTYY0yoGYCK",
+  "tags": []
+}

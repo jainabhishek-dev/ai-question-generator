@@ -159,8 +159,8 @@ export default function CreateQuestionsPage() {
               const processed = processQuestions([questionData])
               if (processed.length > 0) {
                 setQuestions(prev => {
-                  // Avoid duplicates (question may have a db id in payload)
-                  const alreadyExists = prev.some(q => q.id && q.id === processed[0].id)
+                  // Avoid duplicates by comparing question strings since payloads from AI lack a DB ID
+                  const alreadyExists = prev.some(q => q.question === processed[0].question)
                   return alreadyExists ? prev : [...prev, processed[0]]
                 })
                 // Load images for logged-in users
@@ -204,7 +204,6 @@ export default function CreateQuestionsPage() {
   // Start/stop polling when jobId changes
   useEffect(() => {
     if (!jobId) return
-    lastEventTs.current = '1970-01-01T00:00:00.000Z'
     pollingRef.current = setInterval(() => pollJobStatus(jobId), 2000)
     return () => {
       if (pollingRef.current) clearInterval(pollingRef.current)
@@ -221,6 +220,7 @@ export default function CreateQuestionsPage() {
     setJobId(null)
     setJobComplete(false)
     setSlots(buildInitialSlots(inputs))
+    lastEventTs.current = '1970-01-01T00:00:00.000Z'
 
     setTimeout(() => {
       resultsRef.current?.scrollIntoView({ behavior: 'smooth' })
