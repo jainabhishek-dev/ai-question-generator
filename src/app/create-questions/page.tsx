@@ -227,13 +227,14 @@ export default function CreateQuestionsPage() {
     }, 100)
 
     try {
-      const authHeader = user?.accessToken
-        ? { Authorization: `Bearer ${user.accessToken}` }
-        : {}
+      const headers: HeadersInit = { 'Content-Type': 'application/json' }
+      if (user?.accessToken) {
+        headers['Authorization'] = `Bearer ${user.accessToken}`
+      }
 
       const res = await fetch('/api/generate/start', {
         method: 'POST',
-        headers: { 'Content-Type': 'application/json', ...authHeader },
+        headers,
         body: JSON.stringify({ inputs, mode }),
       })
 
