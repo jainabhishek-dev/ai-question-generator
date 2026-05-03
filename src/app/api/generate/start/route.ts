@@ -85,16 +85,40 @@ export async function POST(request: NextRequest) {
     }
 
     // ── Create generation job in DB ──────────────────────────────────────────
-    const jobResult = await createGenerationJob(userId, inputs, mode, totalQuestions)
-
-    if (!jobResult.success || !jobResult.jobId) {
+    const serviceRoleKey = process.env.SUPABASE_SERVICE_ROLE_KEY
+    if (!serviceRoleKey) {
       return NextResponse.json(
-        { success: false, error: jobResult.error ?? 'Failed to create generation job.' },
+        { success: false, error: 'SUPABASE_SERVICE_ROLE_KEY missing.' },
         { status: 500 }
       )
     }
 
-    const { jobId } = jobResult
+    const supabaseAdmin = createClient(supabaseUrl!, serviceRoleKey, {
+      auth: { autoRefreshToken: false, persistSession: false }
+    })
+
+    const { data: job, error: jobError } = await supabaseAdmin
+      .from('generation_jobs')
+      .insert({
+        user_id: userId,
+        inputs,
+        mode,
+        status: 'pending',
+        total_questions: totalQuestions,
+        questions_passed: 0,
+        questions_discarded: 0,
+      })
+      .select('id')
+      .single()
+
+    if (jobError || !job) {
+      return NextResponse.json(
+        { success: false, error: jobError?.message ?? 'Failed to create generation job.' },
+        { status: 500 }
+      )
+    }
+
+    const jobId = job.id
 
     // ── Fire webhook to n8n ─────────────────────────────────────────────────
     // n8n receives the job details and runs the full generate→review→rewrite loop.
