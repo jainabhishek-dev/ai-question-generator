@@ -1,6 +1,4 @@
 import { NextRequest, NextResponse } from 'next/server'
-import { getJobEventsSince } from '@/lib/database'
-
 /**
  * GET /api/generate/[jobId]/status?since=<ISO_TIMESTAMP>
  *
@@ -46,20 +44,42 @@ export async function GET(
       )
     }
 
-    const result = await getJobEventsSince(jobId, since)
+    const serviceRoleKey = process.env.SUPABASE_SERVICE_ROLE_KEY
+    if (!serviceRoleKey) {
+      return NextResponse.json({ success: false, error: 'Missing service role key.' }, { status: 500 })
+    }
 
-    if (!result.success) {
-      return NextResponse.json(
-        { success: false, error: result.error ?? 'Failed to fetch job status.' },
-        { status: 500 }
-      )
+    const { createClient } = await import('@supabase/supabase-js')
+    const supabaseAdmin = createClient(process.env.NEXT_PUBLIC_SUPABASE_URL!, serviceRoleKey, {
+      auth: { autoRefreshToken: false, persistSession: false }
+    })
+
+    const { data: events, error: eventsError } = await supabaseAdmin
+      .from('generation_job_events')
+      .select('*')
+      .eq('job_id', jobId)
+      .gt('created_at', since)
+      .order('created_at', { ascending: true })
+
+    if (eventsError) {
+      return NextResponse.json({ success: false, error: eventsError.message }, { status: 500 })
+    }
+
+    const { data: job, error: jobError } = await supabaseAdmin
+      .from('generation_jobs')
+      .select('status')
+      .eq('id', jobId)
+      .single()
+
+    if (jobError) {
+      return NextResponse.json({ success: false, error: jobError.message }, { status: 500 })
     }
 
     return NextResponse.json(
       {
         success: true,
-        jobStatus: result.jobStatus,
-        events: result.events ?? [],
+        jobStatus: job.status,
+        events: events ?? [],
       },
       {
         status: 200,
