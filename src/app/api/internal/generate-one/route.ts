@@ -142,6 +142,22 @@ export async function POST(request: NextRequest) {
     let finalPrompt = basePrompt
     if (attemptNumber > 1 && rewriteInstructions && previousReviewResult) {
       finalPrompt = buildRewritePrompt(basePrompt, previousReviewResult, attemptNumber)
+    } else {
+      // For initial generation, fetch recently generated questions to prevent repetition
+      if (userId) {
+        const tenMinsAgo = new Date(Date.now() - 10 * 60000).toISOString()
+        const { data: recentQuestions } = await supabaseAdmin
+          .from('questions')
+          .select('question')
+          .eq('user_id', userId)
+          .gte('created_at', tenMinsAgo)
+          .limit(30)
+        
+        if (recentQuestions && recentQuestions.length > 0) {
+          const pastQs = recentQuestions.map(q => q.question).join('\n- ')
+          finalPrompt += `\n\nCRITICAL DIVERSITY INSTRUCTION:\nYou have recently generated the following questions for this user:\n- ${pastQs}\n\nDO NOT repeat any of the exact questions or core concepts from the list above. You MUST pick a completely different aspect, angle, or sub-topic for this new question.`
+        }
+      }
     }
 
     // ── Call Gemini ──────────────────────────────────────────────────────────
