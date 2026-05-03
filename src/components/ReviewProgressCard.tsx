@@ -246,8 +246,8 @@ export default function ReviewProgressCard({ slot }: Props) {
         </p>
       )}
 
-      {/* Parameter grid — shown for failed, passed states */}
-      {slot.parameters && ['failed', 'rewriting', 'passed'].includes(slot.status) && (
+      {/* Parameter grid — shown for failed, rewriting states */}
+      {slot.parameters && ['failed', 'rewriting'].includes(slot.status) && (
         <>
           <div className="mt-3 grid grid-cols-2 gap-x-4 gap-y-1.5">
             {paramKeys.map((key) => {
