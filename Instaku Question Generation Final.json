@@ -43,7 +43,7 @@
             },
             {
               "name": "Authorization",
-              "value": "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Inlkd21jdGhkanZobWlld3ducGZvIiwicm9sZSI6InNlcnZpY2Vfcm9sZSIsImlhdCI6MTc1MzYyMDM2MiwiZXhwIjoyMDY5MTk2MzYyfQ.CmRE4CItRDUged-TKgkNvyCGW4cP7rKzNjigJYJEYZ4"
+              "value": "Bearer eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Inlkd21jdGhkanZobWlld3ducGZvIiwicm9sZSI6InNlcnZpY2Vfcm9sZSIsImlhdCI6MTc1MzYyMDM2MiwiZXhwIjoyMDY5MTk2MzYyfQ.CmRE4CItRDUged-TKgkNvyCGW4cP7rKzNjigJYJEYZ4"
             },
             {
               "name": "Content-Type",
@@ -68,7 +68,7 @@
     {
       "parameters": {
         "method": "PATCH",
-        "url": "=https://ydwmcthdjvhmiewwnpfo.supabase.co/rest/v1/generation_jobs?id=eq.{{ $(\"Initialize Variables\").item.json.jobId }}",
+        "url": "=https://ydwmcthdjvhmiewwnpfo.supabase.co/rest/v1/generation_jobs?id=eq.{{ $('Count Passed Questions').item.json.jobId }}",
         "sendHeaders": true,
         "headerParameters": {
           "parameters": [
@@ -84,7 +84,7 @@
         },
         "sendBody": true,
         "specifyBody": "json",
-        "jsonBody": "{ \"status\": \"completed\" }",
+        "jsonBody": "={{\n  {\n    \"status\": \"completed\",\n    \"questions_passed\": $('Count Passed Questions').item.json.passedCount,\n    \"questions_discarded\": $('Count Passed Questions').item.json.discardedCount,\n    \"completed_at\": new Date().toISOString()\n  }\n}}",
         "options": {}
       },
       "id": "56c02c46-97b7-4f5a-9e3e-4c29697e9190",
@@ -115,7 +115,7 @@
         },
         "sendBody": true,
         "specifyBody": "json",
-        "jsonBody": "={{\n  {\n    \"job_id\": $('Webhook Trigger').item.json.body.jobId,\n    \"event_type\": \"complete\",\n    \"payload\": {}\n  }\n}}",
+        "jsonBody": "={{\n  {\n    \"job_id\": $('Webhook Trigger').item.json.body.jobId,\n    \"event_type\": \"complete\",\n    \"payload\": {\n      \"totalPassed\": $('Count Passed Questions').item.json.passedCount,\n      \"totalDiscarded\": $('Count Passed Questions').item.json.discardedCount\n    }\n  }\n}}",
         "options": {}
       },
       "id": "0ede4af4-de78-48c9-b23e-90dfd14956a3",
@@ -408,7 +408,7 @@
         },
         "sendBody": true,
         "specifyBody": "json",
-        "jsonBody": "={{\n  {\n    \"question\": $json.question.question,\n    \"question_type\": $json.question.type,\n    \"options\": $json.question.options || [],\n    \"correct_answer\": $json.question.correctAnswer,\n    \"explanation\": $json.question.explanation || null,\n    \"subject\": $('Initialize Variables').item.json.inputs.subject,\n    \"topic\": $('Initialize Variables').item.json.inputs.topic,\n    \"grade\": $('Initialize Variables').item.json.inputs.grade,\n    \"difficulty\": $('Initialize Variables').item.json.inputs.difficulty,\n    \"blooms_level\": $('Initialize Variables').item.json.inputs.bloomsLevel,\n    \"user_id\": $('Webhook Trigger').first().json.body.userId || null,\n    \"is_public\": false,\n    \"is_shared\": false,\n    \"shared_with\": null,\n    \"review_status\": \"pending\",\n    \"is_user_visible\": false,\n    \"review_attempts\": $json.attemptNumber,\n    \"parse_attempts\": $('Initialize Variables').item.json.parseAttempts,\n    \"question_source\": $('Initialize Variables').item.json.inputs.question_source || \"general\"\n  }\n}}",
+        "jsonBody": "={{\n  {\n    \"question\": $json.question.question,\n    \"question_type\": $json.question.type,\n    \"options\": $json.question.options || [],\n    \"correct_answer\": $json.question.correctAnswer,\n    \"explanation\": $json.question.explanation || null,\n    \"subject\": $('Initialize Variables').item.json.inputs.subject,\n    \"sub_subject\": $('Initialize Variables').item.json.inputs.subSubject || null,\n    \"topic\": $('Initialize Variables').item.json.inputs.topic,\n    \"grade\": $('Initialize Variables').item.json.inputs.grade,\n    \"difficulty\": $('Initialize Variables').item.json.inputs.difficulty,\n    \"blooms_level\": $('Initialize Variables').item.json.inputs.bloomsLevel,\n    \"user_id\": $('Webhook Trigger').first().json.body.userId || null,\n    \"is_public\": false,\n    \"is_shared\": false,\n    \"shared_with\": null,\n    \"review_status\": \"pending\",\n    \"is_user_visible\": false,\n    \"review_attempts\": $json.attemptNumber,\n    \"parse_attempts\": $('Initialize Variables').item.json.parseAttempts,\n    \"question_source\": $('Initialize Variables').item.json.inputs.question_source || \"general\",\n    \"ai_prompt\": $('Generate Question').item.json.prompt || null\n  }\n}}",
         "options": {}
       },
       "id": "209baafb-a32b-497b-bc5e-5d4c38ff79c4",
@@ -418,6 +418,41 @@
       "position": [
         48,
         976
+      ]
+    },
+    {
+      "parameters": {
+        "method": "POST",
+        "url": "https://ydwmcthdjvhmiewwnpfo.supabase.co/rest/v1/question_reviews",
+        "sendHeaders": true,
+        "headerParameters": {
+          "parameters": [
+            {
+              "name": "apikey",
+              "value": "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Inlkd21jdGhkanZobWlld3ducGZvIiwicm9sZSI6InNlcnZpY2Vfcm9sZSIsImlhdCI6MTc1MzYyMDM2MiwiZXhwIjoyMDY5MTk2MzYyfQ.CmRE4CItRDUged-TKgkNvyCGW4cP7rKzNjigJYJEYZ4"
+            },
+            {
+              "name": "Authorization",
+              "value": "Bearer eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Inlkd21jdGhkanZobWlld3ducGZvIiwicm9sZSI6InNlcnZpY2Vfcm9sZSIsImlhdCI6MTc1MzYyMDM2MiwiZXhwIjoyMDY5MTk2MzYyfQ.CmRE4CItRDUged-TKgkNvyCGW4cP7rKzNjigJYJEYZ4"
+            },
+            {
+              "name": "Content-Type",
+              "value": "application/json"
+            }
+          ]
+        },
+        "sendBody": true,
+        "specifyBody": "json",
+        "jsonBody": "={{\n  {\n    \"question_id\": $('Insert Question to DB').item.json[0].id,\n    \"attempt\": $('Initialize Variables').item.json.attempt,\n    \"p1_construct_validity\": $('Review Question').item.json.reviewResult.p1.pass,\n    \"p1_feedback\": $('Review Question').item.json.reviewResult.p1.feedback || null,\n    \"p2_single_concept\": $('Review Question').item.json.reviewResult.p2.pass,\n    \"p2_feedback\": $('Review Question').item.json.reviewResult.p2.feedback || null,\n    \"p3_blooms_alignment\": $('Review Question').item.json.reviewResult.p3.pass,\n    \"p3_feedback\": $('Review Question').item.json.reviewResult.p3.feedback || null,\n    \"p4_command_word\": $('Review Question').item.json.reviewResult.p4.pass,\n    \"p4_feedback\": $('Review Question').item.json.reviewResult.p4.feedback || null,\n    \"p5_age_grade_appropriate\": $('Review Question').item.json.reviewResult.p5.pass,\n    \"p5_feedback\": $('Review Question').item.json.reviewResult.p5.feedback || null,\n    \"p6_question_clarity\": $('Review Question').item.json.reviewResult.p6.pass,\n    \"p6_feedback\": $('Review Question').item.json.reviewResult.p6.feedback || null,\n    \"p7_option_parallelism\": $('Review Question').item.json.reviewResult.p7.pass,\n    \"p7_feedback\": $('Review Question').item.json.reviewResult.p7.feedback || null,\n    \"p8_distractor_quality\": $('Review Question').item.json.reviewResult.p8.pass,\n    \"p8_feedback\": $('Review Question').item.json.reviewResult.p8.feedback || null,\n    \"p9_factual_accuracy\": $('Review Question').item.json.reviewResult.p9.pass,\n    \"p9_feedback\": $('Review Question').item.json.reviewResult.p9.feedback || null,\n    \"p10_explanation_quality\": $('Review Question').item.json.reviewResult.p10.pass,\n    \"p10_feedback\": $('Review Question').item.json.reviewResult.p10.feedback || null,\n    \"parameters_passed\": $('Review Question').item.json.reviewResult.parameters_passed,\n    \"overall_passed\": $('Review Question').item.json.reviewResult.overall_passed,\n    \"rewrite_prompt\": $('Review Question').item.json.reviewResult.rewrite_instructions || null\n  }\n}}",
+        "options": {}
+      },
+      "id": "a8f3c1d2-e4b5-4f67-8910-ab1234567890",
+      "name": "Create Question Review",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.4,
+      "position": [
+        160,
+        1076
       ]
     },
     {
@@ -497,7 +532,7 @@
             },
             {
               "name": "Authorization",
-              "value": "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Inlkd21jdGhkanZobWlld3ducGZvIiwicm9sZSI6InNlcnZpY2Vfcm9sZSIsImlhdCI6MTc1MzYyMDM2MiwiZXhwIjoyMDY5MTk2MzYyfQ.CmRE4CItRDUged-TKgkNvyCGW4cP7rKzNjigJYJEYZ4"
+              "value": "Bearer eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Inlkd21jdGhkanZobWlld3ducGZvIiwicm9sZSI6InNlcnZpY2Vfcm9sZSIsImlhdCI6MTc1MzYyMDM2MiwiZXhwIjoyMDY5MTk2MzYyfQ.CmRE4CItRDUged-TKgkNvyCGW4cP7rKzNjigJYJEYZ4"
             },
             {
               "name": "Content-Type",
@@ -538,7 +573,7 @@
         },
         "sendBody": true,
         "specifyBody": "json",
-        "jsonBody": "={{\n  {\n    \"job_id\": $('Initialize Variables').item.json.jobId,\n    \"question_index\": $('Initialize Variables').item.json.questionIndex,\n    \"event_type\": \"passed\",\n    \"payload\": {\n      \"attempt\": $('Initialize Variables').item.json.attempt,\n      \"question\": $('Generate Question').item.json.question,\n      \"review\": $('Review Question').item.json.reviewResult\n    }\n  }\n}}",
+        "jsonBody": "={{\n  {\n    \"job_id\": $('Initialize Variables').item.json.jobId,\n    \"question_index\": $('Initialize Variables').item.json.questionIndex,\n    \"event_type\": \"passed\",\n    \"question_id\": $('Insert Question to DB').item.json[0].id,\n    \"payload\": {\n      \"attempt\": $('Initialize Variables').item.json.attempt,\n      \"question\": $('Generate Question').item.json.question,\n      \"review\": $('Review Question').item.json.reviewResult\n    }\n  }\n}}",
         "options": {}
       },
       "id": "3dc7c41a-b9ec-4376-a24f-197604fddb38",
@@ -642,6 +677,19 @@
         944,
         1552
       ]
+    },
+    {
+      "parameters": {
+        "jsCode": "const jobId = $('Webhook Trigger').first().json.body.jobId;\nconst totalQuestions = $('Webhook Trigger').first().json.body.inputs.totalQuestions;\nconst serviceKey = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Inlkd21jdGhkanZobWlld3ducGZvIiwicm9sZSI6InNlcnZpY2Vfcm9sZSIsImlhdCI6MTc1MzYyMDM2MiwiZXhwIjoyMDY5MTk2MzYyfQ.CmRE4CItRDUged-TKgkNvyCGW4cP7rKzNjigJYJEYZ4';\n\nconst res = await fetch(\n  `https://ydwmcthdjvhmiewwnpfo.supabase.co/rest/v1/generation_job_events?job_id=eq.${jobId}&event_type=eq.passed&select=id`,\n  {\n    headers: {\n      'apikey': serviceKey,\n      'Authorization': `Bearer ${serviceKey}`\n    }\n  }\n);\nconst data = await res.json();\nconst passedCount = Array.isArray(data) ? data.length : 0;\nconst discardedCount = Math.max(0, totalQuestions - passedCount);\n\nreturn [{ json: { jobId, passedCount, discardedCount } }];"
+      },
+      "id": "d5e6f7a8-b9c0-4d12-ef34-567890123456",
+      "name": "Count Passed Questions",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        -1000,
+        1408
+      ]
     }
   ],
   "pinData": {},
@@ -673,6 +721,17 @@
         [
           {
             "node": "Validate & Build Question Slots",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Count Passed Questions": {
+      "main": [
+        [
+          {
+            "node": "Update Job Completed",
             "type": "main",
             "index": 0
           }
@@ -781,7 +840,7 @@
         ],
         [
           {
-            "node": "Update Job Completed",
+            "node": "Count Passed Questions",
             "type": "main",
             "index": 0
           }
@@ -811,6 +870,17 @@
       ]
     },
     "Insert Question to DB": {
+      "main": [
+        [
+          {
+            "node": "Create Question Review",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Create Question Review": {
       "main": [
         [
           {
